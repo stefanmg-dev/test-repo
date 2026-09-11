@@ -38,19 +38,32 @@ def require_non_empty_string(
     return value.strip()
 
 
-def validate_regex(pattern: Any, path: str) -> None:
-    pattern = require_non_empty_string(pattern, path)
+def validate_regex(
+    pattern: Any,
+    path: str
+) -> None:
+    pattern = require_non_empty_string(
+        pattern,
+        path
+    )
 
     try:
         re.compile(pattern)
+
     except re.error as exc:
         raise ConfigValidationError(
             f"{path} contains invalid regex: {exc}"
         ) from exc
 
 
-def validate_occurrence(field: dict, path: str) -> None:
-    occurrence = field.get("occurrence", "last")
+def validate_occurrence(
+    field: dict,
+    path: str
+) -> None:
+    occurrence = field.get(
+        "occurrence",
+        "last"
+    )
 
     if occurrence not in SUPPORTED_OCCURRENCES:
         raise ConfigValidationError(
@@ -59,23 +72,36 @@ def validate_occurrence(field: dict, path: str) -> None:
         )
 
 
-def validate_constant_field(field: dict, path: str) -> None:
+def validate_constant_field(
+    field: dict,
+    path: str
+) -> None:
     if "value" not in field:
         raise ConfigValidationError(
-            f"{path}.value is required for constant fields"
+            f"{path}.value is required for "
+            f"constant fields"
         )
 
 
-def validate_regex_field(field: dict, path: str) -> None:
+def validate_regex_field(
+    field: dict,
+    path: str
+) -> None:
     validate_regex(
         field.get("rule"),
         f"{path}.rule"
     )
 
-    validate_occurrence(field, path)
+    validate_occurrence(
+        field,
+        path
+    )
 
 
-def validate_regex_list_field(field: dict, path: str) -> None:
+def validate_regex_list_field(
+    field: dict,
+    path: str
+) -> None:
     rules = field.get("rules")
 
     if not isinstance(rules, list) or not rules:
@@ -89,10 +115,16 @@ def validate_regex_list_field(field: dict, path: str) -> None:
             f"{path}.rules[{rule_index}]"
         )
 
-    validate_occurrence(field, path)
+    validate_occurrence(
+        field,
+        path
+    )
 
 
-def validate_nearby_field(field: dict, path: str) -> None:
+def validate_nearby_field(
+    field: dict,
+    path: str
+) -> None:
     require_non_empty_string(
         field.get("anchor"),
         f"{path}.anchor"
@@ -103,7 +135,10 @@ def validate_nearby_field(field: dict, path: str) -> None:
         f"{path}.pattern"
     )
 
-    direction = field.get("direction", "both")
+    direction = field.get(
+        "direction",
+        "both"
+    )
 
     if direction not in SUPPORTED_DIRECTIONS:
         raise ConfigValidationError(
@@ -111,9 +146,15 @@ def validate_nearby_field(field: dict, path: str) -> None:
             f"{sorted(SUPPORTED_DIRECTIONS)}"
         )
 
-    validate_occurrence(field, path)
+    validate_occurrence(
+        field,
+        path
+    )
 
-    window_size = field.get("window_size", 400)
+    window_size = field.get(
+        "window_size",
+        400
+    )
 
     if (
         not isinstance(window_size, int)
@@ -121,7 +162,8 @@ def validate_nearby_field(field: dict, path: str) -> None:
         or window_size <= 0
     ):
         raise ConfigValidationError(
-            f"{path}.window_size must be a positive integer"
+            f"{path}.window_size must be "
+            f"a positive integer"
         )
 
 
@@ -146,21 +188,34 @@ def validate_field(
 
     if field_type not in SUPPORTED_FIELD_TYPES:
         raise ConfigValidationError(
-            f"{path}.type '{field_type}' is not supported. "
-            f"Supported types: {sorted(SUPPORTED_FIELD_TYPES)}"
+            f"{path}.type '{field_type}' "
+            f"is not supported. Supported types: "
+            f"{sorted(SUPPORTED_FIELD_TYPES)}"
         )
 
     if field_type == "constant":
-        validate_constant_field(field, path)
+        validate_constant_field(
+            field,
+            path
+        )
 
     elif field_type == "regex":
-        validate_regex_field(field, path)
+        validate_regex_field(
+            field,
+            path
+        )
 
     elif field_type == "regex_list":
-        validate_regex_list_field(field, path)
+        validate_regex_list_field(
+            field,
+            path
+        )
 
     elif field_type == "nearby":
-        validate_nearby_field(field, path)
+        validate_nearby_field(
+            field,
+            path
+        )
 
     return field_name
 
@@ -178,15 +233,17 @@ def validate_document_type(
 
     fields = document_config.get("fields")
 
-    if not isinstance(fields, list) or not fields:
+    if not isinstance(fields, list):
         raise ConfigValidationError(
-            f"{path}.fields must be a non-empty list"
+            f"{path}.fields must be a list"
         )
 
     field_names = set()
 
     for field_index, field in enumerate(fields):
-        field_path = f"{path}.fields[{field_index}]"
+        field_path = (
+            f"{path}.fields[{field_index}]"
+        )
 
         field_name = validate_field(
             field,
@@ -195,14 +252,17 @@ def validate_document_type(
 
         if field_name in field_names:
             raise ConfigValidationError(
-                f"{field_path}.name contains duplicate "
-                f"field name '{field_name}'"
+                f"{field_path}.name contains "
+                f"duplicate field name "
+                f"'{field_name}'"
             )
 
         field_names.add(field_name)
 
 
-def validate_config(config: Any) -> None:
+def validate_config(
+    config: Any
+) -> None:
     if not isinstance(config, dict):
         raise ConfigValidationError(
             "Configuration root must be an object"
