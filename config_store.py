@@ -1,14 +1,59 @@
 import json
 from pathlib import Path
 
-CONFIG_PATH = Path("document_types.json")
+from config_validator import validate_config
 
-def load_config():
+
+BASE_DIR = Path(__file__).resolve().parent
+CONFIG_PATH = BASE_DIR / "document_types.json"
+
+
+def load_config() -> dict:
     if not CONFIG_PATH.exists():
-        return {}
-    with CONFIG_PATH.open("r", encoding="utf-8") as f:
-        return json.load(f)
+        raise FileNotFoundError(
+            f"Configuration file not found: {CONFIG_PATH}"
+        )
 
-def save_config(cfg: dict):
-    with CONFIG_PATH.open("w", encoding="utf-8") as f:
-        json.dump(cfg, f, ensure_ascii=False, indent=4)
+    try:
+        with CONFIG_PATH.open(
+            "r",
+            encoding="utf-8"
+        ) as config_file:
+            config = json.load(config_file)
+
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            f"Invalid JSON in {CONFIG_PATH.name}: "
+            f"line {exc.lineno}, column {exc.colno}: "
+            f"{exc.msg}"
+        ) from exc
+
+    validate_config(config)
+
+    return config
+
+
+def save_config(config: dict) -> None:
+    validate_config(config)
+
+    temporary_path = CONFIG_PATH.with_suffix(".json.tmp")
+
+    try:
+        with temporary_path.open(
+            "w",
+            encoding="utf-8"
+        ) as config_file:
+            json.dump(
+                config,
+                config_file,
+                ensure_ascii=False,
+                indent=2
+            )
+
+            config_file.write("\n")
+
+        temporary_path.replace(CONFIG_PATH)
+
+    finally:
+        if temporary_path.exists():
+            temporary_path.unlink()
