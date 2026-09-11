@@ -1,0 +1,71 @@
+{
+  "invoice": {
+    "fields": [
+      {
+        "name": "supplier_name",
+        "type": "constant",
+        "value": "А1 България ЕАД"
+      },
+      {
+        "name": "supplier_id",
+        "type": "regex_list",
+        "occurrence": "first",
+        "rules": [
+          "ЕИК[:\\s]*([0-9]{9,13})",
+          "ДДС[:\\s]*BG([0-9]{9,13})"
+        ]
+      },
+      {
+        "name": "invoice_number",
+        "type": "regex_list",
+        "occurrence": "first",
+        "rules": [
+          "Фактура\\s*№\\s*([0-9]{8,15})",
+          "към\\s+фактура\\s*№\\s*([0-9]{8,15})"
+        ]
+      },
+      {
+        "name": "issue_date",
+        "type": "nearby",
+        "anchor": "Дата на издаване",
+        "pattern": "([0-9]{2}\\.[0-9]{2}\\.[0-9]{4})",
+        "direction": "before",
+        "occurrence": "last",
+        "window_size": 250
+      },
+      {
+        "name": "contract_number",
+        "type": "nearby",
+        "anchor": "Договор",
+        "pattern": "([МM][0-9]{7,10})",
+        "direction": "before",
+        "occurrence": "last",
+        "window_size": 250
+      },
+      {
+        "name": "customer_name",
+        "type": "regex",
+        "rule": "^\\s*(?:от\\s+4\\s*)?\\n?\\s*1\\s*\\n\\s*([А-Я][а-я]+\\s+[А-Я][а-я]+\\s+[А-Я][а-я]+)",
+        "occurrence": "first"
+      },
+      {
+        "name": "customer_address",
+        "type": "regex",
+        "rule": "(жк\\.[^\\n]+)",
+        "occurrence": "first"
+      },
+      {
+        "name": "due_date",
+        "type": "regex",
+        "rule": "Краен срок на плащане[:\\s\\n]*([0-9]{2}\\.[0-9]{2}\\.[0-9]{4})",
+        "occurrence": "last"
+      },
+      {
+        "name": "total_amount",
+        "type": "regex",
+        "rule": "Обща стойност за плащане\\s*([0-9]+\\.[0-9]+)",
+        "occurrence": "last"
+      }
+    ]
+  }
+}

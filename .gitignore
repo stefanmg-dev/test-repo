@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Local database
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploaded documents and invoices
+uploaded_documents/
+*.pdf
+
+# Local AI models
+models/
+
+# Temporary and generated files
+out.txt
+*.log
+*.tmp
+
+# EasyOCR and model caches
+.EasyOCR/
+.cache/
+
+# Test and coverage caches
+.pytest_cache/
+.coverage
+htmlcov/
