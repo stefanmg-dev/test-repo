@@ -4,7 +4,13 @@
       {
         "name": "supplier_name",
         "type": "constant",
-        "value": "А1 България ЕАД"
+        "value": "А1 България ЕАД",
+        "validation": [
+          {
+            "type": "required",
+            "message": "Supplier name is required"
+          }
+        ]
       },
       {
         "name": "supplier_id",
@@ -13,6 +19,17 @@
         "rules": [
           "ЕИК[:\\s]*([0-9]{9,13})",
           "ДДС[:\\s]*BG([0-9]{9,13})"
+        ],
+        "validation": [
+          {
+            "type": "required",
+            "message": "Supplier ID is required"
+          },
+          {
+            "type": "regex",
+            "pattern": "[0-9]{9,13}",
+            "message": "Supplier ID must contain between 9 and 13 digits"
+          }
         ]
       },
       {
@@ -22,6 +39,17 @@
         "rules": [
           "Фактура\\s*№\\s*([0-9]{8,15})",
           "към\\s+фактура\\s*№\\s*([0-9]{8,15})"
+        ],
+        "validation": [
+          {
+            "type": "required",
+            "message": "Invoice number is required"
+          },
+          {
+            "type": "regex",
+            "pattern": "[0-9]{8,15}",
+            "message": "Invoice number must contain between 8 and 15 digits"
+          }
         ]
       },
       {
@@ -31,7 +59,18 @@
         "pattern": "([0-9]{2}\\.[0-9]{2}\\.[0-9]{4})",
         "direction": "before",
         "occurrence": "last",
-        "window_size": 250
+        "window_size": 250,
+        "validation": [
+          {
+            "type": "required",
+            "message": "Issue date is required"
+          },
+          {
+            "type": "date",
+            "format": "%d.%m.%Y",
+            "message": "Issue date must be a valid date in DD.MM.YYYY format"
+          }
+        ]
       },
       {
         "name": "contract_number",
@@ -40,31 +79,76 @@
         "pattern": "([МM][0-9]{7,10})",
         "direction": "before",
         "occurrence": "last",
-        "window_size": 250
+        "window_size": 250,
+        "validation": [
+          {
+            "type": "required",
+            "message": "Contract number is required"
+          },
+          {
+            "type": "regex",
+            "pattern": "[МM][0-9]{7,10}",
+            "message": "Contract number has invalid format"
+          }
+        ]
       },
       {
         "name": "customer_name",
         "type": "regex",
         "rule": "^\\s*(?:от\\s+4\\s*)?\\n?\\s*1\\s*\\n\\s*([А-Я][а-я]+\\s+[А-Я][а-я]+\\s+[А-Я][а-я]+)",
-        "occurrence": "first"
+        "occurrence": "first",
+        "validation": [
+          {
+            "type": "required",
+            "message": "Customer name is required"
+          }
+        ]
       },
       {
         "name": "customer_address",
         "type": "regex",
         "rule": "(жк\\.[^\\n]+)",
-        "occurrence": "first"
+        "occurrence": "first",
+        "validation": [
+          {
+            "type": "required",
+            "message": "Customer address is required"
+          }
+        ]
       },
       {
         "name": "due_date",
         "type": "regex",
         "rule": "Краен срок на плащане[:\\s\\n]*([0-9]{2}\\.[0-9]{2}\\.[0-9]{4})",
-        "occurrence": "last"
+        "occurrence": "last",
+        "validation": [
+          {
+            "type": "required",
+            "message": "Due date is required"
+          },
+          {
+            "type": "date",
+            "format": "%d.%m.%Y",
+            "message": "Due date must be a valid date in DD.MM.YYYY format"
+          }
+        ]
       },
       {
         "name": "total_amount",
         "type": "regex",
         "rule": "Обща стойност за плащане\\s*([0-9]+\\.[0-9]+)",
-        "occurrence": "last"
+        "occurrence": "last",
+        "validation": [
+          {
+            "type": "required",
+            "message": "Total amount is required"
+          },
+          {
+            "type": "decimal",
+            "minimum": "0.01",
+            "message": "Total amount must be a positive decimal number"
+          }
+        ]
       }
     ]
   }
