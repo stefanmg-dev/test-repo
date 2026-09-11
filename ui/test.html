@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Тест на документ</title>
+    <link rel="stylesheet" href="/ui/styles.css">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-mark">DX</div>
+                <div>
+                    <div class="brand-title">Document Extractor</div>
+                    <div class="brand-subtitle">Testing Console</div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a class="nav-item" href="/ui/index.html">Типове документи</a>
+                <a class="nav-item active" href="/ui/test.html">Тест на документ</a>
+                <a class="nav-item" href="/docs" target="_blank" rel="noopener noreferrer">API документация</a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="status-row">
+                    <span id="apiStatusIndicator" class="status-indicator"></span>
+                    <span id="apiStatusText">Проверка на API...</span>
+                </div>
+                <div class="version">Extraction API</div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div>
+                    <p class="eyebrow">DOCUMENT TESTING</p>
+                    <h1>Тест на документ</h1>
+                    <p class="page-description">
+                        Избери тип документ, качи PDF или изображение и провери извлечените стойности.
+                    </p>
+                </div>
+            </header>
+
+            <section id="messageArea" class="message-area" aria-live="polite"></section>
+
+            <section class="editor-panel">
+                <div class="document-editor">
+                    <div class="editor-header">
+                        <div>
+                            <p class="eyebrow">INPUT</p>
+                            <h2>Избор на документ</h2>
+                            <p>Поддържани формати: PDF, JPG, JPEG и PNG.</p>
+                        </div>
+                    </div>
+
+                    <form id="documentTestForm" class="form-grid">
+                        <div class="form-group">
+                            <label for="documentType">Тип документ</label>
+                            <select id="documentType" class="form-control" required>
+                                <option value="">Зареждане...</option>
+                            </select>
+                            <div class="form-help">Показват се типовете с поне едно конфигурирано поле.</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="documentFile">Файл</label>
+                            <input
+                                id="documentFile"
+                                class="form-control"
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                                required
+                            >
+                            <div class="form-help">Избери реален PDF, сканиран PDF или изображение.</div>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <button id="extractButton" class="button button-primary" type="submit">
+                                Разпознай документа
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <section id="processingSection" class="editor-panel hidden" style="margin-top: 22px;">
+                <div class="empty-state">
+                    <div class="empty-state-icon">OCR</div>
+                    <h2>Документът се обработва</h2>
+                    <p>Извличането може да отнеме време, защото включва PDF обработка и OCR.</p>
+                </div>
+            </section>
+
+            <section id="resultSection" class="editor-panel hidden" style="margin-top: 22px;">
+                <div class="document-editor">
+                    <div class="editor-header">
+                        <div>
+                            <p class="eyebrow">RESULT</p>
+                            <h2>Резултат от извличането</h2>
+                            <p id="resultSummary">Няма резултат.</p>
+                        </div>
+                        <div>
+                            <span id="validationBadge" class="field-type-badge">UNKNOWN</span>
+                        </div>
+                    </div>
+                    <div id="validationErrors" class="message-area"></div>
+                    <div id="resultFields" class="field-list"></div>
+                </div>
+            </section>
+
+            <section id="diagnosticsSection" class="editor-panel hidden" style="margin-top: 22px;">
+                <div class="document-editor">
+                    <details>
+                        <summary>Диагностика и raw text</summary>
+                        <div class="field-details" style="margin-top: 18px;">
+                            <div class="field-detail">
+                                <span class="field-detail-label">Document type</span>
+                                <span id="diagnosticDocumentType" class="field-detail-value"></span>
+                            </div>
+                            <div class="field-detail">
+                                <span class="field-detail-label">LLM values</span>
+                                <pre id="diagnosticLlmValues" class="field-detail-value"></pre>
+                            </div>
+                        </div>
+                        <div class="field-detail" style="margin-top: 16px;">
+                            <span class="field-detail-label">Raw text</span>
+                            <pre
+                                id="diagnosticRawText"
+                                class="field-detail-value"
+                                style="max-height: 480px; overflow: auto; white-space: pre-wrap;"
+                            ></pre>
+                        </div>
+                    </details>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <template id="resultFieldTemplate">
+        <article class="field-card">
+            <div class="field-card-header">
+                <div>
+                    <div class="field-title-row">
+                        <h3 class="field-title"></h3>
+                        <span class="field-type-badge">EXTRACTED</span>
+                    </div>
+                    <code class="field-name"></code>
+                </div>
+            </div>
+            <div class="field-details">
+                <div class="field-detail">
+                    <span class="field-detail-label">Стойност</span>
+                    <span class="field-detail-value"></span>
+                </div>
+            </div>
+            <div class="field-validation-errors" style="margin-top: 12px;"></div>
+        </article>
+    </template>
+
+    <script src="/ui/test.js"></script>
+</body>
+</html>
