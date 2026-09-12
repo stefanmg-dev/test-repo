@@ -45,3 +45,6 @@ out.txt
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Local assistant memory
+memory.json
