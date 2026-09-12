@@ -5,6 +5,7 @@ import easyocr
 import numpy as np
 from PIL import Image, ImageOps
 
+from input_quality import evaluate_image_quality
 from pdf_engine import (
     extract_pdf_text,
     is_native_pdf,
@@ -16,6 +17,25 @@ reader = easyocr.Reader(
     ["bg", "en"],
     gpu=False,
 )
+
+
+def inspect_image_quality(
+    image_path: str,
+) -> dict:
+    with Image.open(image_path) as image:
+        normalized_image = ImageOps.exif_transpose(
+            image
+        )
+
+        width, height = normalized_image.size
+
+        return evaluate_image_quality(
+            image_format=image.format,
+            width=width,
+            height=height,
+            mode=normalized_image.mode,
+            dpi=image.info.get("dpi"),
+        )
 
 
 def load_rgb_image(
@@ -65,8 +85,16 @@ def load_rgb_image(
         ).copy()
 
 
-def run_ocr(image_path: str) -> str:
-    image = load_rgb_image(image_path)
+def run_ocr_with_quality(
+    image_path: str,
+) -> dict:
+    quality = inspect_image_quality(
+        image_path
+    )
+
+    image = load_rgb_image(
+        image_path
+    )
 
     results = reader.readtext(
         image,
@@ -74,7 +102,18 @@ def run_ocr(image_path: str) -> str:
         paragraph=True,
     )
 
-    return "\n".join(results)
+    return {
+        "text": "\n".join(results),
+        "quality": quality,
+    }
+
+
+def run_ocr(image_path: str) -> str:
+    result = run_ocr_with_quality(
+        image_path
+    )
+
+    return result["text"]
 
 
 def remove_file(
