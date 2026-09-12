@@ -8,6 +8,7 @@ from fastapi import (
 )
 
 from config_store import load_config
+from document_status import is_document_type_ready
 from extraction_orchestrator import apply_rules
 from llm_engine import extract_values
 from ocr_engine import extract_text
@@ -32,9 +33,9 @@ def get_extraction_document_config(
             ),
         )
 
-    fields = document_config.get("fields")
-
-    if not isinstance(fields, list) or not fields:
+    if not is_document_type_ready(
+        document_config
+    ):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=(
