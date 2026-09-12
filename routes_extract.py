@@ -11,7 +11,10 @@ from config_store import load_config
 from document_status import is_document_type_ready
 from extraction_orchestrator import apply_rules
 from llm_engine import extract_values
-from ocr_engine import extract_text
+from ocr_engine import (
+    extract_document_input,
+    extract_text,
+)
 from result_validator import validate_result
 
 
@@ -60,7 +63,12 @@ async def extract_document(
         config=config,
     )
 
-    raw_text = await extract_text(file)
+    input_result = await extract_document_input(
+        file
+    )
+
+    raw_text = input_result["text"]
+    quality = input_result["quality"]
 
     llm_values = extract_values(raw_text)
 
@@ -79,6 +87,7 @@ async def extract_document(
 
     return {
         "document_type": document_type,
+        "quality": quality,
         "raw_text": raw_text,
         "llm_values": llm_values,
         "final_values": final_values,

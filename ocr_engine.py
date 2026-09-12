@@ -108,12 +108,71 @@ def run_ocr_with_quality(
     }
 
 
-def run_ocr(image_path: str) -> str:
+def run_ocr(
+    image_path: str,
+) -> str:
     result = run_ocr_with_quality(
         image_path
     )
 
     return result["text"]
+
+
+def build_native_pdf_quality(
+    page_count: int,
+) -> dict:
+    return {
+        "status": "accepted",
+        "requires_review": False,
+        "input": {
+            "format": "PDF",
+            "source": "native_pdf",
+            "page_count": page_count,
+        },
+        "warnings": [],
+    }
+
+
+def build_scanned_pdf_quality(
+    page_qualities: list[dict],
+) -> dict:
+    requires_review = any(
+        quality.get("requires_review") is True
+        for quality in page_qualities
+    )
+
+    warnings = []
+
+    if requires_review:
+        warnings.append(
+            {
+                "code": "low_page_resolution",
+                "message": (
+                    "One or more PDF pages may have "
+                    "insufficient resolution for "
+                    "reliable OCR"
+                ),
+            }
+        )
+
+    return {
+        "status": (
+            "review"
+            if requires_review
+            else "accepted"
+        ),
+        "requires_review": requires_review,
+        "input": {
+            "format": "PDF",
+            "source": "scanned_pdf",
+            "page_count": len(page_qualities),
+            "pages": [
+                quality["input"]
+                for quality in page_qualities
+            ],
+        },
+        "warnings": warnings,
+    }
 
 
 def remove_file(
@@ -130,7 +189,7 @@ def remove_file(
         pass
 
 
-async def extract_text(file) -> str:
+async def extract_document_input(file) -> dict:
     filename = file.filename or ""
 
     extension = os.path.splitext(
@@ -165,22 +224,26 @@ async def extract_text(file) -> str:
             temp_file_path = temp_file.name
 
         if extension == ".pdf":
+            generated_image_paths = pdf_to_images(
+                temp_file_path
+            )
+
             if is_native_pdf(temp_file_path):
                 native_text = extract_pdf_text(
                     temp_file_path
                 )
 
-                generated_image_paths = (
-                    pdf_to_images(
-                        temp_file_path
-                    )
-                )
-
                 first_page_ocr = ""
 
                 if generated_image_paths:
-                    first_page_ocr = run_ocr(
-                        generated_image_paths[0]
+                    first_page_result = (
+                        run_ocr_with_quality(
+                            generated_image_paths[0]
+                        )
+                    )
+
+                    first_page_ocr = (
+                        first_page_result["text"]
                     )
 
                 text_parts = []
@@ -195,30 +258,66 @@ async def extract_text(file) -> str:
                         first_page_ocr.strip()
                     )
 
-                return "\n\n".join(text_parts)
-
-            generated_image_paths = pdf_to_images(
-                temp_file_path
-            )
+                return {
+                    "text": "\n\n".join(
+                        text_parts
+                    ),
+                    "quality": (
+                        build_native_pdf_quality(
+                            len(
+                                generated_image_paths
+                            )
+                        )
+                    ),
+                }
 
             ocr_pages = []
+            page_qualities = []
 
             for image_path in generated_image_paths:
-                page_text = run_ocr(image_path)
+                page_result = run_ocr_with_quality(
+                    image_path
+                )
+
+                page_text = page_result["text"]
+
+                page_qualities.append(
+                    page_result["quality"]
+                )
 
                 if page_text.strip():
                     ocr_pages.append(
                         page_text.strip()
                     )
 
-            return "\n\n".join(ocr_pages)
+            return {
+                "text": "\n\n".join(
+                    ocr_pages
+                ),
+                "quality": (
+                    build_scanned_pdf_quality(
+                        page_qualities
+                    )
+                ),
+            }
 
-        return run_ocr(
+        image_result = run_ocr_with_quality(
             temp_file_path
-        ).strip()
+        )
+
+        return {
+            "text": image_result["text"].strip(),
+            "quality": image_result["quality"],
+        }
 
     finally:
         remove_file(temp_file_path)
 
         for image_path in generated_image_paths:
             remove_file(image_path)
+
+
+async def extract_text(file) -> str:
+    result = await extract_document_input(file)
+
+    return result["text"]
