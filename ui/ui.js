@@ -4,6 +4,7 @@ const API_BASE = "/api/v1/config";
 
 const state = {
     documentTypes: {},
+    documentTypeMetadata: {},
     selectedDocumentType: null,
     modalConfirmHandler: null,
 };
@@ -177,7 +178,16 @@ function renderDocumentTypes() {
 
         const countElement = document.createElement("span");
         countElement.className = "document-type-item-count";
-        countElement.textContent = `${config.fields?.length || 0} полета`;
+        const metadata =
+            state.documentTypeMetadata[name] || {
+                status: "draft",
+                ready: false,
+                field_count: 0
+            };
+
+        countElement.textContent =
+            `${metadata.status.toUpperCase()} · `
+            + `${metadata.field_count} полета`;
 
         button.append(nameElement, countElement);
         button.addEventListener("click", () => selectDocumentType(name));
@@ -223,7 +233,16 @@ function selectDocumentType(name) {
     el.emptyEditorState.classList.add("hidden");
     el.documentEditor.classList.remove("hidden");
     el.selectedDocumentTypeName.textContent = name;
-    el.selectedDocumentTypeSummary.textContent = `${config.fields?.length || 0} конфигурирани полета`;
+    const metadata =
+        state.documentTypeMetadata[name] || {
+            status: "draft",
+            ready: false,
+            field_count: 0
+        };
+
+    el.selectedDocumentTypeSummary.textContent =
+        `${metadata.status.toUpperCase()} · `
+        + `${metadata.field_count} конфигурирани полета`;
     renderFields(config);
 }
 
@@ -232,8 +251,15 @@ async function loadConfiguration(preserveSelection = true) {
 
     try {
         const response = await apiRequest("/document-types");
-        state.documentTypes = response.document_types || {};
-        const names = Object.keys(state.documentTypes);
+        state.documentTypes =
+            response.document_types || {};
+
+        state.documentTypeMetadata =
+            response.document_type_metadata || {};
+
+        const names = Object.keys(
+            state.documentTypes
+        );
 
         if (!preserveSelection || !state.selectedDocumentType || !state.documentTypes[state.selectedDocumentType]) {
             state.selectedDocumentType = names[0] || null;
@@ -242,6 +268,7 @@ async function loadConfiguration(preserveSelection = true) {
         selectDocumentType(state.selectedDocumentType);
     } catch (error) {
         state.documentTypes = {};
+        state.documentTypeMetadata = {};
         state.selectedDocumentType = null;
         renderDocumentTypes();
         selectDocumentType(null);
