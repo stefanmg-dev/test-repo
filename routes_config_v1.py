@@ -1,6 +1,11 @@
 from copy import deepcopy
 
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    Response,
+    status,
+)
 
 from config_models import (
     AddFieldRequest,
@@ -13,6 +18,7 @@ from config_models import (
 )
 from config_store import load_config, save_config
 from config_validator import ConfigValidationError
+from document_status import build_document_type_metadata
 
 
 router = APIRouter(
@@ -61,21 +67,42 @@ def find_field_index(
     return None
 
 
+def build_all_document_type_metadata(
+    config: dict,
+) -> dict:
+    return {
+        document_type: build_document_type_metadata(
+            document_config
+        )
+        for document_type, document_config
+        in config.items()
+    }
+
+
 @router.get(
     "/document-types",
     response_model=ConfigResponse,
+    response_model_exclude_none=True,
 )
 def get_document_types():
     config = load_config()
 
+    document_type_metadata = (
+        build_all_document_type_metadata(config)
+    )
+
     return {
-        "document_types": config
+        "document_types": config,
+        "document_type_metadata": (
+            document_type_metadata
+        ),
     }
 
 
 @router.get(
     "/document-types/{document_type}",
     response_model=DocumentTypeModel,
+    response_model_exclude_none=True,
 )
 def get_document_type(document_type: str):
     config = load_config()
@@ -227,7 +254,10 @@ def add_field(
         document_type=document_type,
     )
 
-    fields = document_config.get("fields", [])
+    fields = document_config.get(
+        "fields",
+        []
+    )
 
     field_data = request.field.model_dump(
         exclude_none=True
@@ -235,7 +265,10 @@ def add_field(
 
     field_name = field_data["name"]
 
-    if find_field_index(fields, field_name) is not None:
+    if find_field_index(
+        fields,
+        field_name,
+    ) is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=(
@@ -277,7 +310,10 @@ def update_field(
         document_type=document_type,
     )
 
-    fields = document_config.get("fields", [])
+    fields = document_config.get(
+        "fields",
+        []
+    )
 
     field_index = find_field_index(
         fields=fields,
@@ -347,7 +383,10 @@ def delete_field(
         document_type=document_type,
     )
 
-    fields = document_config.get("fields", [])
+    fields = document_config.get(
+        "fields",
+        []
+    )
 
     field_index = find_field_index(
         fields=fields,
@@ -360,15 +399,6 @@ def delete_field(
             detail=(
                 f"Field '{field_name}' was not found "
                 f"in document type '{document_type}'"
-            ),
-        )
-
-    if len(fields) == 1:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                "The last field of a document type "
-                "cannot be deleted"
             ),
         )
 
