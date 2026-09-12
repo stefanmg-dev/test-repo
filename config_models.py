@@ -29,6 +29,11 @@ ValidationType = Literal[
     "decimal",
 ]
 
+DocumentStatusType = Literal[
+    "draft",
+    "ready",
+]
+
 
 class ValidationRuleModel(BaseModel):
     model_config = ConfigDict(
@@ -91,6 +96,19 @@ class DocumentTypeModel(BaseModel):
     )
 
 
+class DocumentTypeMetadataModel(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid"
+    )
+
+    status: DocumentStatusType
+    ready: bool
+
+    field_count: int = Field(
+        ge=0
+    )
+
+
 class CreateDocumentTypeRequest(BaseModel):
     model_config = ConfigDict(
         extra="forbid"
@@ -132,9 +150,27 @@ class UpdateFieldRequest(BaseModel):
 
 
 class ConfigResponse(BaseModel):
-    document_types: dict[str, DocumentTypeModel]
+    model_config = ConfigDict(
+        extra="forbid"
+    )
+
+    document_types: dict[
+        str,
+        DocumentTypeModel
+    ]
+
+    document_type_metadata: dict[
+        str,
+        DocumentTypeMetadataModel
+    ] = Field(
+        default_factory=dict
+    )
 
 
 class OperationResponse(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid"
+    )
+
     status: Literal["ok"]
     message: str
