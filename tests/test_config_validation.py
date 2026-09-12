@@ -5,7 +5,7 @@ import pytest
 from config_store import load_config
 from config_validator import (
     ConfigValidationError,
-    validate_config
+    validate_config,
 )
 
 
@@ -30,7 +30,7 @@ def test_rejects_duplicate_field_names():
 
     with pytest.raises(
         ConfigValidationError,
-        match="duplicate field name"
+        match="duplicate field name",
     ):
         validate_config(invalid_config)
 
@@ -49,7 +49,7 @@ def test_rejects_invalid_regex():
 
     with pytest.raises(
         ConfigValidationError,
-        match="invalid regex"
+        match="invalid regex",
     ):
         validate_config(invalid_config)
 
@@ -64,7 +64,7 @@ def test_rejects_unknown_field_type():
 
     with pytest.raises(
         ConfigValidationError,
-        match="is not supported"
+        match="is not supported",
     ):
         validate_config(invalid_config)
 
@@ -73,17 +73,19 @@ def test_rejects_invalid_nearby_direction():
     config = load_config()
     invalid_config = copy.deepcopy(config)
 
-    contract_field = next(
+    issue_date_field = next(
         field
         for field in invalid_config["invoice"]["fields"]
-        if field["name"] == "contract_number"
+        if field["name"] == "issue_date"
     )
 
-    contract_field["direction"] = "sideways"
+    assert issue_date_field["type"] == "nearby"
+
+    issue_date_field["direction"] = "sideways"
 
     with pytest.raises(
         ConfigValidationError,
-        match="direction"
+        match="direction",
     ):
         validate_config(invalid_config)
 
@@ -92,16 +94,18 @@ def test_rejects_invalid_window_size():
     config = load_config()
     invalid_config = copy.deepcopy(config)
 
-    contract_field = next(
+    issue_date_field = next(
         field
         for field in invalid_config["invoice"]["fields"]
-        if field["name"] == "contract_number"
+        if field["name"] == "issue_date"
     )
 
-    contract_field["window_size"] = 0
+    assert issue_date_field["type"] == "nearby"
+
+    issue_date_field["window_size"] = 0
 
     with pytest.raises(
         ConfigValidationError,
-        match="positive integer"
+        match="positive integer",
     ):
         validate_config(invalid_config)

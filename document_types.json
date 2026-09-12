@@ -38,7 +38,9 @@
         "occurrence": "first",
         "rules": [
           "Фактура\\s*№\\s*([0-9]{8,15})",
-          "към\\s+фактура\\s*№\\s*([0-9]{8,15})"
+          "към\\s+фактура\\s*№\\s*([0-9]{8,15})",
+          "Фактура\\s*N[gоo°]?\\s*([0-9]{8,15})",
+          "Фактура\\s+([0-9]{8,15})"
         ],
         "validation": [
           {
@@ -74,12 +76,12 @@
       },
       {
         "name": "contract_number",
-        "type": "nearby",
-        "anchor": "Договор",
-        "pattern": "([МM][0-9]{7,10})",
-        "direction": "before",
-        "occurrence": "last",
-        "window_size": 250,
+        "type": "regex_list",
+        "occurrence": "first",
+        "rules": [
+          "([МM][0-9]{7,10})[\\s\\S]{0,250}Договор",
+          "Договор\\s*(?:№|N[gоo°]?)?\\s*:?\\s*([МM][0-9]{7,10})"
+        ],
         "validation": [
           {
             "type": "required",
@@ -94,9 +96,12 @@
       },
       {
         "name": "customer_name",
-        "type": "regex",
-        "rule": "^\\s*(?:от\\s+4\\s*)?\\n?\\s*1\\s*\\n\\s*([А-Я][а-я]+\\s+[А-Я][а-я]+\\s+[А-Я][а-я]+)",
+        "type": "regex_list",
         "occurrence": "first",
+        "rules": [
+          "Име:\\s*([А-Я][а-я]+\\s+[А-Я][а-я]+\\s+[А-Я][а-я]+)",
+          "^\\s*(?:от\\s+4\\s*)?\\n?\\s*1\\s*\\n\\s*([А-Я][а-я]+\\s+[А-Я][а-я]+\\s+[А-Я][а-я]+)"
+        ],
         "validation": [
           {
             "type": "required",
@@ -106,9 +111,12 @@
       },
       {
         "name": "customer_address",
-        "type": "regex",
-        "rule": "(жк\\.[^\\n]+)",
+        "type": "regex_list",
         "occurrence": "first",
+        "rules": [
+          "Адрес:\\s*((?:ж\\.?к\\.?)?\\s*[^\\n]*?ап\\.?\\s*[0-9]+)",
+          "(жк\\.[^\\n]+)"
+        ],
         "validation": [
           {
             "type": "required",
