@@ -42,6 +42,26 @@ const elements = {
         "resultSection"
     ),
 
+    qualitySection: document.getElementById(
+        "qualitySection"
+    ),
+
+    qualityBadge: document.getElementById(
+        "qualityBadge"
+    ),
+
+    qualitySummary: document.getElementById(
+        "qualitySummary"
+    ),
+
+    qualityWarnings: document.getElementById(
+        "qualityWarnings"
+    ),
+
+    qualityDetails: document.getElementById(
+        "qualityDetails"
+    ),
+
     diagnosticsSection: document.getElementById(
         "diagnosticsSection"
     ),
@@ -312,6 +332,10 @@ function setProcessing(processing) {
             "hidden"
         );
 
+        elements.qualitySection.classList.add(
+            "hidden"
+        );
+
         elements.diagnosticsSection.classList.add(
             "hidden"
         );
@@ -529,7 +553,103 @@ function renderFields(
 }
 
 
+function addQualityDetail(label, value) {
+    const detail = document.createElement("div");
+    detail.className = "field-detail";
+
+    const labelElement = document.createElement("span");
+    labelElement.className = "field-detail-label";
+    labelElement.textContent = label;
+
+    const valueElement = document.createElement("span");
+    valueElement.className = "field-detail-value";
+    valueElement.textContent = value;
+
+    detail.append(labelElement, valueElement);
+    elements.qualityDetails.appendChild(detail);
+}
+
+
+function renderInputQuality(quality) {
+    elements.qualityWarnings.replaceChildren();
+    elements.qualityDetails.replaceChildren();
+
+    if (!quality) {
+        elements.qualityBadge.textContent = "UNKNOWN";
+        elements.qualitySummary.textContent = "Няма налична оценка за входа.";
+        elements.qualitySection.classList.remove("hidden");
+        return;
+    }
+
+    const requiresReview = quality.requires_review === true;
+    const input = quality.input || {};
+
+    elements.qualityBadge.textContent = requiresReview
+        ? "REVIEW"
+        : "ACCEPTED";
+
+    elements.qualityBadge.style.background = requiresReview
+        ? "#fff7ed"
+        : "#f0fdf4";
+
+    elements.qualityBadge.style.color = requiresReview
+        ? "#c2410c"
+        : "#15803d";
+
+    elements.qualitySummary.textContent = requiresReview
+        ? "Входът е обработен, но изисква човешка проверка."
+        : "Входът покрива текущите критерии за OCR качество.";
+
+    if (input.format) {
+        addQualityDetail("Формат", String(input.format));
+    }
+
+    if (input.width && input.height) {
+        addQualityDetail(
+            "Размери",
+            `${input.width} × ${input.height} px`
+        );
+    }
+
+    if (input.source) {
+        addQualityDetail("Източник", String(input.source));
+    }
+
+    if (input.page_count !== undefined) {
+        addQualityDetail("Страници", String(input.page_count));
+    }
+
+    if (input.mode) {
+        addQualityDetail("Цветови режим", String(input.mode));
+    }
+
+    if (input.dpi) {
+        addQualityDetail("DPI", input.dpi.join(" × "));
+    }
+
+    if (quality.warnings?.length) {
+        const warningBox = document.createElement("div");
+        warningBox.className = "message-area error";
+
+        const list = document.createElement("ul");
+
+        for (const warning of quality.warnings) {
+            const item = document.createElement("li");
+            item.textContent = warning.message || warning.code;
+            list.appendChild(item);
+        }
+
+        warningBox.appendChild(list);
+        elements.qualityWarnings.appendChild(warningBox);
+    }
+
+    elements.qualitySection.classList.remove("hidden");
+}
+
+
 function renderResult(body) {
+    renderInputQuality(body.quality);
+
     const values =
         body.final_values || {};
 
@@ -719,6 +839,10 @@ async function submitDocument(event) {
 
     } catch (error) {
         elements.resultSection.classList.add(
+            "hidden"
+        );
+
+        elements.qualitySection.classList.add(
             "hidden"
         );
 
