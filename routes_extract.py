@@ -63,9 +63,15 @@ async def extract_document(
 ):
     config = load_config()
 
-    get_extraction_document_config(
-        document_type=document_type,
-        config=config,
+    document_config = (
+        get_extraction_document_config(
+            document_type=document_type,
+            config=config,
+        )
+    )
+
+    selected_profile = document_config.get(
+        "default_profile"
     )
 
     input_result = await extract_document_input(
@@ -92,6 +98,7 @@ async def extract_document(
 
     return {
         "document_type": document_type,
+        "profile": selected_profile,
         "quality": quality,
         "raw_text": raw_text,
         "llm_values": llm_values,
