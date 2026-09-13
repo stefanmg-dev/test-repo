@@ -194,6 +194,20 @@ def validate_profile_document_type(
             f"{path}.profiles must be an object"
         )
 
+    default_profile = document_config.get("default_profile")
+
+    if default_profile is not None:
+        default_profile = validate_profile_name(
+            default_profile,
+            f"{path}.default_profile",
+        )
+
+        if default_profile not in profiles:
+            raise ConfigValidationError(
+                f"{path}.default_profile '{default_profile}' "
+                "was not found in profiles"
+            )
+
     for profile_name, profile_config in profiles.items():
         profile_path = f"{path}.profiles.{profile_name}"
         validate_profile_name(profile_name, f"{profile_path}.name")
@@ -226,7 +240,7 @@ def validate_document_type(
     if not isinstance(document_config, dict):
         raise ConfigValidationError(f"{path} must be an object")
 
-    allowed_keys = {"fields", "common_fields", "profiles"}
+    allowed_keys = {"fields", "default_profile", "common_fields", "profiles"}
     unknown_keys = set(document_config) - allowed_keys
 
     if unknown_keys:
@@ -237,14 +251,15 @@ def validate_document_type(
 
     uses_legacy = "fields" in document_config
     uses_profiles = (
-        "common_fields" in document_config
+        "default_profile" in document_config
+        or "common_fields" in document_config
         or "profiles" in document_config
     )
 
     if uses_legacy and uses_profiles:
         raise ConfigValidationError(
             f"{path} cannot combine legacy 'fields' with "
-            "'common_fields' or 'profiles'"
+            "'default_profile', 'common_fields' or 'profiles'"
         )
 
     if not uses_legacy and not uses_profiles:
