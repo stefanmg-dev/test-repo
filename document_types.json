@@ -1,6 +1,7 @@
 {
   "invoice": {
-    "fields": [
+    "default_profile": "telecom_a1",
+    "common_fields": [
       {
         "name": "supplier_name",
         "type": "constant",
@@ -75,26 +76,6 @@
         ]
       },
       {
-        "name": "contract_number",
-        "type": "regex_list",
-        "occurrence": "first",
-        "rules": [
-          "([МM][0-9]{7,10})[\\s\\S]{0,250}Договор",
-          "Договор\\s*(?:№|N[gоo°]?)?\\s*:?\\s*([МM][0-9]{7,10})"
-        ],
-        "validation": [
-          {
-            "type": "required",
-            "message": "Contract number is required"
-          },
-          {
-            "type": "regex",
-            "pattern": "[МM][0-9]{7,10}",
-            "message": "Contract number has invalid format"
-          }
-        ]
-      },
-      {
         "name": "customer_name",
         "type": "regex_list",
         "occurrence": "first",
@@ -158,6 +139,32 @@
           }
         ]
       }
-    ]
+    ],
+    "profiles": {
+      "telecom_a1": {
+        "fields": [
+          {
+            "name": "contract_number",
+            "type": "regex_list",
+            "occurrence": "first",
+            "rules": [
+              "([МM][0-9]{7,10})[\\s\\S]{0,250}Договор",
+              "Договор\\s*(?:№|N[gоo°]?)?\\s*:?\\s*([МM][0-9]{7,10})"
+            ],
+            "validation": [
+              {
+                "type": "required",
+                "message": "Contract number is required"
+              },
+              {
+                "type": "regex",
+                "pattern": "[МM][0-9]{7,10}",
+                "message": "Contract number has invalid format"
+              }
+            ]
+          }
+        ]
+      }
+    }
   }
 }
