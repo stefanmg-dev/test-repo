@@ -38,9 +38,8 @@ def get_common_fields(
     return deepcopy(common_fields)
 
 
-def get_profile_fields(
+def get_profiles(
     document_config: dict,
-    profile_name: str,
 ):
     profiles = document_config.get(
         "profiles",
@@ -51,6 +50,39 @@ def get_profile_fields(
         raise DocumentConfigResolutionError(
             "'profiles' must be an object"
         )
+
+    return profiles
+
+
+def get_default_profile(
+    document_config: dict,
+):
+    default_profile = document_config.get(
+        "default_profile"
+    )
+
+    if default_profile is None:
+        return None
+
+    if (
+        not isinstance(default_profile, str)
+        or not default_profile.strip()
+    ):
+        raise DocumentConfigResolutionError(
+            "'default_profile' must be "
+            "a non-empty string"
+        )
+
+    return default_profile.strip()
+
+
+def get_profile_fields(
+    document_config: dict,
+    profile_name: str,
+):
+    profiles = get_profiles(
+        document_config
+    )
 
     profile_config = profiles.get(
         profile_name
@@ -111,6 +143,27 @@ def validate_unique_field_names(
         field_names.add(field_name)
 
 
+def resolve_profile_name(
+    document_config: dict,
+    profile_name: str | None,
+):
+    if profile_name is not None:
+        if (
+            not isinstance(profile_name, str)
+            or not profile_name.strip()
+        ):
+            raise DocumentConfigResolutionError(
+                "Profile name must be "
+                "a non-empty string"
+            )
+
+        return profile_name.strip()
+
+    return get_default_profile(
+        document_config
+    )
+
+
 def resolve_document_fields(
     document_config: Any,
     profile_name: str | None = None,
@@ -132,6 +185,13 @@ def resolve_document_fields(
                 "a legacy document configuration"
             )
 
+        if "default_profile" in document_config:
+            raise DocumentConfigResolutionError(
+                "'default_profile' cannot be used "
+                "with a legacy document "
+                "configuration"
+            )
+
         validate_unique_field_names(
             legacy_fields
         )
@@ -142,27 +202,26 @@ def resolve_document_fields(
         document_config
     )
 
-    profiles = document_config.get(
-        "profiles",
-        {},
+    profiles = get_profiles(
+        document_config
     )
 
-    if not isinstance(profiles, dict):
-        raise DocumentConfigResolutionError(
-            "'profiles' must be an object"
-        )
+    selected_profile = resolve_profile_name(
+        document_config=document_config,
+        profile_name=profile_name,
+    )
 
-    if profiles and not profile_name:
+    if profiles and not selected_profile:
         raise DocumentConfigResolutionError(
             "A profile name is required"
         )
 
     profile_fields: list[dict] = []
 
-    if profile_name:
+    if selected_profile:
         profile_fields = get_profile_fields(
             document_config=document_config,
-            profile_name=profile_name,
+            profile_name=selected_profile,
         )
 
     resolved_fields = (
