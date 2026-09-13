@@ -29,7 +29,6 @@ ACCEPTED_QUALITY = {
         "long_edge": 2048,
         "pixel_count": 2963456,
         "mode": "RGBA",
-        "dpi": None,
     },
     "warnings": [],
 }
