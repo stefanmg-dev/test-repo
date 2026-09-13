@@ -439,3 +439,272 @@ def delete_field(
             f"document type '{document_type}'"
         ),
     }
+
+
+# Profile-aware field endpoints
+
+def get_profile_or_404(
+    document_config: dict,
+    profile_name: str,
+) -> dict:
+    profiles = document_config.get("profiles")
+
+    if not isinstance(profiles, dict):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Document type does not use profile configuration",
+        )
+
+    profile_config = profiles.get(profile_name)
+
+    if profile_config is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Profile '{profile_name}' was not found",
+        )
+
+    return profile_config
+
+
+def ensure_profile_based_config(
+    document_config: dict,
+) -> None:
+    if "fields" in document_config:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Document type uses legacy fields configuration",
+        )
+
+
+def ensure_field_name_available(
+    document_config: dict,
+    field_name: str,
+    ignored_field_name: str | None = None,
+) -> None:
+    resolved_fields = resolve_document_fields(document_config)
+
+    for field in resolved_fields:
+        existing_name = field.get("name")
+
+        if existing_name == ignored_field_name:
+            continue
+
+        if existing_name == field_name:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"Field '{field_name}' already exists "
+                    "in the resolved document configuration"
+                ),
+            )
+
+
+@router.post(
+    "/document-types/{document_type}/common-fields",
+    response_model=OperationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_common_field(
+    document_type: str,
+    request: AddFieldRequest,
+):
+    config = load_config()
+    document_config = get_document_type_or_404(config, document_type)
+    ensure_profile_based_config(document_config)
+
+    field_data = request.field.model_dump(exclude_none=True)
+    field_name = field_data["name"]
+    ensure_field_name_available(document_config, field_name)
+
+    updated_config = deepcopy(config)
+    updated_config[document_type].setdefault("common_fields", []).append(
+        field_data
+    )
+    save_validated_config(updated_config)
+
+    return {
+        "status": "ok",
+        "message": f"Common field '{field_name}' added",
+    }
+
+
+@router.put(
+    "/document-types/{document_type}/common-fields/{field_name}",
+    response_model=OperationResponse,
+)
+def update_common_field(
+    document_type: str,
+    field_name: str,
+    request: UpdateFieldRequest,
+):
+    config = load_config()
+    document_config = get_document_type_or_404(config, document_type)
+    ensure_profile_based_config(document_config)
+    fields = document_config.get("common_fields", [])
+    field_index = find_field_index(fields, field_name)
+
+    if field_index is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Common field '{field_name}' was not found",
+        )
+
+    field_data = request.field.model_dump(exclude_none=True)
+    ensure_field_name_available(
+        document_config,
+        field_data["name"],
+        ignored_field_name=field_name,
+    )
+
+    updated_config = deepcopy(config)
+    updated_config[document_type]["common_fields"][field_index] = field_data
+    save_validated_config(updated_config)
+
+    return {
+        "status": "ok",
+        "message": f"Common field '{field_name}' updated",
+    }
+
+
+@router.delete(
+    "/document-types/{document_type}/common-fields/{field_name}",
+    response_model=OperationResponse,
+)
+def delete_common_field(
+    document_type: str,
+    field_name: str,
+):
+    config = load_config()
+    document_config = get_document_type_or_404(config, document_type)
+    ensure_profile_based_config(document_config)
+    fields = document_config.get("common_fields", [])
+    field_index = find_field_index(fields, field_name)
+
+    if field_index is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Common field '{field_name}' was not found",
+        )
+
+    updated_config = deepcopy(config)
+    del updated_config[document_type]["common_fields"][field_index]
+    save_validated_config(updated_config)
+
+    return {
+        "status": "ok",
+        "message": f"Common field '{field_name}' deleted",
+    }
+
+
+@router.post(
+    "/document-types/{document_type}/profiles/{profile_name}/fields",
+    response_model=OperationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_profile_field(
+    document_type: str,
+    profile_name: str,
+    request: AddFieldRequest,
+):
+    config = load_config()
+    document_config = get_document_type_or_404(config, document_type)
+    ensure_profile_based_config(document_config)
+    get_profile_or_404(document_config, profile_name)
+
+    field_data = request.field.model_dump(exclude_none=True)
+    field_name = field_data["name"]
+    ensure_field_name_available(document_config, field_name)
+
+    updated_config = deepcopy(config)
+    updated_config[document_type]["profiles"][profile_name]["fields"].append(
+        field_data
+    )
+    save_validated_config(updated_config)
+
+    return {
+        "status": "ok",
+        "message": f"Field '{field_name}' added to profile '{profile_name}'",
+    }
+
+
+@router.put(
+    "/document-types/{document_type}/profiles/{profile_name}/fields/{field_name}",
+    response_model=OperationResponse,
+)
+def update_profile_field(
+    document_type: str,
+    profile_name: str,
+    field_name: str,
+    request: UpdateFieldRequest,
+):
+    config = load_config()
+    document_config = get_document_type_or_404(config, document_type)
+    ensure_profile_based_config(document_config)
+    profile_config = get_profile_or_404(document_config, profile_name)
+    fields = profile_config.get("fields", [])
+    field_index = find_field_index(fields, field_name)
+
+    if field_index is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"Field '{field_name}' was not found "
+                f"in profile '{profile_name}'"
+            ),
+        )
+
+    field_data = request.field.model_dump(exclude_none=True)
+    ensure_field_name_available(
+        document_config,
+        field_data["name"],
+        ignored_field_name=field_name,
+    )
+
+    updated_config = deepcopy(config)
+    updated_config[document_type]["profiles"][profile_name]["fields"][
+        field_index
+    ] = field_data
+    save_validated_config(updated_config)
+
+    return {
+        "status": "ok",
+        "message": f"Field '{field_name}' updated in profile '{profile_name}'",
+    }
+
+
+@router.delete(
+    "/document-types/{document_type}/profiles/{profile_name}/fields/{field_name}",
+    response_model=OperationResponse,
+)
+def delete_profile_field(
+    document_type: str,
+    profile_name: str,
+    field_name: str,
+):
+    config = load_config()
+    document_config = get_document_type_or_404(config, document_type)
+    ensure_profile_based_config(document_config)
+    profile_config = get_profile_or_404(document_config, profile_name)
+    fields = profile_config.get("fields", [])
+    field_index = find_field_index(fields, field_name)
+
+    if field_index is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"Field '{field_name}' was not found "
+                f"in profile '{profile_name}'"
+            ),
+        )
+
+    updated_config = deepcopy(config)
+    del updated_config[document_type]["profiles"][profile_name]["fields"][
+        field_index
+    ]
+    save_validated_config(updated_config)
+
+    return {
+        "status": "ok",
+        "message": f"Field '{field_name}' deleted from profile '{profile_name}'",
+    }
+
