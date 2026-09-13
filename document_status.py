@@ -1,19 +1,37 @@
 from typing import Any
 
+from document_config_resolver import (
+    DocumentConfigResolutionError,
+    resolve_document_fields,
+)
+
 
 DOCUMENT_STATUS_DRAFT = "draft"
 DOCUMENT_STATUS_READY = "ready"
 
 
-def get_document_type_status(
-    document_config: Any
-) -> str:
+def get_resolved_fields(
+    document_config: Any,
+) -> list[dict]:
     if not isinstance(document_config, dict):
-        return DOCUMENT_STATUS_DRAFT
+        return []
 
-    fields = document_config.get("fields")
+    try:
+        return resolve_document_fields(
+            document_config
+        )
+    except DocumentConfigResolutionError:
+        return []
 
-    if not isinstance(fields, list) or not fields:
+
+def get_document_type_status(
+    document_config: Any,
+) -> str:
+    fields = get_resolved_fields(
+        document_config
+    )
+
+    if not fields:
         return DOCUMENT_STATUS_DRAFT
 
     return DOCUMENT_STATUS_READY
@@ -29,15 +47,11 @@ def is_document_type_ready(
 
 
 def build_document_type_metadata(
-    document_config: Any
+    document_config: Any,
 ) -> dict:
-    if not isinstance(document_config, dict):
-        fields = []
-    else:
-        fields = document_config.get("fields", [])
-
-        if not isinstance(fields, list):
-            fields = []
+    fields = get_resolved_fields(
+        document_config
+    )
 
     return {
         "status": get_document_type_status(

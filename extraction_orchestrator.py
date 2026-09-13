@@ -1,6 +1,8 @@
 import re
 from typing import Any
 
+from document_config_resolver import resolve_document_fields
+
 
 def clean_value(value: Any) -> str | None:
     if value is None:
@@ -100,9 +102,13 @@ def apply_rules(
             "error": f"Unknown document type: {document_type}"
         }
 
+    fields = resolve_document_fields(
+        doc_cfg
+    )
+
     final_values = {}
 
-    for field in doc_cfg.get("fields", []):
+    for field in fields:
         field_name = field.get("name")
         field_type = field.get("type")
 
