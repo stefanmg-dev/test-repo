@@ -102,6 +102,7 @@ const elements = {
 
 const state = {
     documentTypes: {},
+    resolvedDocumentTypes: {},
     documentTypeMetadata: {},
     processing: false
 };
@@ -237,6 +238,9 @@ async function loadDocumentTypes() {
         state.documentTypes =
             body?.document_types || {};
 
+        state.resolvedDocumentTypes =
+            body?.resolved_document_types || {};
+
         state.documentTypeMetadata =
             body?.document_type_metadata || {};
 
@@ -244,6 +248,7 @@ async function loadDocumentTypes() {
 
     } catch (error) {
         state.documentTypes = {};
+        state.resolvedDocumentTypes = {};
         state.documentTypeMetadata = {};
 
         elements.documentType.innerHTML = (
@@ -348,7 +353,7 @@ function fieldLabel(
     fieldName
 ) {
     const fields =
-        state.documentTypes[
+        state.resolvedDocumentTypes[
             documentType
         ]?.fields || [];
 
@@ -443,7 +448,7 @@ function renderFields(
     elements.resultFields.replaceChildren();
 
     const configuredFields =
-        state.documentTypes[
+        state.resolvedDocumentTypes[
             documentType
         ]?.fields || [];
 
