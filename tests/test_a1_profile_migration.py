@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 from config_store import load_config
 from config_validator import validate_config
 from document_config_resolver import (
@@ -10,46 +8,29 @@ from document_config_resolver import (
 PROFILE_NAME = "telecom_a1"
 PROFILE_FIELD_NAME = "contract_number"
 
+EXPECTED_FIELD_NAMES = {
+    "supplier_name",
+    "supplier_id",
+    "invoice_number",
+    "issue_date",
+    "contract_number",
+    "customer_name",
+    "customer_address",
+    "due_date",
+    "total_amount",
+}
 
-def build_a1_profile_configuration() -> dict:
-    current_config = load_config()
 
-    legacy_fields = deepcopy(
-        current_config["invoice"]["fields"]
-    )
+def get_invoice_config() -> dict:
+    config = load_config()
 
-    common_fields = [
-        field
-        for field in legacy_fields
-        if field["name"] != PROFILE_FIELD_NAME
-    ]
-
-    profile_fields = [
-        field
-        for field in legacy_fields
-        if field["name"] == PROFILE_FIELD_NAME
-    ]
-
-    return {
-        "invoice": {
-            "common_fields": common_fields,
-            "profiles": {
-                PROFILE_NAME: {
-                    "fields": profile_fields
-                }
-            },
-        }
-    }
+    return config["invoice"]
 
 
 def test_a1_profile_contains_eight_common_fields():
-    profile_config = (
-        build_a1_profile_configuration()
-    )
+    invoice_config = get_invoice_config()
 
-    common_fields = profile_config[
-        "invoice"
-    ][
+    common_fields = invoice_config[
         "common_fields"
     ]
 
@@ -62,13 +43,9 @@ def test_a1_profile_contains_eight_common_fields():
 
 
 def test_a1_profile_contains_contract_number():
-    profile_config = (
-        build_a1_profile_configuration()
-    )
+    invoice_config = get_invoice_config()
 
-    profile_fields = profile_config[
-        "invoice"
-    ][
+    profile_fields = invoice_config[
         "profiles"
     ][
         PROFILE_NAME
@@ -83,87 +60,64 @@ def test_a1_profile_contains_contract_number():
     )
 
 
-def test_a1_profile_configuration_is_valid():
-    profile_config = (
-        build_a1_profile_configuration()
-    )
+def test_a1_default_profile_is_configured():
+    invoice_config = get_invoice_config()
 
-    validate_config(profile_config)
+    assert invoice_config[
+        "default_profile"
+    ] == PROFILE_NAME
+
+
+def test_a1_profile_configuration_is_valid():
+    config = load_config()
+
+    validate_config(config)
 
 
 def test_resolved_a1_profile_has_nine_fields():
-    profile_config = (
-        build_a1_profile_configuration()
-    )
+    invoice_config = get_invoice_config()
 
     resolved_fields = resolve_document_fields(
-        document_config=profile_config[
-            "invoice"
-        ],
+        document_config=invoice_config
+    )
+
+    assert len(resolved_fields) == 9
+
+
+def test_explicit_a1_profile_has_nine_fields():
+    invoice_config = get_invoice_config()
+
+    resolved_fields = resolve_document_fields(
+        document_config=invoice_config,
         profile_name=PROFILE_NAME,
     )
 
     assert len(resolved_fields) == 9
 
 
-def test_resolved_a1_profile_preserves_all_fields():
-    current_config = load_config()
-
-    legacy_fields = current_config[
-        "invoice"
-    ][
-        "fields"
-    ]
-
-    profile_config = (
-        build_a1_profile_configuration()
-    )
-
-    resolved_fields = resolve_document_fields(
-        document_config=profile_config[
-            "invoice"
-        ],
-        profile_name=PROFILE_NAME,
-    )
-
-    legacy_fields_by_name = {
-        field["name"]: field
-        for field in legacy_fields
-    }
-
-    resolved_fields_by_name = {
-        field["name"]: field
-        for field in resolved_fields
-    }
-
-    assert resolved_fields_by_name == (
-        legacy_fields_by_name
-    )
-
-
 def test_resolved_a1_field_names_are_complete():
-    profile_config = (
-        build_a1_profile_configuration()
-    )
+    invoice_config = get_invoice_config()
 
     resolved_fields = resolve_document_fields(
-        document_config=profile_config[
-            "invoice"
-        ],
-        profile_name=PROFILE_NAME,
+        document_config=invoice_config
     )
 
     assert {
         field["name"]
         for field in resolved_fields
-    } == {
-        "supplier_name",
-        "supplier_id",
-        "invoice_number",
-        "issue_date",
-        "contract_number",
-        "customer_name",
-        "customer_address",
-        "due_date",
-        "total_amount",
-    }
+    } == EXPECTED_FIELD_NAMES
+
+
+def test_default_and_explicit_profile_resolve_equally():
+    invoice_config = get_invoice_config()
+
+    default_fields = resolve_document_fields(
+        document_config=invoice_config
+    )
+
+    explicit_fields = resolve_document_fields(
+        document_config=invoice_config,
+        profile_name=PROFILE_NAME,
+    )
+
+    assert default_fields == explicit_fields
