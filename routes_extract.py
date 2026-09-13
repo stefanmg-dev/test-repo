@@ -11,6 +11,7 @@ from config_store import load_config
 from document_status import is_document_type_ready
 from extraction_orchestrator import apply_rules
 from llm_engine import extract_values
+from extraction_models import ExtractionResponseModel
 from ocr_engine import (
     extract_document_input,
     extract_text,
@@ -51,7 +52,11 @@ def get_extraction_document_config(
     return document_config
 
 
-@router.post("/extract-document")
+@router.post(
+    "/extract-document",
+    response_model=ExtractionResponseModel,
+    response_model_exclude_none=True,
+)
 async def extract_document(
     document_type: str = Form(...),
     file: UploadFile = File(...),
