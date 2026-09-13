@@ -3,6 +3,8 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from document_config_resolver import resolve_document_fields
+
 
 SUPPORTED_VALIDATION_TYPES = {
     "required",
@@ -178,9 +180,13 @@ def validate_result(
             }
         }
 
+    fields = resolve_document_fields(
+        document_config
+    )
+
     errors = {}
 
-    for field in document_config.get("fields", []):
+    for field in fields:
         field_name = field.get("name")
 
         if not field_name:
