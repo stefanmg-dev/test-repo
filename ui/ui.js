@@ -4,8 +4,10 @@ const API_BASE = "/api/v1/config";
 
 const state = {
     documentTypes: {},
+    resolvedDocumentTypes: {},
     documentTypeMetadata: {},
     selectedDocumentType: null,
+    selectedFieldScope: "legacy",
     modalConfirmHandler: null,
 };
 
@@ -20,6 +22,9 @@ const el = {
     documentEditor: byId("documentEditor"),
     selectedDocumentTypeName: byId("selectedDocumentTypeName"),
     selectedDocumentTypeSummary: byId("selectedDocumentTypeSummary"),
+    fieldScopeSection: byId("fieldScopeSection"),
+    fieldScope: byId("fieldScope"),
+    selectedProfileName: byId("selectedProfileName"),
     fieldList: byId("fieldList"),
     messageArea: byId("messageArea"),
     modalBackdrop: byId("modalBackdrop"),
@@ -195,9 +200,77 @@ function renderDocumentTypes() {
     }
 }
 
+function getSelectedProfile(config) {
+    return config.default_profile || null;
+}
+
+function getSelectedFields(config) {
+    if (Array.isArray(config.fields)) {
+        return config.fields;
+    }
+
+    if (state.selectedFieldScope === "common") {
+        return config.common_fields || [];
+    }
+
+    const profileName = getSelectedProfile(config);
+    return config.profiles?.[profileName]?.fields || [];
+}
+
+function updateFieldScope(config) {
+    const usesProfiles = !Array.isArray(config.fields);
+    const profileName = getSelectedProfile(config);
+
+    el.fieldScope.replaceChildren();
+    el.fieldScopeSection.classList.toggle(
+        "hidden",
+        !usesProfiles
+    );
+    el.selectedProfileName.textContent =
+        profileName || "Няма избран профил";
+
+    if (!usesProfiles) {
+        state.selectedFieldScope = "legacy";
+        return;
+    }
+
+    if (!["common", "profile"].includes(state.selectedFieldScope)) {
+        state.selectedFieldScope = "common";
+    }
+
+    const commonOption = new Option("Общи полета", "common");
+    const profileOption = new Option(
+        `Профил: ${profileName || "няма"}`,
+        "profile"
+    );
+    commonOption.selected = state.selectedFieldScope === "common";
+    profileOption.selected = state.selectedFieldScope === "profile";
+    profileOption.disabled = !profileName;
+    el.fieldScope.append(commonOption, profileOption);
+}
+
+function buildFieldEndpoint(documentType, fieldName = null) {
+    const encodedType = encodeURIComponent(documentType);
+    let endpoint;
+
+    if (state.selectedFieldScope === "common") {
+        endpoint = `/document-types/${encodedType}/common-fields`;
+    } else if (state.selectedFieldScope === "profile") {
+        const config = state.documentTypes[documentType];
+        const profileName = encodeURIComponent(config.default_profile);
+        endpoint = `/document-types/${encodedType}/profiles/${profileName}/fields`;
+    } else {
+        endpoint = `/document-types/${encodedType}/fields`;
+    }
+
+    return fieldName
+        ? `${endpoint}/${encodeURIComponent(fieldName)}`
+        : endpoint;
+}
+
 function renderFields(config) {
     el.fieldList.replaceChildren();
-    const fields = config.fields || [];
+    const fields = getSelectedFields(config);
 
     if (!fields.length) {
         const empty = document.createElement("div");
@@ -243,6 +316,7 @@ function selectDocumentType(name) {
     el.selectedDocumentTypeSummary.textContent =
         `${metadata.status.toUpperCase()} · `
         + `${metadata.field_count} конфигурирани полета`;
+    updateFieldScope(config);
     renderFields(config);
 }
 
@@ -253,6 +327,9 @@ async function loadConfiguration(preserveSelection = true) {
         const response = await apiRequest("/document-types");
         state.documentTypes =
             response.document_types || {};
+
+        state.resolvedDocumentTypes =
+            response.resolved_document_types || {};
 
         state.documentTypeMetadata =
             response.document_type_metadata || {};
@@ -268,6 +345,7 @@ async function loadConfiguration(preserveSelection = true) {
         selectDocumentType(state.selectedDocumentType);
     } catch (error) {
         state.documentTypes = {};
+        state.resolvedDocumentTypes = {};
         state.documentTypeMetadata = {};
         state.selectedDocumentType = null;
         renderDocumentTypes();
@@ -683,17 +761,15 @@ function openFieldModal(existingField = null) {
             const field = buildFieldPayload(form, existingField);
             const documentType = state.selectedDocumentType;
 
-            if (isEditing) {
-                await apiRequest(`/document-types/${encodeURIComponent(documentType)}/fields/${encodeURIComponent(existingField.name)}`, {
-                    method: "PUT",
-                    body: JSON.stringify({ field }),
-                });
-            } else {
-                await apiRequest(`/document-types/${encodeURIComponent(documentType)}/fields`, {
-                    method: "POST",
-                    body: JSON.stringify({ field }),
-                });
-            }
+            const endpoint = buildFieldEndpoint(
+                documentType,
+                isEditing ? existingField.name : null
+            );
+
+            await apiRequest(endpoint, {
+                method: isEditing ? "PUT" : "POST",
+                body: JSON.stringify({ field }),
+            });
 
             closeModal();
             await loadConfiguration();
@@ -711,7 +787,11 @@ function confirmDeleteField(field) {
         body,
         confirmText: "Изтрий",
         onConfirm: async () => {
-            await apiRequest(`/document-types/${encodeURIComponent(state.selectedDocumentType)}/fields/${encodeURIComponent(field.name)}`, {
+            const endpoint = buildFieldEndpoint(
+                state.selectedDocumentType,
+                field.name
+            );
+            await apiRequest(endpoint, {
                 method: "DELETE",
             });
             closeModal();
@@ -749,6 +829,11 @@ el.openCreateDocumentTypeButton.addEventListener("click", openCreateDocumentType
 el.renameDocumentTypeButton.addEventListener("click", openRenameDocumentTypeModal);
 el.deleteDocumentTypeButton.addEventListener("click", confirmDeleteDocumentType);
 el.openAddFieldButton.addEventListener("click", () => openFieldModal());
+el.fieldScope.addEventListener("change", () => {
+    state.selectedFieldScope = el.fieldScope.value;
+    const config = state.documentTypes[state.selectedDocumentType];
+    renderFields(config);
+});
 
 async function initializeApplication() {
     await checkApiHealth();

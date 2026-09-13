@@ -84,6 +84,17 @@
                                 <p class="eyebrow">DOCUMENT TYPE</p>
                                 <h2 id="selectedDocumentTypeName">invoice</h2>
                                 <p id="selectedDocumentTypeSummary">0 конфигурирани полета</p>
+                                <div id="fieldScopeSection" class="hidden">
+                                    <p>
+                                        Активен профил:
+                                        <strong id="selectedProfileName">Няма избран профил</strong>
+                                    </p>
+                                    <label for="fieldScope">Обхват на полетата</label>
+                                    <select id="fieldScope" class="form-control">
+                                        <option value="common">Общи полета</option>
+                                        <option value="profile">Профилни полета</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="editor-actions">
                                 <button id="renameDocumentTypeButton" class="button button-secondary" type="button">
