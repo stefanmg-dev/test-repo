@@ -46,3 +46,22 @@ def test_quality_is_separate_from_validation():
     assert "renderInputQuality" in content
     assert "renderValidationErrors" in content
     assert "renderResult" in content
+
+def test_testing_page_contains_profile_diagnostic():
+    html_content = read_text(TEST_HTML)
+    js_content = read_text(TEST_JS)
+
+    assert (
+        'id="diagnosticProfile"'
+        in html_content
+    )
+
+    assert (
+        "body.profile"
+        in js_content
+    )
+
+    assert (
+        "diagnosticProfile"
+        in js_content
+    )

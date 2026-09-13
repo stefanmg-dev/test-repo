@@ -86,6 +86,10 @@ const elements = {
         "diagnosticDocumentType"
     ),
 
+    diagnosticProfile: document.getElementById(
+        "diagnosticProfile"
+    ),
+
     diagnosticLlmValues: document.getElementById(
         "diagnosticLlmValues"
     ),
@@ -708,6 +712,9 @@ function renderResult(body) {
 
     elements.diagnosticDocumentType.textContent =
         body.document_type || "";
+
+    elements.diagnosticProfile.textContent =
+        body.profile || "Няма избран профил";
 
     elements.diagnosticLlmValues.textContent =
         JSON.stringify(
