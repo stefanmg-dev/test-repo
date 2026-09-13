@@ -19,7 +19,6 @@ def test_image_quality_model_accepts_valid_input():
             "long_edge": 2048,
             "pixel_count": 2963456,
             "mode": "RGBA",
-            "dpi": None,
         },
         warnings=[],
     )
@@ -117,7 +116,6 @@ def test_extraction_response_model_is_valid():
                 "long_edge": 2048,
                 "pixel_count": 2963456,
                 "mode": "RGBA",
-                "dpi": None,
             },
             "warnings": [],
         },
@@ -157,7 +155,6 @@ def test_invalid_quality_status_is_rejected():
                 "long_edge": 2048,
                 "pixel_count": 2963456,
                 "mode": "RGBA",
-                "dpi": None,
             },
             warnings=[],
         )
@@ -178,7 +175,6 @@ def test_invalid_image_dimensions_are_rejected():
                 "long_edge": 2048,
                 "pixel_count": 0,
                 "mode": "RGBA",
-                "dpi": None,
             },
             warnings=[],
         )
@@ -199,7 +195,6 @@ def test_unknown_quality_property_is_rejected():
                 "long_edge": 2048,
                 "pixel_count": 2963456,
                 "mode": "RGBA",
-                "dpi": None,
             },
             warnings=[],
             unexpected_property=True,
