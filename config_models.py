@@ -142,10 +142,21 @@ class UpdateFieldRequest(BaseModel):
     field: DocumentFieldModel
 
 
+class ResolvedDocumentTypeModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    profile: str | None = None
+    fields: list[DocumentFieldModel] = Field(default_factory=list)
+
+
 class ConfigResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     document_types: dict[str, DocumentTypeModel]
+    resolved_document_types: dict[
+        str,
+        ResolvedDocumentTypeModel,
+    ] = Field(default_factory=dict)
     document_type_metadata: dict[
         str,
         DocumentTypeMetadataModel,

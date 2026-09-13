@@ -18,6 +18,7 @@ from config_models import (
 )
 from config_store import load_config, save_config
 from config_validator import ConfigValidationError
+from document_config_resolver import resolve_document_fields
 from document_status import build_document_type_metadata
 
 
@@ -79,6 +80,20 @@ def build_all_document_type_metadata(
     }
 
 
+def build_resolved_document_types(
+    config: dict,
+) -> dict:
+    resolved_document_types = {}
+
+    for document_type, document_config in config.items():
+        resolved_document_types[document_type] = {
+            "profile": document_config.get("default_profile"),
+            "fields": resolve_document_fields(document_config),
+        }
+
+    return resolved_document_types
+
+
 @router.get(
     "/document-types",
     response_model=ConfigResponse,
@@ -91,8 +106,15 @@ def get_document_types():
         build_all_document_type_metadata(config)
     )
 
+    resolved_document_types = (
+        build_resolved_document_types(config)
+    )
+
     return {
         "document_types": config,
+        "resolved_document_types": (
+            resolved_document_types
+        ),
         "document_type_metadata": (
             document_type_metadata
         ),
