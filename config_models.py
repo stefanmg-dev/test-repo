@@ -55,6 +55,12 @@ class DocumentTypeModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     fields: list[DocumentFieldModel] | None = None
+    default_profile: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=100,
+        pattern=r"^[a-z][a-z0-9_]*$",
+    )
     common_fields: list[DocumentFieldModel] | None = None
     profiles: dict[str, DocumentProfileModel] | None = None
 
@@ -62,14 +68,15 @@ class DocumentTypeModel(BaseModel):
     def validate_configuration_shape(self):
         uses_legacy = self.fields is not None
         uses_profiles = (
-            self.common_fields is not None
+            self.default_profile is not None
+            or self.common_fields is not None
             or self.profiles is not None
         )
 
         if uses_legacy and uses_profiles:
             raise ValueError(
                 "Legacy 'fields' cannot be combined with "
-                "'common_fields' or 'profiles'"
+                "'default_profile', 'common_fields' or 'profiles'"
             )
 
         if not uses_legacy and not uses_profiles:
@@ -83,6 +90,14 @@ class DocumentTypeModel(BaseModel):
 
         if uses_profiles and self.profiles is None:
             self.profiles = {}
+
+        if (
+            self.default_profile is not None
+            and self.default_profile not in self.profiles
+        ):
+            raise ValueError(
+                "default_profile must reference an existing profile"
+            )
 
         return self
 
