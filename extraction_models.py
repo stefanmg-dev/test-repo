@@ -156,6 +156,13 @@ class ExtractionResponseModel(BaseModel):
         min_length=1
     )
 
+    profile: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=100,
+        pattern=r"^[a-z][a-z0-9_]*$",
+    )
+
     quality: InputQualityModel
 
     raw_text: str
