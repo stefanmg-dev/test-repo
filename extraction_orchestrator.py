@@ -28,6 +28,37 @@ def select_match(matches: list, occurrence: str) -> str | None:
     return clean_value(selected)
 
 
+
+def has_decimal_validation(
+    field: dict,
+) -> bool:
+    return any(
+        isinstance(validation, dict)
+        and validation.get("type") == "decimal"
+        for validation in field.get(
+            "validation",
+            [],
+        )
+    )
+
+
+def normalize_field_value(
+    field: dict,
+    value,
+):
+    if (
+        isinstance(value, str)
+        and has_decimal_validation(field)
+        and re.fullmatch(
+            r"[0-9]+,[0-9]+",
+            value,
+        )
+    ):
+        return value.replace(",", ".", 1)
+
+    return value
+
+
 def extract_regex_value(
     text: str,
     pattern: str,
@@ -156,5 +187,20 @@ def apply_rules(
 
         else:
             final_values[field_name] = None
+
+    for field in fields:
+        field_name = field.get("name")
+
+        if not field_name:
+            continue
+
+        final_values[field_name] = (
+            normalize_field_value(
+                field=field,
+                value=final_values.get(
+                    field_name
+                ),
+            )
+        )
 
     return final_values
