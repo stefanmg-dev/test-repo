@@ -22,6 +22,19 @@ from result_validator import validate_result
 router = APIRouter()
 
 
+def determine_processing_status(
+    validation: dict,
+    quality: dict,
+) -> str:
+    if validation.get("valid") is not True:
+        return "invalid"
+
+    if quality.get("requires_review") is True:
+        return "review"
+
+    return "accepted"
+
+
 def get_extraction_document_config(
     document_type: str,
     config: dict,
@@ -96,8 +109,14 @@ async def extract_document(
         final_values=final_values,
     )
 
+    processing_status = determine_processing_status(
+        validation=validation,
+        quality=quality,
+    )
+
     return {
         "document_type": document_type,
+        "processing_status": processing_status,
         "profile": selected_profile,
         "quality": quality,
         "raw_text": raw_text,

@@ -105,6 +105,7 @@ def test_scanned_pdf_quality_model_is_valid():
 def test_extraction_response_model_is_valid():
     response = ExtractionResponseModel(
         document_type="invoice",
+        processing_status="accepted",
         quality={
             "status": "accepted",
             "requires_review": False,
