@@ -736,6 +736,38 @@ function renderResult(body) {
 }
 
 
+
+function processingStatusMessage(status) {
+    if (status === "accepted") {
+        return {
+            message: (
+                "Документът е извлечен "
+                + "и валидиран успешно."
+            ),
+            type: "success"
+        };
+    }
+
+    if (status === "review") {
+        return {
+            message: (
+                "Документът е извлечен, "
+                + "но изисква човешка проверка."
+            ),
+            type: "error"
+        };
+    }
+
+    return {
+        message: (
+            "Документът е обработен, "
+            + "но има невалидни "
+            + "или липсващи полета."
+        ),
+        type: "error"
+    };
+}
+
 async function submitDocument(event) {
     event.preventDefault();
 
@@ -833,20 +865,15 @@ async function submitDocument(event) {
 
         renderResult(body);
 
+        const processingMessage = (
+            processingStatusMessage(
+                body.processing_status
+            )
+        );
+
         showMessage(
-            body.validation?.valid
-                ? (
-                    "Документът е извлечен "
-                    + "и валидиран успешно."
-                )
-                : (
-                    "Документът е обработен, "
-                    + "но има невалидни "
-                    + "или липсващи полета."
-                ),
-            body.validation?.valid
-                ? "success"
-                : "error"
+            processingMessage.message,
+            processingMessage.type
         );
 
     } catch (error) {

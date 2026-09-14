@@ -13,6 +13,13 @@ QualityStatus = Literal[
 ]
 
 
+ProcessingStatus = Literal[
+    "accepted",
+    "review",
+    "invalid",
+]
+
+
 class QualityWarningModel(BaseModel):
     model_config = ConfigDict(
         extra="forbid"
@@ -155,6 +162,8 @@ class ExtractionResponseModel(BaseModel):
     document_type: str = Field(
         min_length=1
     )
+
+    processing_status: ProcessingStatus
 
     profile: str | None = Field(
         default=None,

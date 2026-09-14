@@ -65,3 +65,43 @@ def test_testing_page_contains_profile_diagnostic():
         "diagnosticProfile"
         in js_content
     )
+
+def test_testing_ui_uses_processing_status():
+    js_content = read_text(TEST_JS)
+
+    assert "body.processing_status" in js_content
+
+    assert (
+        '"Документът е извлечен, "'
+        in js_content
+    )
+
+    assert (
+        '"но изисква човешка проверка."'
+        in js_content
+    )
+
+    assert (
+        '"Документът е извлечен "'
+        in js_content
+    )
+
+    assert (
+        '"и валидиран успешно."'
+        in js_content
+    )
+
+    assert (
+        '"Документът е обработен, "'
+        in js_content
+    )
+
+    assert (
+        '"но има невалидни "'
+        in js_content
+    )
+
+    assert (
+        '"или липсващи полета."'
+        in js_content
+    )
