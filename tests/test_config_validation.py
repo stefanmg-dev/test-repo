@@ -140,7 +140,7 @@ def test_rejects_unknown_field_type():
         validate_config(invalid_config)
 
 
-def test_rejects_invalid_nearby_direction():
+def test_rejects_invalid_issue_date_regex():
     config = load_config()
     invalid_config = copy.deepcopy(config)
 
@@ -151,41 +151,32 @@ def test_rejects_invalid_nearby_direction():
 
     assert issue_date_field[
         "type"
-    ] == "nearby"
+    ] == "regex_list"
 
-    issue_date_field[
-        "direction"
-    ] = "sideways"
+    issue_date_field["rules"][0] = "("
 
     with pytest.raises(
         ConfigValidationError,
-        match="direction",
+        match="invalid regex",
     ):
         validate_config(invalid_config)
 
 
-def test_rejects_invalid_window_size():
+def test_issue_date_has_before_and_after_rules():
     config = load_config()
-    invalid_config = copy.deepcopy(config)
 
     issue_date_field = find_common_field(
-        invalid_config,
+        config,
         "issue_date",
     )
 
     assert issue_date_field[
         "type"
-    ] == "nearby"
+    ] == "regex_list"
 
-    issue_date_field[
-        "window_size"
-    ] = 0
-
-    with pytest.raises(
-        ConfigValidationError,
-        match="positive integer",
-    ):
-        validate_config(invalid_config)
+    assert len(
+        issue_date_field["rules"]
+    ) == 2
 
 
 def test_rejects_unknown_default_profile():
