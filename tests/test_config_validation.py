@@ -84,16 +84,12 @@ def test_rejects_duplicate_field_names():
     config = load_config()
     invalid_config = copy.deepcopy(config)
 
-    duplicate_field = copy.deepcopy(
-        get_common_fields(
-            invalid_config
-        )[0]
+    profile_fields = get_profile_fields(
+        invalid_config
     )
 
-    get_profile_fields(
-        invalid_config
-    ).append(
-        duplicate_field
+    profile_fields.append(
+        copy.deepcopy(profile_fields[0])
     )
 
     with pytest.raises(
@@ -101,7 +97,6 @@ def test_rejects_duplicate_field_names():
         match="duplicate field name",
     ):
         validate_config(invalid_config)
-
 
 def test_rejects_invalid_regex():
     config = load_config()

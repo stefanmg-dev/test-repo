@@ -143,6 +143,34 @@ def validate_unique_field_names(
         field_names.add(field_name)
 
 
+def merge_field_layers(
+    common_fields: list[dict],
+    profile_fields: list[dict],
+) -> list[dict]:
+    profile_fields_by_name = {
+        field["name"]: field
+        for field in profile_fields
+    }
+
+    resolved_fields = []
+
+    for common_field in common_fields:
+        field_name = common_field["name"]
+
+        resolved_fields.append(
+            profile_fields_by_name.pop(
+                field_name,
+                common_field,
+            )
+        )
+
+    resolved_fields.extend(
+        profile_fields_by_name.values()
+    )
+
+    return resolved_fields
+
+
 def resolve_profile_name(
     document_config: dict,
     profile_name: str | None,
@@ -235,6 +263,10 @@ def resolve_document_fields(
             "A profile name is required"
         )
 
+    validate_unique_field_names(
+        common_fields
+    )
+
     profile_fields: list[dict] = []
 
     if selected_profile:
@@ -243,9 +275,13 @@ def resolve_document_fields(
             profile_name=selected_profile,
         )
 
-    resolved_fields = (
-        common_fields
-        + profile_fields
+        validate_unique_field_names(
+            profile_fields
+        )
+
+    resolved_fields = merge_field_layers(
+        common_fields=common_fields,
+        profile_fields=profile_fields,
     )
 
     validate_unique_field_names(

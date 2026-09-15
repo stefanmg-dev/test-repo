@@ -227,7 +227,6 @@ def validate_profile_document_type(
         validate_field_list(
             profile_config.get("fields", []),
             f"{profile_path}.fields",
-            existing_names=common_names,
         )
 
 
