@@ -103,6 +103,15 @@ def _find_a1_evidence(
             ),
         ),
         (
+            "a1_bulgaria_company_reversed",
+            re.compile(
+                r"\b(?:bulgaria|българия)"
+                r"\s+(?:ead|еад)"
+                r"\s+\b[aа]\s*1\b",
+                re.IGNORECASE,
+            ),
+        ),
+        (
             "a1_official_domain",
             re.compile(
                 r"(?<![\w.-])"

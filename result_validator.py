@@ -166,7 +166,8 @@ def validate_single_rule(
 def validate_result(
     document_type: str,
     config: dict,
-    final_values: dict
+    final_values: dict,
+    resolved_fields: list[dict] | None = None,
 ) -> dict:
     document_config = config.get(document_type)
 
@@ -180,9 +181,12 @@ def validate_result(
             }
         }
 
-    fields = resolve_document_fields(
-        document_config
-    )
+    fields = resolved_fields
+
+    if fields is None:
+        fields = resolve_document_fields(
+            document_config
+        )
 
     errors = {}
 
