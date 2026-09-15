@@ -146,6 +146,7 @@ def validate_unique_field_names(
 def resolve_profile_name(
     document_config: dict,
     profile_name: str | None,
+    use_default_profile: bool = True,
 ):
     if profile_name is not None:
         if (
@@ -159,6 +160,18 @@ def resolve_profile_name(
 
         return profile_name.strip()
 
+    if not isinstance(
+        use_default_profile,
+        bool,
+    ):
+        raise DocumentConfigResolutionError(
+            "'use_default_profile' must "
+            "be a boolean"
+        )
+
+    if not use_default_profile:
+        return None
+
     return get_default_profile(
         document_config
     )
@@ -167,6 +180,7 @@ def resolve_profile_name(
 def resolve_document_fields(
     document_config: Any,
     profile_name: str | None = None,
+    use_default_profile: bool = True,
 ):
     if not isinstance(document_config, dict):
         raise DocumentConfigResolutionError(
@@ -209,9 +223,14 @@ def resolve_document_fields(
     selected_profile = resolve_profile_name(
         document_config=document_config,
         profile_name=profile_name,
+        use_default_profile=use_default_profile,
     )
 
-    if profiles and not selected_profile:
+    if (
+        profiles
+        and not selected_profile
+        and use_default_profile
+    ):
         raise DocumentConfigResolutionError(
             "A profile name is required"
         )
