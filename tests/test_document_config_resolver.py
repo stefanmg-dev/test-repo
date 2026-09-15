@@ -112,21 +112,71 @@ def test_unknown_profile_is_rejected():
         )
 
 
-def test_duplicate_resolved_fields_are_rejected():
+def test_profile_field_overrides_common_field():
     document_config = {
         "common_fields": [
             {
-                "name": "contract_number",
+                "name": "supplier_name",
+                "type": "llm",
+            },
+            {
+                "name": "invoice_number",
                 "type": "regex",
-            }
+            },
         ],
         "profiles": {
             "telecom_a1": {
                 "fields": [
                     {
+                        "name": "supplier_name",
+                        "type": "constant",
+                        "value": "А1 България ЕАД",
+                    },
+                    {
                         "name": "contract_number",
                         "type": "regex_list",
-                    }
+                    },
+                ]
+            }
+        },
+    }
+
+    fields = resolve_document_fields(
+        document_config=document_config,
+        profile_name="telecom_a1",
+    )
+
+    assert fields == [
+        {
+            "name": "supplier_name",
+            "type": "constant",
+            "value": "А1 България ЕАД",
+        },
+        {
+            "name": "invoice_number",
+            "type": "regex",
+        },
+        {
+            "name": "contract_number",
+            "type": "regex_list",
+        },
+    ]
+
+
+def test_duplicate_fields_inside_profile_are_rejected():
+    document_config = {
+        "common_fields": [],
+        "profiles": {
+            "telecom_a1": {
+                "fields": [
+                    {
+                        "name": "supplier_name",
+                        "type": "constant",
+                    },
+                    {
+                        "name": "supplier_name",
+                        "type": "regex",
+                    },
                 ]
             }
         },

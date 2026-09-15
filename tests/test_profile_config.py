@@ -60,13 +60,35 @@ def test_validator_rejects_mixed_shapes():
         validate_config(config)
 
 
-def test_validator_rejects_duplicate_common_and_profile_field():
+def test_validator_accepts_common_field_override():
     config = profile_config()
-    config["invoice"]["profiles"]["telecom_a1"]["fields"][0][
-        "name"
-    ] = "invoice_number"
 
-    with pytest.raises(ConfigValidationError, match="duplicate field name"):
+    config["invoice"]["profiles"]["telecom_a1"][
+        "fields"
+    ][0]["name"] = "invoice_number"
+
+    validate_config(config)
+
+
+def test_validator_rejects_duplicate_profile_field():
+    config = profile_config()
+
+    duplicate_field = dict(
+        config["invoice"]["profiles"][
+            "telecom_a1"
+        ]["fields"][0]
+    )
+
+    config["invoice"]["profiles"][
+        "telecom_a1"
+    ]["fields"].append(
+        duplicate_field
+    )
+
+    with pytest.raises(
+        ConfigValidationError,
+        match="duplicate field name",
+    ):
         validate_config(config)
 
 
