@@ -28,7 +28,6 @@ def select_match(matches: list, occurrence: str) -> str | None:
     return clean_value(selected)
 
 
-
 def has_decimal_validation(
     field: dict,
 ) -> bool:
@@ -124,7 +123,8 @@ def apply_rules(
     document_type: str,
     config: dict,
     raw_text: str,
-    llm_values: dict
+    llm_values: dict,
+    resolved_fields: list[dict] | None = None,
 ):
     doc_cfg = config.get(document_type)
 
@@ -133,9 +133,12 @@ def apply_rules(
             "error": f"Unknown document type: {document_type}"
         }
 
-    fields = resolve_document_fields(
-        doc_cfg
-    )
+    fields = resolved_fields
+
+    if fields is None:
+        fields = resolve_document_fields(
+            doc_cfg
+        )
 
     final_values = {}
 

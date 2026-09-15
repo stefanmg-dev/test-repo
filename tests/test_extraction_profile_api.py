@@ -54,7 +54,10 @@ def test_extract_document_returns_selected_profile(
         await file.read()
 
         return {
-            "text": "Договор M5781970",
+            "text": (
+                "Доставчик: А1 България ЕАД\n"
+                "Договор M5781970"
+            ),
             "quality": ACCEPTED_QUALITY,
         }
 

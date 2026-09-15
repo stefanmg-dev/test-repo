@@ -156,3 +156,18 @@ def test_rejects_non_string_supplier_text(
         match="must be a string",
     ):
         match_supplier(invalid_text)
+
+def test_matches_reversed_a1_ocr_company_block():
+    result = match_supplier(
+        "България ЕАД\nA1"
+    )
+
+    assert result.profile_name == (
+        "telecom_a1"
+    )
+
+    assert (
+        "a1_bulgaria_company_reversed"
+        in result.evidence
+    )
+

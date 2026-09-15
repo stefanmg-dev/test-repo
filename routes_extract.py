@@ -17,6 +17,9 @@ from ocr_engine import (
     extract_text,
 )
 from result_validator import validate_result
+from supplier_profile_pipeline import (
+    resolve_supplier_profile_fields,
+)
 
 
 router = APIRouter()
@@ -83,16 +86,48 @@ async def extract_document(
         )
     )
 
-    selected_profile = document_config.get(
-        "default_profile"
-    )
-
     input_result = await extract_document_input(
         file
     )
 
     raw_text = input_result["text"]
     quality = input_result["quality"]
+
+    selected_profile = None
+    resolved_fields = None
+
+    if "profiles" in document_config:
+        profile_result = (
+            resolve_supplier_profile_fields(
+                document_config=document_config,
+                ocr_text=raw_text,
+            )
+        )
+
+        selected_profile = profile_result[
+            "profile"
+        ]
+        resolved_fields = profile_result[
+            "fields"
+        ]
+
+        if profile_result[
+            "requires_review"
+        ]:
+            quality = {
+                **quality,
+                "status": "review",
+                "requires_review": True,
+                "warnings": [
+                    *quality.get(
+                        "warnings",
+                        [],
+                    ),
+                    *profile_result[
+                        "warnings"
+                    ],
+                ],
+            }
 
     llm_values = extract_values(raw_text)
 
@@ -101,12 +136,14 @@ async def extract_document(
         config=config,
         raw_text=raw_text,
         llm_values=llm_values,
+        resolved_fields=resolved_fields,
     )
 
     validation = validate_result(
         document_type=document_type,
         config=config,
         final_values=final_values,
+        resolved_fields=resolved_fields,
     )
 
     processing_status = determine_processing_status(
