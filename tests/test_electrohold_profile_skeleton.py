@@ -18,6 +18,8 @@ def test_electrohold_profile_is_configured():
         "supplier_name",
         "supplier_id",
         "issue_date",
+        "customer_name",
+        "customer_address",
         "due_date",
         "total_amount",
     ]

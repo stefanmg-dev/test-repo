@@ -12,8 +12,7 @@ ELECTROHOLD_OCR_TEXT = """
 ЗДДС № BG175133827
 Идент. № 175133827
 
-Име СТЕФАН МОМЧИЛОВ ГЕОРГИЕВ
-Адрес бул. БРАТЯ БЪКСТОН, бл. 201 А, вх. Г, ап. 68
+Име СТЕФАН МОМЧИЛОВ ГЕОРГИЕВ Адрес бул. БРАТЯ БЪКСТОН, бл. 201 А, вх. Г, ап. 68
 
 Обща стойност на сделката 37,91 €
 Срок за плащане на фактурата от 26.08.2026 до 09.09.2026
@@ -95,6 +94,13 @@ def test_electrohold_endpoint_selects_profile_skeleton(
     assert final_values["supplier_id"] == "175133827"
     assert final_values["invoice_number"] == "0484935637"
     assert final_values["issue_date"] == "26.08.2026"
+    assert final_values["customer_name"] == (
+        "СТЕФАН МОМЧИЛОВ ГЕОРГИЕВ"
+    )
+    assert final_values["customer_address"] == (
+        "бул. БРАТЯ БЪКСТОН, "
+        "бл. 201 А, вх. Г, ап. 68"
+    )
     assert final_values["due_date"] == "09.09.2026"
     assert final_values["total_amount"] == "37.91"
 

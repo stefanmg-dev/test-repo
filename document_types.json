@@ -223,6 +223,36 @@
             ]
           },
           {
+            "name": "customer_name",
+            "type": "regex_list",
+            "occurrence": "first",
+            "rules": [
+              "Име\\s+([А-Я]+(?:\\s+[А-Я]+){2})\\s+Адрес",
+              "Получател\\s+([А-Я]+(?:\\s+[А-Я]+){2})\\s+Адрес"
+            ],
+            "validation": [
+              {
+                "type": "required",
+                "message": "Customer name is required"
+              }
+            ]
+          },
+          {
+            "name": "customer_address",
+            "type": "regex_list",
+            "occurrence": "first",
+            "rules": [
+              "Име\\s+[А-Я]+(?:\\s+[А-Я]+){2}\\s+Адрес\\s+([^\\n]*?ап\\.?\\s*[0-9]+)",
+              "Получател\\s+[А-Я]+(?:\\s+[А-Я]+){2}\\s+Адрес\\s+([^\\n]*?ап\\.?\\s*[0-9]+)"
+            ],
+            "validation": [
+              {
+                "type": "required",
+                "message": "Customer address is required"
+              }
+            ]
+          },
+          {
             "name": "due_date",
             "type": "regex",
             "rule": "Срок за плащане на фактурата\\s+от\\s+[0-9]{2}\\.[0-9]{2}\\.[0-9]{4}\\s+до\\s+([0-9]{2}\\.[0-9]{2}\\.[0-9]{4})",
