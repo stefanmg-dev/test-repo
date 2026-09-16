@@ -22,6 +22,7 @@ def test_electrohold_profile_is_configured():
         "customer_address",
         "due_date",
         "total_amount",
+        "client_number",
     ]
 
 
@@ -47,7 +48,7 @@ def test_electrohold_resolves_common_fields_only():
         for field in result["fields"]
     ]
 
-    assert len(field_names) == 8
+    assert len(field_names) == 9
     assert set(field_names) == {
         "supplier_name",
         "supplier_id",
@@ -57,6 +58,7 @@ def test_electrohold_resolves_common_fields_only():
         "customer_address",
         "due_date",
         "total_amount",
+        "client_number",
     }
     assert "contract_number" not in field_names
 

@@ -17,6 +17,7 @@ ELECTROHOLD_OCR_TEXT = """
 Обща стойност на сделката 37,91 €
 Срок за плащане на фактурата от 26.08.2026 до 09.09.2026
 
+КЛИЕНТСКИ НОМЕР 300031587847
 electrohold.bg/sales
 """.strip()
 
@@ -77,7 +78,7 @@ def test_electrohold_endpoint_selects_profile_skeleton(
 
     final_values = body["final_values"]
 
-    assert len(final_values) == 8
+    assert len(final_values) == 9
     assert set(final_values) == {
         "supplier_name",
         "supplier_id",
@@ -87,6 +88,7 @@ def test_electrohold_endpoint_selects_profile_skeleton(
         "customer_address",
         "due_date",
         "total_amount",
+        "client_number",
     }
     assert final_values["supplier_name"] == (
         "Електрохолд Продажби ЕАД"
@@ -103,6 +105,7 @@ def test_electrohold_endpoint_selects_profile_skeleton(
     )
     assert final_values["due_date"] == "09.09.2026"
     assert final_values["total_amount"] == "37.91"
+    assert final_values["client_number"] == "300031587847"
 
     assert "contract_number" not in final_values
 
