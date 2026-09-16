@@ -288,6 +288,26 @@
                 "message": "Total amount must be a positive decimal number"
               }
             ]
+          },
+          {
+            "name": "client_number",
+            "type": "regex_list",
+            "occurrence": "first",
+            "rules": [
+              "КЛИЕНТСКИ\\s+НОМЕР\\s*([0-9]{10,15})",
+              "Клиентски\\s+номер\\s*[:№]?\\s*([0-9]{10,15})"
+            ],
+            "validation": [
+              {
+                "type": "required",
+                "message": "Client number is required"
+              },
+              {
+                "type": "regex",
+                "pattern": "[0-9]{10,15}",
+                "message": "Client number must contain between 10 and 15 digits"
+              }
+            ]
           }
         ]
       }
