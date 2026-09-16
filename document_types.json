@@ -308,6 +308,26 @@
                 "message": "Client number must contain between 10 and 15 digits"
               }
             ]
+          },
+          {
+            "name": "abonat_number",
+            "type": "regex_list",
+            "occurrence": "first",
+            "rules": [
+              "Абонатен\\s*№\\s*([0-9]{8,15})",
+              "Абонатен\\s+номер\\s*[:№]?\\s*([0-9]{8,15})"
+            ],
+            "validation": [
+              {
+                "type": "required",
+                "message": "Abonat number is required"
+              },
+              {
+                "type": "regex",
+                "pattern": "[0-9]{8,15}",
+                "message": "Abonat number must contain between 8 and 15 digits"
+              }
+            ]
           }
         ]
       }
