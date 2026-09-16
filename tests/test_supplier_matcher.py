@@ -171,3 +171,50 @@ def test_matches_reversed_a1_ocr_company_block():
         in result.evidence
     )
 
+
+
+@pytest.mark.parametrize(
+    ("text", "expected_evidence"),
+    [
+        (
+            "Доставчик: Електрохолд Продажби ЕАД",
+            (
+                "electrohold_sales_company",
+            ),
+        ),
+        (
+            "Информация: electrohold.bg/sales",
+            (
+                "electrohold_official_domain",
+            ),
+        ),
+        (
+            "ЕЛЕКТРОХОЛД   ПРОДАЖБИ\nЕАД",
+            (
+                "electrohold_sales_company",
+            ),
+        ),
+    ],
+)
+def test_matches_electricity_electrohold(
+    text,
+    expected_evidence,
+):
+    result = match_supplier(text)
+
+    assert result == SupplierMatchResult(
+        profile_name=(
+            "electricity_electrohold"
+        ),
+        evidence=expected_evidence,
+    )
+
+
+def test_conflicting_supplier_evidence_returns_none():
+    result = match_supplier(
+        "А1 България ЕАД\n"
+        "Електрохолд Продажби ЕАД"
+    )
+
+    assert result.profile_name is None
+    assert result.evidence

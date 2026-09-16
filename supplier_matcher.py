@@ -1,10 +1,12 @@
 import re
 import unicodedata
 from dataclasses import dataclass
-from typing import Any
 
 
 TELECOM_A1_PROFILE = "telecom_a1"
+ELECTRICITY_ELECTROHOLD_PROFILE = (
+    "electricity_electrohold"
+)
 
 
 @dataclass(frozen=True)
@@ -54,18 +56,50 @@ def match_supplier(
             evidence=(),
         )
 
-    evidence = _find_a1_evidence(
+    matches = []
+
+    a1_evidence = _find_a1_evidence(
         normalized_text
     )
 
-    if not evidence:
-        return SupplierMatchResult(
-            profile_name=None,
-            evidence=(),
+    if a1_evidence:
+        matches.append(
+            (
+                TELECOM_A1_PROFILE,
+                a1_evidence,
+            )
         )
 
+    electrohold_evidence = (
+        _find_electrohold_evidence(
+            normalized_text
+        )
+    )
+
+    if electrohold_evidence:
+        matches.append(
+            (
+                ELECTRICITY_ELECTROHOLD_PROFILE,
+                electrohold_evidence,
+            )
+        )
+
+    if len(matches) != 1:
+        evidence = tuple(
+            evidence_code
+            for _, profile_evidence in matches
+            for evidence_code in profile_evidence
+        )
+
+        return SupplierMatchResult(
+            profile_name=None,
+            evidence=evidence,
+        )
+
+    profile_name, evidence = matches[0]
+
     return SupplierMatchResult(
-        profile_name=TELECOM_A1_PROFILE,
+        profile_name=profile_name,
         evidence=tuple(evidence),
     )
 
@@ -80,7 +114,7 @@ def get_matched_profile_name(
 
 def _find_a1_evidence(
     normalized_text: str,
-) -> list[str]:
+):
     evidence = []
 
     strong_patterns = (
@@ -118,6 +152,43 @@ def _find_a1_evidence(
                 r"(?:https?://)?"
                 r"(?:www\.)?"
                 r"a1\.bg"
+                r"(?![\w.-])",
+                re.IGNORECASE,
+            ),
+        ),
+    )
+
+    for evidence_code, pattern in strong_patterns:
+        if pattern.search(normalized_text):
+            evidence.append(
+                evidence_code
+            )
+
+    return evidence
+
+
+def _find_electrohold_evidence(
+    normalized_text: str,
+):
+    evidence = []
+
+    strong_patterns = (
+        (
+            "electrohold_sales_company",
+            re.compile(
+                r"\bелектрохолд\s+"
+                r"продажби\s+еад\b",
+                re.IGNORECASE,
+            ),
+        ),
+        (
+            "electrohold_official_domain",
+            re.compile(
+                r"(?<![\w.-])"
+                r"(?:https?://)?"
+                r"(?:www\.)?"
+                r"electrohold\.bg"
+                r"(?:/[^\s]*)?"
                 r"(?![\w.-])",
                 re.IGNORECASE,
             ),

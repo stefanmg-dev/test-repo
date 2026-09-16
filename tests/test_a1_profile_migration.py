@@ -53,11 +53,15 @@ def test_a1_profile_contains_contract_number():
         "fields"
     ]
 
-    assert len(profile_fields) == 1
+    assert len(profile_fields) == 2
 
-    assert profile_fields[0]["name"] == (
-        PROFILE_FIELD_NAME
-    )
+    assert {
+        field["name"]
+        for field in profile_fields
+    } == {
+        "supplier_name",
+        PROFILE_FIELD_NAME,
+    }
 
 
 def test_a1_default_profile_is_configured():
