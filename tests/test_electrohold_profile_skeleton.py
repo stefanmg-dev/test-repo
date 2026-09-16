@@ -18,6 +18,8 @@ def test_electrohold_profile_is_configured():
         "supplier_name",
         "supplier_id",
         "issue_date",
+        "due_date",
+        "total_amount",
     ]
 
 
@@ -35,11 +37,7 @@ def test_electrohold_resolves_common_fields_only():
     assert result["profile"] == (
         "electricity_electrohold"
     )
-
-    assert result[
-        "requires_review"
-    ] is False
-
+    assert result["requires_review"] is False
     assert result["warnings"] == []
 
     field_names = [
@@ -48,7 +46,16 @@ def test_electrohold_resolves_common_fields_only():
     ]
 
     assert len(field_names) == 8
-    assert "supplier_name" in field_names
+    assert set(field_names) == {
+        "supplier_name",
+        "supplier_id",
+        "invoice_number",
+        "issue_date",
+        "customer_name",
+        "customer_address",
+        "due_date",
+        "total_amount",
+    }
     assert "contract_number" not in field_names
 
     supplier_field = next(
@@ -60,15 +67,11 @@ def test_electrohold_resolves_common_fields_only():
     assert supplier_field == {
         "name": "supplier_name",
         "type": "constant",
-        "value": (
-            "Електрохолд Продажби ЕАД"
-        ),
+        "value": "Електрохолд Продажби ЕАД",
         "validation": [
             {
                 "type": "required",
-                "message": (
-                    "Supplier name is required"
-                ),
+                "message": "Supplier name is required",
             }
         ],
     }
@@ -105,9 +108,7 @@ def test_unknown_supplier_keeps_generic_supplier_field():
     )
 
     assert result["profile"] is None
-    assert result[
-        "requires_review"
-    ] is True
+    assert result["requires_review"] is True
 
     supplier_field = next(
         field
