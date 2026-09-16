@@ -330,6 +330,21 @@
             ]
           }
         ]
+      },
+      "heating_toplofikacia_sofia": {
+        "fields": [
+          {
+            "name": "supplier_name",
+            "type": "constant",
+            "value": "Топлофикация София ЕАД",
+            "validation": [
+              {
+                "type": "required",
+                "message": "Supplier name is required"
+              }
+            ]
+          }
+        ]
       }
     }
   }
