@@ -71,7 +71,7 @@ def test_current_document_types_config_is_valid():
         invoice_config["profiles"][
             PROFILE_NAME
         ]["fields"]
-    ) == 1
+    ) == 2
 
     assert len(
         resolve_document_fields(

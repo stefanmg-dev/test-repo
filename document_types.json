@@ -4,14 +4,8 @@
     "common_fields": [
       {
         "name": "supplier_name",
-        "type": "constant",
-        "value": "А1 България ЕАД",
-        "validation": [
-          {
-            "type": "required",
-            "message": "Supplier name is required"
-          }
-        ]
+        "type": "llm",
+        "validation": []
       },
       {
         "name": "supplier_id",
@@ -146,6 +140,17 @@
       "telecom_a1": {
         "fields": [
           {
+            "name": "supplier_name",
+            "type": "constant",
+            "value": "А1 България ЕАД",
+            "validation": [
+              {
+                "type": "required",
+                "message": "Supplier name is required"
+              }
+            ]
+          },
+          {
             "name": "contract_number",
             "type": "regex_list",
             "occurrence": "first",
@@ -162,6 +167,21 @@
                 "type": "regex",
                 "pattern": "[МM][0-9]{7,10}",
                 "message": "Contract number has invalid format"
+              }
+            ]
+          }
+        ]
+      },
+      "electricity_electrohold": {
+        "fields": [
+          {
+            "name": "supplier_name",
+            "type": "constant",
+            "value": "Електрохолд Продажби ЕАД",
+            "validation": [
+              {
+                "type": "required",
+                "message": "Supplier name is required"
               }
             ]
           }
