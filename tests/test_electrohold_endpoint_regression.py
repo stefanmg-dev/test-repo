@@ -92,6 +92,12 @@ def test_electrohold_endpoint_selects_profile_skeleton(
     assert final_values["supplier_name"] == (
         "Електрохолд Продажби ЕАД"
     )
+    assert final_values["supplier_id"] == "175133827"
+    assert final_values["invoice_number"] == "0484935637"
+    assert final_values["issue_date"] == "26.08.2026"
+    assert final_values["due_date"] == "09.09.2026"
+    assert final_values["total_amount"] == "37.91"
+
     assert "contract_number" not in final_values
 
     warning_codes = {
