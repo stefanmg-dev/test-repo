@@ -11,7 +11,11 @@ def clean_value(value: Any) -> str | None:
     if isinstance(value, tuple):
         value = value[-1]
 
-    value = str(value).strip()
+    value = re.sub(
+        r"\s+",
+        " ",
+        str(value),
+    ).strip()
 
     return value or None
 
