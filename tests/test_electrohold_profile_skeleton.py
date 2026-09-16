@@ -16,6 +16,8 @@ def test_electrohold_profile_is_configured():
         for field in profile["fields"]
     ] == [
         "supplier_name",
+        "supplier_id",
+        "issue_date",
     ]
 
 
