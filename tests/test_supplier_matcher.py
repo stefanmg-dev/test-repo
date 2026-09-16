@@ -72,7 +72,6 @@ def test_matches_telecom_a1_from_clear_evidence(
         "\n\t",
         "EVN България Електроснабдяване ЕАД",
         "Софийска вода АД",
-        "Топлофикация София ЕАД",
         "Формат на страницата: A1",
         "Клетка A1",
         "Референция A123456",
@@ -216,5 +215,39 @@ def test_conflicting_supplier_evidence_returns_none():
         "Електрохолд Продажби ЕАД"
     )
 
+    assert result.profile_name is None
+    assert result.evidence
+
+
+@pytest.mark.parametrize(
+    ("text", "expected_evidence"),
+    [
+        (
+            "ДОСТАВЧИК: „ТОПЛОФИКАЦИЯ СОФИЯ“ ЕАД",
+            ("toplofikacia_sofia_company",),
+        ),
+        (
+            "Информация: www.toplo.bg",
+            ("toplofikacia_sofia_domain",),
+        ),
+    ],
+)
+def test_matches_heating_toplofikacia_sofia(
+    text,
+    expected_evidence,
+):
+    result = match_supplier(text)
+    assert result == SupplierMatchResult(
+        profile_name="heating_toplofikacia_sofia",
+        evidence=expected_evidence,
+    )
+
+
+def test_three_supplier_evidences_are_conflicting():
+    result = match_supplier(
+        "А1 България ЕАД\n"
+        "Електрохолд Продажби ЕАД\n"
+        "Топлофикация София ЕАД"
+    )
     assert result.profile_name is None
     assert result.evidence

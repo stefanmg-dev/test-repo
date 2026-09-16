@@ -7,6 +7,9 @@ TELECOM_A1_PROFILE = "telecom_a1"
 ELECTRICITY_ELECTROHOLD_PROFILE = (
     "electricity_electrohold"
 )
+HEATING_TOPLOFIKACIA_SOFIA_PROFILE = (
+    "heating_toplofikacia_sofia"
+)
 
 
 @dataclass(frozen=True)
@@ -81,6 +84,16 @@ def match_supplier(
             (
                 ELECTRICITY_ELECTROHOLD_PROFILE,
                 electrohold_evidence,
+            )
+        )
+    toplo_evidence = _find_toplofikacia_sofia_evidence(
+        normalized_text
+    )
+    if toplo_evidence:
+        matches.append(
+            (
+                HEATING_TOPLOFIKACIA_SOFIA_PROFILE,
+                toplo_evidence,
             )
         )
 
@@ -201,4 +214,37 @@ def _find_electrohold_evidence(
                 evidence_code
             )
 
+    return evidence
+
+
+def _find_toplofikacia_sofia_evidence(
+    normalized_text: str,
+):
+    evidence = []
+    strong_patterns = (
+        (
+            "toplofikacia_sofia_company",
+            re.compile(
+                r"\bтоплофикация\s+"
+                r"софия(?:\s*[\"„“']*)?"
+                r"\s+еад\b",
+                re.IGNORECASE,
+            ),
+        ),
+        (
+            "toplofikacia_sofia_domain",
+            re.compile(
+                r"(?<![\w.-])"
+                r"(?:https?://)?"
+                r"(?:www\.)?"
+                r"toplo\.bg"
+                r"(?:/[^\s]*)?"
+                r"(?![\w.-])",
+                re.IGNORECASE,
+            ),
+        ),
+    )
+    for evidence_code, pattern in strong_patterns:
+        if pattern.search(normalized_text):
+            evidence.append(evidence_code)
     return evidence
