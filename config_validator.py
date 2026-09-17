@@ -12,6 +12,8 @@ SUPPORTED_FIELD_TYPES = {
 
 SUPPORTED_OCCURRENCES = {"first", "last"}
 SUPPORTED_DIRECTIONS = {"before", "after", "both"}
+SUPPORTED_COLLECTION_CARDINALITIES = {"zero_or_more"}
+COLLECTION_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 PROFILE_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 
 
@@ -168,6 +170,41 @@ def validate_profile_name(profile_name: Any, path: str) -> str:
     return profile_name
 
 
+def validate_collections(collections: Any, path: str) -> None:
+    if collections is None:
+        return
+    if not isinstance(collections, dict):
+        raise ConfigValidationError(f"{path} must be an object")
+    for collection_name, collection_config in collections.items():
+        collection_path = f"{path}.{collection_name}"
+        name = require_non_empty_string(collection_name, collection_path)
+        if not COLLECTION_NAME_PATTERN.fullmatch(name):
+            raise ConfigValidationError(
+                f"{collection_path} must match ^[a-z][a-z0-9_]*$"
+            )
+        if not isinstance(collection_config, dict):
+            raise ConfigValidationError(f"{collection_path} must be an object")
+        unknown_keys = set(collection_config) - {"cardinality", "fields"}
+        if unknown_keys:
+            raise ConfigValidationError(
+                f"{collection_path} contains unsupported properties: "
+                f"{sorted(unknown_keys)}"
+            )
+        cardinality = require_non_empty_string(
+            collection_config.get("cardinality"),
+            f"{collection_path}.cardinality",
+        )
+        if cardinality not in SUPPORTED_COLLECTION_CARDINALITIES:
+            raise ConfigValidationError(
+                f"{collection_path}.cardinality must be one of: "
+                f"{sorted(SUPPORTED_COLLECTION_CARDINALITIES)}"
+            )
+        validate_field_list(
+            collection_config.get("fields", []),
+            f"{collection_path}.fields",
+        )
+
+
 def validate_legacy_document_type(
     document_config: dict,
     path: str,
@@ -239,7 +276,10 @@ def validate_document_type(
     if not isinstance(document_config, dict):
         raise ConfigValidationError(f"{path} must be an object")
 
-    allowed_keys = {"fields", "default_profile", "common_fields", "profiles"}
+    allowed_keys = {
+        "fields", "default_profile", "common_fields",
+        "profiles", "collections",
+    }
     unknown_keys = set(document_config) - allowed_keys
 
     if unknown_keys:
@@ -271,6 +311,10 @@ def validate_document_type(
         validate_legacy_document_type(document_config, path)
     else:
         validate_profile_document_type(document_config, path)
+    validate_collections(
+        document_config.get("collections"),
+        f"{path}.collections",
+    )
 
 
 def validate_config(config: Any) -> None:

@@ -3,6 +3,7 @@ import pytest
 from document_config_resolver import (
     DocumentConfigResolutionError,
     build_resolved_document_config,
+    get_document_collections,
     resolve_document_fields,
 )
 
@@ -314,3 +315,19 @@ def test_field_without_name_is_rejected():
         resolve_document_fields(
             document_config
         )
+
+def test_resolves_collection_schema_as_deep_copy():
+    config = {"collections": {"meters": {"cardinality": "zero_or_more", "fields": []}}}
+    collections = get_document_collections(config)
+    collections["meters"]["fields"].append({"name": "meter_number"})
+    assert config["collections"]["meters"]["fields"] == []
+
+
+def test_build_includes_collections_when_configured():
+    config = {
+        "fields": [{"name": "invoice_number", "type": "regex"}],
+        "collections": {"services": {"cardinality": "zero_or_more", "fields": []}},
+    }
+    resolved = build_resolved_document_config(config)
+    assert resolved["collections"] == config["collections"]
+    assert resolved["collections"] is not config["collections"]
