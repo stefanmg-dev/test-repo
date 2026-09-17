@@ -433,6 +433,66 @@
                 "message": "Total amount must be a positive decimal number"
               }
             ]
+          },
+          {
+            "name": "business_partner_number",
+            "type": "regex_list",
+            "occurrence": "first",
+            "rules": [
+              "БИЗНЕС\\s+ПАРТНЬОР\\s*№\\s*([0-9]{8,15})",
+              "БИЗНЕС\\s+ПАРТНЬОР\\s+НОМЕР\\s*[:№]?\\s*([0-9]{8,15})"
+            ],
+            "validation": [
+              {
+                "type": "required",
+                "message": "Business partner number is required"
+              },
+              {
+                "type": "regex",
+                "pattern": "[0-9]{8,15}",
+                "message": "Business partner number must contain between 8 and 15 digits"
+              }
+            ]
+          },
+          {
+            "name": "contract_account_number",
+            "type": "regex_list",
+            "occurrence": "first",
+            "rules": [
+              "ДОГОВОРНА\\s+СМЕТКА\\s*№\\s*([0-9]{8,15})",
+              "ДОГОВОРНА\\s+СМЕТКА\\s*[:№]?\\s*([0-9]{8,15})"
+            ],
+            "validation": [
+              {
+                "type": "required",
+                "message": "Contract account number is required"
+              },
+              {
+                "type": "regex",
+                "pattern": "[0-9]{8,15}",
+                "message": "Contract account number must contain between 8 and 15 digits"
+              }
+            ]
+          },
+          {
+            "name": "installation_number",
+            "type": "regex_list",
+            "occurrence": "first",
+            "rules": [
+              "НОМЕР\\s+НА\\s+ИНСТАЛАЦИЯ\\s*№\\s*([0-9]{8,15})",
+              "ИНСТАЛАЦИЯ\\s*№\\s*([0-9]{8,15})"
+            ],
+            "validation": [
+              {
+                "type": "required",
+                "message": "Installation number is required"
+              },
+              {
+                "type": "regex",
+                "pattern": "[0-9]{8,15}",
+                "message": "Installation number must contain between 8 and 15 digits"
+              }
+            ]
           }
         ]
       }
