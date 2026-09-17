@@ -184,7 +184,11 @@ def validate_collections(collections: Any, path: str) -> None:
             )
         if not isinstance(collection_config, dict):
             raise ConfigValidationError(f"{collection_path} must be an object")
-        unknown_keys = set(collection_config) - {"cardinality", "fields"}
+        unknown_keys = set(collection_config) - {
+            "cardinality",
+            "start_pattern",
+            "fields",
+        }
         if unknown_keys:
             raise ConfigValidationError(
                 f"{collection_path} contains unsupported properties: "
@@ -198,6 +202,14 @@ def validate_collections(collections: Any, path: str) -> None:
             raise ConfigValidationError(
                 f"{collection_path}.cardinality must be one of: "
                 f"{sorted(SUPPORTED_COLLECTION_CARDINALITIES)}"
+            )
+        start_pattern = collection_config.get(
+            "start_pattern"
+        )
+        if start_pattern is not None:
+            validate_regex(
+                start_pattern,
+                f"{collection_path}.start_pattern",
             )
         validate_field_list(
             collection_config.get("fields", []),

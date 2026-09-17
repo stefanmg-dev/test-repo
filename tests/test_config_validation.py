@@ -6,6 +6,7 @@ from config_store import load_config
 from config_validator import ConfigValidationError, validate_config
 from document_config_resolver import resolve_document_fields
 
+
 PROFILE_NAME = "telecom_a1"
 
 
@@ -18,7 +19,11 @@ def get_profile_fields(config: dict) -> list:
 
 
 def find_common_field(config: dict, field_name: str) -> dict:
-    return next(field for field in get_common_fields(config) if field["name"] == field_name)
+    return next(
+        field
+        for field in get_common_fields(config)
+        if field["name"] == field_name
+    )
 
 
 def test_current_document_types_config_is_valid():
@@ -30,8 +35,12 @@ def test_current_document_types_config_is_valid():
     assert len(invoice["profiles"][PROFILE_NAME]["fields"]) == 2
     assert len(resolve_document_fields(invoice)) == 9
     assert set(invoice["collections"]) == {
-        "services", "metering_points", "meters", "consumption_items"
+        "services",
+        "metering_points",
+        "meters",
+        "consumption_items",
     }
+    assert invoice["collections"]["meters"]["start_pattern"]
 
 
 def test_rejects_duplicate_field_names():
@@ -86,13 +95,33 @@ def test_rejects_duplicate_common_field():
 
 def test_rejects_invalid_collection_cardinality():
     invalid = copy.deepcopy(load_config())
-    invalid["invoice"]["collections"]["meters"]["cardinality"] = "one_or_more"
+    invalid["invoice"]["collections"]["meters"]["cardinality"] = (
+        "one_or_more"
+    )
     with pytest.raises(ConfigValidationError, match="cardinality"):
         validate_config(invalid)
 
 
 def test_rejects_unknown_collection_property():
     invalid = copy.deepcopy(load_config())
-    invalid["invoice"]["collections"]["meters"]["extractor"] = "future"
-    with pytest.raises(ConfigValidationError, match="unsupported properties"):
+    invalid["invoice"]["collections"]["meters"]["extractor"] = (
+        "future"
+    )
+    with pytest.raises(
+        ConfigValidationError,
+        match="unsupported properties",
+    ):
         validate_config(invalid)
+
+
+def test_rejects_invalid_collection_start_pattern():
+    invalid = copy.deepcopy(load_config())
+    invalid["invoice"]["collections"]["meters"]["start_pattern"] = "("
+    with pytest.raises(ConfigValidationError, match="invalid regex"):
+        validate_config(invalid)
+
+
+def test_collection_start_pattern_is_optional():
+    config = copy.deepcopy(load_config())
+    config["invoice"]["collections"]["meters"].pop("start_pattern")
+    validate_config(config)

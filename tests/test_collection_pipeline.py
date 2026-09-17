@@ -1,4 +1,8 @@
+import pytest
+
 from collection_pipeline import (
+    CollectionPipelineError,
+    extract_collection_from_schema,
     extract_collection_from_text,
 )
 
@@ -113,3 +117,51 @@ def test_pipeline_keeps_missing_optional_values():
             "unit": "kWh",
         }
     ]
+
+
+def test_schema_pipeline_extracts_multiple_items():
+    schema = {
+        "cardinality": "zero_or_more",
+        "start_pattern": METER_START_PATTERN,
+        "fields": METER_FIELDS,
+    }
+
+    items = extract_collection_from_schema(
+        raw_text=(
+            "Електромер №1111111111\n"
+            "Потребление 10,25\n"
+            "Фабричен номер 2222222222\n"
+            "Потребление 20.75"
+        ),
+        collection_schema=schema,
+    )
+
+    assert [item["meter_number"] for item in items] == [
+        "1111111111",
+        "2222222222",
+    ]
+
+
+def test_schema_pipeline_returns_empty_list():
+    assert extract_collection_from_schema(
+        raw_text="Фактура без електромери",
+        collection_schema={
+            "cardinality": "zero_or_more",
+            "start_pattern": METER_START_PATTERN,
+            "fields": METER_FIELDS,
+        },
+    ) == []
+
+
+def test_schema_pipeline_rejects_missing_start_pattern():
+    with pytest.raises(
+        CollectionPipelineError,
+        match="start_pattern",
+    ):
+        extract_collection_from_schema(
+            raw_text="sample",
+            collection_schema={
+                "cardinality": "zero_or_more",
+                "fields": [],
+            },
+        )
