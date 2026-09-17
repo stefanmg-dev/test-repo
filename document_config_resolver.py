@@ -38,6 +38,17 @@ def get_common_fields(
     return deepcopy(common_fields)
 
 
+def get_document_collections(
+    document_config: dict,
+):
+    collections = document_config.get("collections", {})
+    if not isinstance(collections, dict):
+        raise DocumentConfigResolutionError(
+            "'collections' must be an object"
+        )
+    return deepcopy(collections)
+
+
 def get_profiles(
     document_config: dict,
 ):
@@ -295,9 +306,14 @@ def build_resolved_document_config(
     document_config: dict,
     profile_name: str | None = None,
 ) -> dict:
-    return {
+    resolved_config = {
         "fields": resolve_document_fields(
             document_config=document_config,
             profile_name=profile_name,
         )
     }
+    if "collections" in document_config:
+        resolved_config["collections"] = (
+            get_document_collections(document_config)
+        )
+    return resolved_config
