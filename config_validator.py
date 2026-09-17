@@ -170,7 +170,11 @@ def validate_profile_name(profile_name: Any, path: str) -> str:
     return profile_name
 
 
-def validate_collections(collections: Any, path: str) -> None:
+def validate_collections(
+    collections: Any,
+    path: str,
+    require_cardinality: bool = True,
+) -> None:
     if collections is None:
         return
     if not isinstance(collections, dict):
@@ -194,15 +198,23 @@ def validate_collections(collections: Any, path: str) -> None:
                 f"{collection_path} contains unsupported properties: "
                 f"{sorted(unknown_keys)}"
             )
-        cardinality = require_non_empty_string(
-            collection_config.get("cardinality"),
-            f"{collection_path}.cardinality",
-        )
-        if cardinality not in SUPPORTED_COLLECTION_CARDINALITIES:
-            raise ConfigValidationError(
-                f"{collection_path}.cardinality must be one of: "
-                f"{sorted(SUPPORTED_COLLECTION_CARDINALITIES)}"
+        cardinality = collection_config.get("cardinality")
+        if cardinality is None:
+            if require_cardinality:
+                raise ConfigValidationError(
+                    f"{collection_path}.cardinality must be "
+                    "a non-empty string"
+                )
+        else:
+            cardinality = require_non_empty_string(
+                cardinality,
+                f"{collection_path}.cardinality",
             )
+            if cardinality not in SUPPORTED_COLLECTION_CARDINALITIES:
+                raise ConfigValidationError(
+                    f"{collection_path}.cardinality must be one of: "
+                    f"{sorted(SUPPORTED_COLLECTION_CARDINALITIES)}"
+                )
         start_pattern = collection_config.get(
             "start_pattern"
         )
@@ -266,7 +278,10 @@ def validate_profile_document_type(
                 f"{profile_path} must be an object"
             )
 
-        unknown_keys = set(profile_config) - {"fields"}
+        unknown_keys = set(profile_config) - {
+            "fields",
+            "collections",
+        }
         if unknown_keys:
             raise ConfigValidationError(
                 f"{profile_path} contains unsupported properties: "
@@ -276,6 +291,11 @@ def validate_profile_document_type(
         validate_field_list(
             profile_config.get("fields", []),
             f"{profile_path}.fields",
+        )
+        validate_collections(
+            profile_config.get("collections"),
+            f"{profile_path}.collections",
+            require_cardinality=False,
         )
 
 
