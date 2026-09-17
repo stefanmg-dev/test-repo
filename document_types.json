@@ -508,7 +508,8 @@
       },
       "meters": {
         "cardinality": "zero_or_more",
-        "fields": []
+        "fields": [],
+        "start_pattern": "^(?:Електромер\\s*№|Фабричен\\s+номер)"
       },
       "consumption_items": {
         "cardinality": "zero_or_more",
