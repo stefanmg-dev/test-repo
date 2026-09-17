@@ -84,7 +84,7 @@ def test_toplofikacia_endpoint_selects_profile_skeleton(
 
     final_values = body["final_values"]
 
-    assert len(final_values) == 8
+    assert len(final_values) == 11
     assert set(final_values) == {
         "supplier_name",
         "supplier_id",
@@ -94,6 +94,9 @@ def test_toplofikacia_endpoint_selects_profile_skeleton(
         "customer_address",
         "due_date",
         "total_amount",
+        "business_partner_number",
+        "contract_account_number",
+        "installation_number",
     }
     assert final_values["supplier_name"] == (
         "Топлофикация София ЕАД"
@@ -110,6 +113,15 @@ def test_toplofikacia_endpoint_selects_profile_skeleton(
     )
     assert final_values["due_date"] == "15.10.2026"
     assert final_values["total_amount"] == "15.12"
+    assert final_values["business_partner_number"] == (
+        "1000215239"
+    )
+    assert final_values["contract_account_number"] == (
+        "002100047756"
+    )
+    assert final_values["installation_number"] == (
+        "4000374298"
+    )
 
     assert "contract_number" not in final_values
     assert "client_number" not in final_values
