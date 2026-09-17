@@ -329,7 +329,13 @@
               }
             ]
           }
-        ]
+        ],
+        "collections": {
+          "meters": {
+            "start_pattern": "^(?:Електромер\\s*№|Фабричен\\s+номер)",
+            "fields": []
+          }
+        }
       },
       "heating_toplofikacia_sofia": {
         "fields": [

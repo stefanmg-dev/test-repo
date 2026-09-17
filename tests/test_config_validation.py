@@ -125,3 +125,36 @@ def test_collection_start_pattern_is_optional():
     config = copy.deepcopy(load_config())
     config["invoice"]["collections"]["meters"].pop("start_pattern")
     validate_config(config)
+
+
+def test_accepts_profile_collection_override():
+    config = copy.deepcopy(load_config())
+    profile = config["invoice"]["profiles"][
+        "electricity_electrohold"
+    ]
+
+    assert "collections" in profile
+    validate_config(config)
+
+
+def test_rejects_invalid_profile_collection_start_pattern():
+    invalid = copy.deepcopy(load_config())
+    invalid["invoice"]["profiles"][
+        "electricity_electrohold"
+    ]["collections"]["meters"]["start_pattern"] = "("
+
+    with pytest.raises(ConfigValidationError, match="invalid regex"):
+        validate_config(invalid)
+
+
+def test_rejects_unknown_profile_collection_property():
+    invalid = copy.deepcopy(load_config())
+    invalid["invoice"]["profiles"][
+        "electricity_electrohold"
+    ]["collections"]["meters"]["extractor"] = "future"
+
+    with pytest.raises(
+        ConfigValidationError,
+        match="unsupported properties",
+    ):
+        validate_config(invalid)
