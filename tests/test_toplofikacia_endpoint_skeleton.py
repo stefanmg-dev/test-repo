@@ -98,6 +98,11 @@ def test_toplofikacia_endpoint_selects_profile_skeleton(
     assert final_values["supplier_name"] == (
         "Топлофикация София ЕАД"
     )
+    assert final_values["supplier_id"] == "831609046"
+    assert final_values["invoice_number"] == "1204458225"
+    assert final_values["issue_date"] == "31.08.2026"
+    assert final_values["due_date"] == "15.10.2026"
+    assert final_values["total_amount"] == "15.12"
 
     assert "contract_number" not in final_values
     assert "client_number" not in final_values
