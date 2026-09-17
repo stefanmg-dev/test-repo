@@ -365,6 +365,36 @@
             ]
           },
           {
+            "name": "customer_name",
+            "type": "regex_list",
+            "occurrence": "first",
+            "rules": [
+              "ПОЛУЧАТЕЛ\\s*:\\s*([А-Я]+(?:\\s+[А-Я]+){2})\\s+ГР\\.",
+              "ПОЛУЧАТЕЛ\\s*:\\s*([А-Я]+(?:\\s+[А-Я]+){2})\\s+АДРЕС"
+            ],
+            "validation": [
+              {
+                "type": "required",
+                "message": "Customer name is required"
+              }
+            ]
+          },
+          {
+            "name": "customer_address",
+            "type": "regex_list",
+            "occurrence": "first",
+            "rules": [
+              "ПОЛУЧАТЕЛ\\s*:\\s*[А-Я]+(?:\\s+[А-Я]+){2}\\s+(ГР\\.\\s*СОФИЯ\\s+[0-9]{4}[\\s\\S]*?АПАРТАМЕНТ\\s*[0-9]+)",
+              "АДРЕС ЗА КОРЕСПОНДЕНЦИЯ\\s+[А-Я]+(?:\\s+[А-Я]+){2}\\s+(ГР\\.\\s*СОФИЯ\\s+[0-9]{4}[\\s\\S]*?АП\\.?\\s*[0-9]+)"
+            ],
+            "validation": [
+              {
+                "type": "required",
+                "message": "Customer address is required"
+              }
+            ]
+          },
+          {
             "name": "due_date",
             "type": "regex_list",
             "occurrence": "last",
