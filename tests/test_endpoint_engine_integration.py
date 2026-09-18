@@ -4,7 +4,7 @@ import routes_extract
 from api import app
 
 
-def test_endpoint_uses_document_engine_without_changing_response(
+def test_endpoint_returns_document_engine_collections(
     monkeypatch,
 ):
     raw_text = (
@@ -87,4 +87,9 @@ def test_endpoint_uses_document_engine_without_changing_response(
         "supplier_name": "Електрохолд Продажби ЕАД",
         "invoice_number": "0484935637",
     }
-    assert "collections" not in body
+    assert body["collections"] == {
+        "services": [],
+        "meters": [
+            {"meter_number": "1021015029"}
+        ],
+    }
