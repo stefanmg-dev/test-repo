@@ -6,6 +6,42 @@ class DocumentConfigResolutionError(ValueError):
     pass
 
 
+SUPPORTED_COLLECTION_CARDINALITIES = {
+    "zero_or_more",
+    "one_or_more",
+    "exactly_one",
+}
+
+
+def validate_collection_schemas(collections: dict) -> None:
+    for collection_name, schema in collections.items():
+        if not isinstance(collection_name, str) or not collection_name.strip():
+            raise DocumentConfigResolutionError(
+                "Every collection must have a name"
+            )
+        if not isinstance(schema, dict):
+            raise DocumentConfigResolutionError(
+                f"Collection '{collection_name}' must be an object"
+            )
+        cardinality = schema.get("cardinality", "zero_or_more")
+        if cardinality not in SUPPORTED_COLLECTION_CARDINALITIES:
+            raise DocumentConfigResolutionError(
+                f"Collection '{collection_name}' has unsupported "
+                f"cardinality: {cardinality}"
+            )
+        fields = schema.get("fields", [])
+        if not isinstance(fields, list):
+            raise DocumentConfigResolutionError(
+                f"Collection '{collection_name}' fields must be a list"
+            )
+        try:
+            validate_unique_field_names(fields)
+        except DocumentConfigResolutionError as error:
+            raise DocumentConfigResolutionError(
+                f"Collection '{collection_name}': {error}"
+            ) from error
+
+
 def get_legacy_fields(
     document_config: dict,
 ):
@@ -46,6 +82,7 @@ def get_document_collections(
         raise DocumentConfigResolutionError(
             "'collections' must be an object"
         )
+    validate_collection_schemas(collections)
     return deepcopy(collections)
 
 
@@ -378,11 +415,48 @@ def build_resolved_document_config(
             profile_name=profile_name,
         )
     }
-    if "collections" in document_config:
+
+    document_collections = get_document_collections(
+        document_config
+    )
+
+    profile_collections = {}
+
+    if profile_name is not None:
+        profiles = get_profiles(document_config)
+        profile_config = profiles.get(profile_name)
+
+        if profile_config is None:
+            raise DocumentConfigResolutionError(
+                f"Profile '{profile_name}' was not found"
+            )
+
+        if not isinstance(profile_config, dict):
+            raise DocumentConfigResolutionError(
+                f"Profile '{profile_name}' must be an object"
+            )
+
+        profile_collections = profile_config.get(
+            "collections",
+            {},
+        )
+
+        if not isinstance(profile_collections, dict):
+            raise DocumentConfigResolutionError(
+                f"Profile '{profile_name}' collections "
+                "must be an object"
+            )
+
+        validate_collection_schemas(
+            profile_collections
+        )
+
+    if document_collections or profile_collections:
         resolved_config["collections"] = (
-            resolve_document_collections(
-                document_config=document_config,
-                profile_name=profile_name,
+            merge_collection_layers(
+                document_collections=document_collections,
+                profile_collections=profile_collections,
             )
         )
+
     return resolved_config

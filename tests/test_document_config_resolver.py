@@ -331,3 +331,103 @@ def test_build_includes_collections_when_configured():
     resolved = build_resolved_document_config(config)
     assert resolved["collections"] == config["collections"]
     assert resolved["collections"] is not config["collections"]
+
+
+@pytest.mark.parametrize(
+    "cardinality",
+    ["zero_or_more", "one_or_more", "exactly_one"],
+)
+def test_accepts_supported_collection_cardinality(cardinality):
+    config = {
+        "collections": {
+            "meters": {
+                "cardinality": cardinality,
+                "fields": [],
+            }
+        }
+    }
+
+    assert get_document_collections(config) == config["collections"]
+
+
+def test_rejects_unsupported_collection_cardinality():
+    with pytest.raises(
+        DocumentConfigResolutionError,
+        match="unsupported cardinality: many",
+    ):
+        get_document_collections({
+            "collections": {
+                "meters": {
+                    "cardinality": "many",
+                    "fields": [],
+                }
+            }
+        })
+
+
+def test_rejects_non_object_collection_schema():
+    with pytest.raises(
+        DocumentConfigResolutionError,
+        match="Collection 'meters' must be an object",
+    ):
+        get_document_collections({
+            "collections": {"meters": []}
+        })
+
+
+def test_rejects_non_list_collection_fields():
+    with pytest.raises(
+        DocumentConfigResolutionError,
+        match="Collection 'meters' fields must be a list",
+    ):
+        get_document_collections({
+            "collections": {
+                "meters": {"fields": {}}
+            }
+        })
+
+
+def test_rejects_duplicate_collection_field_names():
+    with pytest.raises(
+        DocumentConfigResolutionError,
+        match=(
+            "Collection 'meters': Duplicate resolved "
+            "field 'meter_number'"
+        ),
+    ):
+        get_document_collections({
+            "collections": {
+                "meters": {
+                    "fields": [
+                        {"name": "meter_number"},
+                        {"name": "meter_number"},
+                    ]
+                }
+            }
+        })
+
+
+def test_rejects_invalid_profile_collection_schema():
+    config = {
+        "common_fields": [],
+        "profiles": {
+            "electricity_electrohold": {
+                "fields": [],
+                "collections": {
+                    "meters": {
+                        "cardinality": "many",
+                        "fields": [],
+                    }
+                },
+            }
+        },
+    }
+
+    with pytest.raises(
+        DocumentConfigResolutionError,
+        match="unsupported cardinality: many",
+    ):
+        build_resolved_document_config(
+            document_config=config,
+            profile_name="electricity_electrohold",
+        )
