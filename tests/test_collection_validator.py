@@ -88,3 +88,131 @@ def test_rejects_invalid_collections_container():
         match="Collections must be an object",
     ):
         validate_collections([], SCHEMAS)
+
+
+def test_zero_or_more_accepts_empty_collection():
+    result = validate_collections(
+        collections={"services": []},
+        collection_schemas={
+            "services": {
+                "cardinality": "zero_or_more",
+                "fields": [],
+            }
+        },
+    )
+
+    assert result == {
+        "valid": True,
+        "errors": {},
+    }
+
+
+def test_one_or_more_rejects_empty_collection():
+    result = validate_collections(
+        collections={"meters": []},
+        collection_schemas={
+            "meters": {
+                "cardinality": "one_or_more",
+                "fields": [],
+            }
+        },
+    )
+
+    assert result == {
+        "valid": False,
+        "errors": {
+            "_meters": [
+                "Collection must contain at least one item"
+            ]
+        },
+    }
+
+
+def test_one_or_more_rejects_missing_collection():
+    result = validate_collections(
+        collections={},
+        collection_schemas={
+            "meters": {
+                "cardinality": "one_or_more",
+                "fields": [],
+            }
+        },
+    )
+
+    assert result == {
+        "valid": False,
+        "errors": {
+            "_meters": [
+                "Collection must contain at least one item"
+            ]
+        },
+    }
+
+
+def test_exactly_one_accepts_one_item():
+    result = validate_collections(
+        collections={
+            "metering_points": [
+                {
+                    "metering_point_number":
+                        "32Z1030003158785"
+                }
+            ]
+        },
+        collection_schemas={
+            "metering_points": {
+                "cardinality": "exactly_one",
+                "fields": [],
+            }
+        },
+    )
+
+    assert result == {
+        "valid": True,
+        "errors": {},
+    }
+
+
+def test_exactly_one_rejects_multiple_items():
+    result = validate_collections(
+        collections={
+            "metering_points": [
+                {"metering_point_number": "first"},
+                {"metering_point_number": "second"},
+            ]
+        },
+        collection_schemas={
+            "metering_points": {
+                "cardinality": "exactly_one",
+                "fields": [],
+            }
+        },
+    )
+
+    assert result == {
+        "valid": False,
+        "errors": {
+            "_metering_points": [
+                "Collection must contain exactly one item"
+            ]
+        },
+    }
+
+
+def test_rejects_unsupported_cardinality():
+    with pytest.raises(
+        CollectionValidationError,
+        match=(
+            "Collection 'meters' has unsupported "
+            "cardinality: many"
+        ),
+    ):
+        validate_collections(
+            collections={"meters": []},
+            collection_schemas={
+                "meters": {
+                    "cardinality": "many",
+                    "fields": [],
+                }
+            },
+        )
