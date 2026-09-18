@@ -28,8 +28,15 @@ router = APIRouter()
 def determine_processing_status(
     validation: dict,
     quality: dict,
+    collection_validation: dict | None = None,
 ) -> str:
     if validation.get("valid") is not True:
+        return "invalid"
+
+    if (
+        collection_validation is not None
+        and collection_validation.get("valid") is not True
+    ):
         return "invalid"
 
     if quality.get("requires_review") is True:
@@ -158,6 +165,7 @@ async def extract_document(
     processing_status = determine_processing_status(
         validation=validation,
         quality=quality,
+        collection_validation=collection_validation,
     )
 
     return {
