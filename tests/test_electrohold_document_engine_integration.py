@@ -82,6 +82,14 @@ def test_real_electrohold_text_extracts_all_collections():
 def test_engine_result_keeps_fields_and_collections_separate():
     result = extract_electrohold_invoice()
 
-    assert set(result) == {"fields", "collections"}
+    assert set(result) == {
+        "fields",
+        "collections",
+        "collection_validation",
+    }
     assert "meters" not in result["fields"]
     assert "invoice_number" not in result["collections"]
+    assert result["collection_validation"] == {
+        "valid": True,
+        "errors": {},
+    }

@@ -74,6 +74,10 @@ def test_extracts_fields_and_resolved_collections():
                 {"meter_number": "1021015029"}
             ],
         },
+        "collection_validation": {
+            "valid": True,
+            "errors": {},
+        },
     }
 
 
@@ -105,4 +109,42 @@ def test_returns_existing_unknown_document_error_shape():
         llm_values={},
     ) == {
         "error": "Unknown document type: unknown"
+    }
+
+
+def test_reports_collection_validation_separately():
+    config = build_config()
+    config["invoice"]["profiles"][
+        "electricity_electrohold"
+    ]["collections"]["meters"]["fields"][0][
+        "validation"
+    ] = [
+        {
+            "type": "regex",
+            "pattern": r"[0-9]{10}",
+            "message": "Meter number is invalid",
+        }
+    ]
+
+    result = extract_document_data(
+        document_type="invoice",
+        config=config,
+        raw_text=(
+            "Фактура № 0484935637\n"
+            "Електромер № 12345678"
+        ),
+        llm_values={},
+        profile_name="electricity_electrohold",
+    )
+
+    assert result["fields"] == {
+        "invoice_number": "0484935637"
+    }
+    assert result["collection_validation"] == {
+        "valid": False,
+        "errors": {
+            "meters[0].meter_number": [
+                "Meter number is invalid"
+            ]
+        },
     }
