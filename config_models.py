@@ -15,6 +15,11 @@ OccurrenceType = Literal["first", "last"]
 DirectionType = Literal["before", "after", "both"]
 ValidationType = Literal["required", "regex", "date", "decimal"]
 DocumentStatusType = Literal["draft", "ready"]
+CollectionCardinalityType = Literal[
+    "zero_or_more",
+    "one_or_more",
+    "exactly_one",
+]
 
 
 class ValidationRuleModel(BaseModel):
@@ -45,10 +50,34 @@ class DocumentFieldModel(BaseModel):
     validation: list[ValidationRuleModel] = Field(default_factory=list)
 
 
+class DocumentCollectionModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    cardinality: CollectionCardinalityType = "zero_or_more"
+    start_pattern: str | None = None
+    fields: list[DocumentFieldModel] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_unique_field_names(self):
+        field_names: set[str] = set()
+        for field in self.fields:
+            if field.name in field_names:
+                raise ValueError(
+                    "Duplicate collection field "
+                    f"'{field.name}'"
+                )
+            field_names.add(field.name)
+        return self
+
+
 class DocumentProfileModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     fields: list[DocumentFieldModel] = Field(default_factory=list)
+    collections: dict[
+        str,
+        DocumentCollectionModel,
+    ] | None = None
 
 
 class DocumentTypeModel(BaseModel):
@@ -63,6 +92,10 @@ class DocumentTypeModel(BaseModel):
     )
     common_fields: list[DocumentFieldModel] | None = None
     profiles: dict[str, DocumentProfileModel] | None = None
+    collections: dict[
+        str,
+        DocumentCollectionModel,
+    ] | None = None
 
     @model_validator(mode="after")
     def validate_configuration_shape(self):
