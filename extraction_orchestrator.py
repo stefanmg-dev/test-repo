@@ -1,7 +1,10 @@
 import re
 from typing import Any
 
-from document_config_resolver import resolve_document_fields
+from document_config_resolver import (
+    resolve_document_collections,
+    resolve_document_fields,
+)
 
 
 def clean_value(value: Any) -> str | None:
@@ -211,3 +214,51 @@ def apply_rules(
         )
 
     return final_values
+
+
+def extract_document_data(
+    document_type: str,
+    config: dict,
+    raw_text: str,
+    llm_values: dict,
+    profile_name: str | None = None,
+    resolved_fields: list[dict] | None = None,
+) -> dict:
+    document_config = config.get(document_type)
+    if not document_config:
+        return {
+            "error": f"Unknown document type: {document_type}"
+        }
+
+    fields_for_extraction = resolved_fields
+    if fields_for_extraction is None:
+        fields_for_extraction = resolve_document_fields(
+            document_config=document_config,
+            profile_name=profile_name,
+        )
+
+    fields = apply_rules(
+        document_type=document_type,
+        config=config,
+        raw_text=raw_text,
+        llm_values=llm_values,
+        resolved_fields=fields_for_extraction,
+    )
+    collections = resolve_document_collections(
+        document_config=document_config,
+        profile_name=profile_name,
+    )
+
+    # Delayed import breaks the pre-existing dependency cycle:
+    # collection_pipeline -> collection_extractor -> this module.
+    from collection_pipeline import (
+        extract_collections_from_schemas,
+    )
+
+    return {
+        "fields": fields,
+        "collections": extract_collections_from_schemas(
+            raw_text=raw_text,
+            collections=collections,
+        ),
+    }
