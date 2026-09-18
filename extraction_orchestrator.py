@@ -255,10 +255,18 @@ def extract_document_data(
         extract_collections_from_schemas,
     )
 
+    extracted_collections = extract_collections_from_schemas(
+        raw_text=raw_text,
+        collections=collections,
+    )
+
+    from collection_validator import validate_collections
+
     return {
         "fields": fields,
-        "collections": extract_collections_from_schemas(
-            raw_text=raw_text,
-            collections=collections,
+        "collections": extracted_collections,
+        "collection_validation": validate_collections(
+            collections=extracted_collections,
+            collection_schemas=collections,
         ),
     }
