@@ -140,6 +140,13 @@ async def extract_document(
         resolved_fields=resolved_fields,
     )
     final_values = engine_result["fields"]
+    collection_validation = engine_result.get(
+        "collection_validation",
+        {
+            "valid": True,
+            "errors": {},
+        },
+    )
 
     validation = validate_result(
         document_type=document_type,
@@ -162,5 +169,6 @@ async def extract_document(
         "llm_values": llm_values,
         "final_values": final_values,
         "collections": engine_result["collections"],
+        "collection_validation": collection_validation,
         "validation": validation,
     }

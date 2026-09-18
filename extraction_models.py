@@ -197,4 +197,11 @@ class ExtractionResponseModel(BaseModel):
         default_factory=dict
     )
 
+    collection_validation: ExtractionValidationModel = Field(
+        default_factory=lambda: ExtractionValidationModel(
+            valid=True,
+            errors={},
+        )
+    )
+
     validation: ExtractionValidationModel
