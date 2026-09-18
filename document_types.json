@@ -355,6 +355,28 @@
                 ]
               }
             ]
+          },
+          "metering_points": {
+            "start_pattern": "^Точка\\s+на\\s+измерване",
+            "fields": [
+              {
+                "name": "metering_point_number",
+                "type": "regex",
+                "occurrence": "first",
+                "rule": "Точка\\s+на\\s+измерване\\s+([0-9A-Z]{16})",
+                "validation": [
+                  {
+                    "type": "required",
+                    "message": "Metering point number is required"
+                  },
+                  {
+                    "type": "regex",
+                    "pattern": "[0-9A-Z]{16}",
+                    "message": "Metering point number must contain 16 uppercase alphanumeric characters"
+                  }
+                ]
+              }
+            ]
           }
         }
       },
