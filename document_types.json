@@ -333,7 +333,28 @@
         "collections": {
           "meters": {
             "start_pattern": "^(?:Електромер\\s*№|Фабричен\\s+номер)",
-            "fields": []
+            "fields": [
+              {
+                "name": "meter_number",
+                "type": "regex_list",
+                "occurrence": "first",
+                "rules": [
+                  "Електромер\\s*№\\s*([0-9]{8,15})",
+                  "Фабричен\\s+номер\\s*([0-9]{8,15})"
+                ],
+                "validation": [
+                  {
+                    "type": "required",
+                    "message": "Meter number is required"
+                  },
+                  {
+                    "type": "regex",
+                    "pattern": "[0-9]{8,15}",
+                    "message": "Meter number must contain between 8 and 15 digits"
+                  }
+                ]
+              }
+            ]
           }
         }
       },

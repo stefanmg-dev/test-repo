@@ -49,6 +49,72 @@ def get_document_collections(
     return deepcopy(collections)
 
 
+def get_profile_collections(
+    document_config: dict,
+    profile_name: str,
+):
+    profiles = get_profiles(document_config)
+    profile_config = profiles.get(profile_name)
+
+    if profile_config is None:
+        raise DocumentConfigResolutionError(
+            f"Profile '{profile_name}' was not found"
+        )
+    if not isinstance(profile_config, dict):
+        raise DocumentConfigResolutionError(
+            f"Profile '{profile_name}' must be an object"
+        )
+
+    collections = profile_config.get("collections", {})
+    if not isinstance(collections, dict):
+        raise DocumentConfigResolutionError(
+            f"Profile '{profile_name}' collections "
+            "must be an object"
+        )
+
+    return deepcopy(collections)
+
+
+def merge_collection_layers(
+    document_collections: dict,
+    profile_collections: dict,
+) -> dict:
+    resolved = deepcopy(document_collections)
+
+    for collection_name, override in profile_collections.items():
+        base = resolved.get(collection_name, {})
+        if not isinstance(base, dict) or not isinstance(override, dict):
+            raise DocumentConfigResolutionError(
+                f"Collection '{collection_name}' must be an object"
+            )
+        resolved[collection_name] = {
+            **base,
+            **deepcopy(override),
+        }
+
+    return resolved
+
+
+def resolve_document_collections(
+    document_config: dict,
+    profile_name: str | None = None,
+) -> dict:
+    document_collections = get_document_collections(
+        document_config
+    )
+    if profile_name is None:
+        return document_collections
+
+    profile_collections = get_profile_collections(
+        document_config=document_config,
+        profile_name=profile_name,
+    )
+    return merge_collection_layers(
+        document_collections=document_collections,
+        profile_collections=profile_collections,
+    )
+
+
 def get_profiles(
     document_config: dict,
 ):
@@ -314,6 +380,9 @@ def build_resolved_document_config(
     }
     if "collections" in document_config:
         resolved_config["collections"] = (
-            get_document_collections(document_config)
+            resolve_document_collections(
+                document_config=document_config,
+                profile_name=profile_name,
+            )
         )
     return resolved_config
