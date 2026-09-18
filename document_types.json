@@ -342,17 +342,7 @@
                   "Електромер\\s*№\\s*([0-9]{8,15})",
                   "Фабричен\\s+номер\\s*([0-9]{8,15})"
                 ],
-                "validation": [
-                  {
-                    "type": "required",
-                    "message": "Meter number is required"
-                  },
-                  {
-                    "type": "regex",
-                    "pattern": "[0-9]{8,15}",
-                    "message": "Meter number must contain between 8 and 15 digits"
-                  }
-                ]
+                "validation": []
               }
             ]
           },
@@ -364,17 +354,60 @@
                 "type": "regex",
                 "occurrence": "first",
                 "rule": "Точка\\s+на\\s+измерване\\s+([0-9A-Z]{16})",
-                "validation": [
-                  {
-                    "type": "required",
-                    "message": "Metering point number is required"
-                  },
-                  {
-                    "type": "regex",
-                    "pattern": "[0-9A-Z]{16}",
-                    "message": "Metering point number must contain 16 uppercase alphanumeric characters"
-                  }
-                ]
+                "validation": []
+              }
+            ]
+          },
+          "consumption_items": {
+            "start_pattern": "^(?:Дневна|Нощна)\\s+",
+            "fields": [
+              {
+                "name": "tariff",
+                "type": "regex",
+                "occurrence": "first",
+                "rule": "^(Дневна|Нощна)\\s+",
+                "validation": []
+              },
+              {
+                "name": "previous_reading",
+                "type": "regex",
+                "occurrence": "first",
+                "rule": "^(?:Дневна|Нощна)\\s+([0-9]+\\s+[0-9]+)",
+                "validation": []
+              },
+              {
+                "name": "current_reading",
+                "type": "regex",
+                "occurrence": "first",
+                "rule": "^(?:Дневна|Нощна)\\s+[0-9]+\\s+[0-9]+\\s+([0-9]+\\s+[0-9]+)",
+                "validation": []
+              },
+              {
+                "name": "difference",
+                "type": "regex",
+                "occurrence": "first",
+                "rule": "^(?:Дневна|Нощна)\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+\\s+([0-9]+)",
+                "validation": []
+              },
+              {
+                "name": "correction",
+                "type": "regex",
+                "occurrence": "first",
+                "rule": "^(?:Дневна|Нощна)\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+\\s+([0-9]+)",
+                "validation": []
+              },
+              {
+                "name": "quantity",
+                "type": "regex",
+                "occurrence": "first",
+                "rule": "^(?:Дневна|Нощна)\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+\\s+([0-9]+)",
+                "validation": []
+              },
+              {
+                "name": "unit",
+                "type": "constant",
+                "value": "kWh",
+                "validation": []
               }
             ]
           }
