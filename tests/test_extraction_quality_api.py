@@ -73,9 +73,12 @@ def test_extract_document_returns_input_quality(
 
     monkeypatch.setattr(
         routes_extract,
-        "apply_rules",
+        "extract_document_data",
         lambda **kwargs: {
-            "supplier_name": "Test Supplier"
+            "fields": {
+                "supplier_name": "Test Supplier"
+            },
+            "collections": {},
         },
     )
 

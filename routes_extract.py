@@ -9,7 +9,7 @@ from fastapi import (
 
 from config_store import load_config
 from document_status import is_document_type_ready
-from extraction_orchestrator import apply_rules
+from extraction_orchestrator import extract_document_data
 from llm_engine import extract_values
 from extraction_models import ExtractionResponseModel
 from ocr_engine import (
@@ -131,13 +131,15 @@ async def extract_document(
 
     llm_values = extract_values(raw_text)
 
-    final_values = apply_rules(
+    engine_result = extract_document_data(
         document_type=document_type,
         config=config,
         raw_text=raw_text,
         llm_values=llm_values,
+        profile_name=selected_profile,
         resolved_fields=resolved_fields,
     )
+    final_values = engine_result["fields"]
 
     validation = validate_result(
         document_type=document_type,
