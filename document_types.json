@@ -489,6 +489,15 @@
                 "value": "kWh",
                 "validation": []
               }
+            ],
+            "item_validations": [
+              {
+                "type": "difference_equals",
+                "minuend": "current_reading",
+                "subtrahend": "previous_reading",
+                "result": "difference",
+                "message": "Difference must equal current reading minus previous reading"
+              }
             ]
           }
         }

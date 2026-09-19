@@ -50,12 +50,25 @@ class DocumentFieldModel(BaseModel):
     validation: list[ValidationRuleModel] = Field(default_factory=list)
 
 
+class CollectionItemValidationModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["difference_equals"]
+    minuend: str = Field(min_length=1, max_length=100)
+    subtrahend: str = Field(min_length=1, max_length=100)
+    result: str = Field(min_length=1, max_length=100)
+    message: str | None = None
+
+
 class DocumentCollectionModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     cardinality: CollectionCardinalityType = "zero_or_more"
     start_pattern: str | None = None
     fields: list[DocumentFieldModel] = Field(default_factory=list)
+    item_validations: list[
+        CollectionItemValidationModel
+    ] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_unique_field_names(self):
@@ -67,6 +80,25 @@ class DocumentCollectionModel(BaseModel):
                     f"'{field.name}'"
                 )
             field_names.add(field.name)
+
+        for validation in self.item_validations:
+            referenced_fields = {
+                validation.minuend,
+                validation.subtrahend,
+                validation.result,
+            }
+
+            missing_fields = (
+                referenced_fields - field_names
+            )
+
+            if missing_fields:
+                raise ValueError(
+                    "Collection item validation references "
+                    "unknown fields: "
+                    f"{sorted(missing_fields)}"
+                )
+
         return self
 
 

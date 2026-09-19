@@ -1,6 +1,9 @@
 from typing import Any
 
 from result_validator import validate_single_rule
+from collection_item_validator import (
+    validate_collection_item,
+)
 
 
 class CollectionValidationError(ValueError):
@@ -133,6 +136,19 @@ def validate_collections(
                         f"{field_name}"
                     )
                     errors[path] = field_errors
+
+            item_errors = validate_collection_item(
+                item=item,
+                validations=schema.get(
+                    "item_validations",
+                    [],
+                ),
+            )
+
+            if item_errors:
+                errors[
+                    f"{collection_name}[{index}]"
+                ] = item_errors
 
     return {
         "valid": not bool(errors),

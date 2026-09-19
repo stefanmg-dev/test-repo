@@ -323,7 +323,10 @@ def test_collection_crud_flow(
     )
     assert config_after_add["invoice"]["collections"][
         "meters"
-    ] == collection_payload["collection"]
+    ] == {
+        **collection_payload["collection"],
+        "item_validations": [],
+    }
 
     updated_payload = {
         "collection": {
@@ -344,7 +347,10 @@ def test_collection_crud_flow(
     )
     assert config_after_update["invoice"]["collections"][
         "meters"
-    ] == updated_payload["collection"]
+    ] == {
+        **updated_payload["collection"],
+        "item_validations": [],
+    }
 
     delete_response = client.delete(
         "/api/v1/config/document-types/"
@@ -631,9 +637,10 @@ def test_profile_collection_crud_flow(
     after_add = read_temporary_config(isolated_config)
     assert after_add["invoice"]["profiles"][
         "electricity_electrohold"
-    ]["collections"]["meters"] == (
-        profile_collection_payload()["collection"]
-    )
+    ]["collections"]["meters"] == {
+        **profile_collection_payload()["collection"],
+        "item_validations": [],
+    }
 
     update_response = client.put(
         profile_collection_url(),
