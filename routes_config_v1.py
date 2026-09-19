@@ -1153,3 +1153,164 @@ def delete_profile_collection(
             f"profile '{profile_name}'"
         ),
     }
+
+
+def get_profile_collection_or_404(
+    profile_config: dict,
+    collection_name: str,
+) -> dict:
+    collections = profile_config.get("collections", {})
+    collection_config = collections.get(collection_name)
+    if collection_config is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"Collection '{collection_name}' was not found "
+                "in profile"
+            ),
+        )
+    return collection_config
+
+
+@router.post(
+    "/document-types/{document_type}/profiles/{profile_name}/"
+    "collections/{collection_name}/fields",
+    response_model=OperationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_profile_collection_field(
+    document_type: str,
+    profile_name: str,
+    collection_name: str,
+    request: AddFieldRequest,
+):
+    config = load_config()
+    document_config = get_document_type_or_404(config, document_type)
+    ensure_profile_based_config(document_config)
+    profile_config = get_profile_or_404(document_config, profile_name)
+    collection_config = get_profile_collection_or_404(
+        profile_config,
+        collection_name,
+    )
+    fields = collection_config.get("fields", [])
+    field_data = request.field.model_dump(exclude_none=True)
+    field_name = field_data["name"]
+    if find_field_index(fields, field_name) is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Field '{field_name}' already exists in "
+                f"profile collection '{collection_name}'"
+            ),
+        )
+    updated_config = deepcopy(config)
+    updated_config[document_type]["profiles"][profile_name][
+        "collections"
+    ][collection_name].setdefault("fields", []).append(field_data)
+    save_validated_config(updated_config)
+    return {
+        "status": "ok",
+        "message": (
+            f"Field '{field_name}' added to profile collection "
+            f"'{collection_name}'"
+        ),
+    }
+
+
+@router.put(
+    "/document-types/{document_type}/profiles/{profile_name}/"
+    "collections/{collection_name}/fields/{field_name}",
+    response_model=OperationResponse,
+)
+def update_profile_collection_field(
+    document_type: str,
+    profile_name: str,
+    collection_name: str,
+    field_name: str,
+    request: UpdateFieldRequest,
+):
+    config = load_config()
+    document_config = get_document_type_or_404(config, document_type)
+    ensure_profile_based_config(document_config)
+    profile_config = get_profile_or_404(document_config, profile_name)
+    collection_config = get_profile_collection_or_404(
+        profile_config,
+        collection_name,
+    )
+    fields = collection_config.get("fields", [])
+    field_index = find_field_index(fields, field_name)
+    if field_index is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"Field '{field_name}' was not found in "
+                f"profile collection '{collection_name}'"
+            ),
+        )
+    field_data = request.field.model_dump(exclude_none=True)
+    new_field_name = field_data["name"]
+    if new_field_name != field_name:
+        existing_index = find_field_index(fields, new_field_name)
+        if existing_index is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"Field '{new_field_name}' already exists in "
+                    f"profile collection '{collection_name}'"
+                ),
+            )
+    updated_config = deepcopy(config)
+    updated_config[document_type]["profiles"][profile_name][
+        "collections"
+    ][collection_name]["fields"][field_index] = field_data
+    save_validated_config(updated_config)
+    return {
+        "status": "ok",
+        "message": (
+            f"Field '{field_name}' updated in profile collection "
+            f"'{collection_name}'"
+        ),
+    }
+
+
+@router.delete(
+    "/document-types/{document_type}/profiles/{profile_name}/"
+    "collections/{collection_name}/fields/{field_name}",
+    response_model=OperationResponse,
+)
+def delete_profile_collection_field(
+    document_type: str,
+    profile_name: str,
+    collection_name: str,
+    field_name: str,
+):
+    config = load_config()
+    document_config = get_document_type_or_404(config, document_type)
+    ensure_profile_based_config(document_config)
+    profile_config = get_profile_or_404(document_config, profile_name)
+    collection_config = get_profile_collection_or_404(
+        profile_config,
+        collection_name,
+    )
+    fields = collection_config.get("fields", [])
+    field_index = find_field_index(fields, field_name)
+    if field_index is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"Field '{field_name}' was not found in "
+                f"profile collection '{collection_name}'"
+            ),
+        )
+    updated_config = deepcopy(config)
+    del updated_config[document_type]["profiles"][profile_name][
+        "collections"
+    ][collection_name]["fields"][field_index]
+    save_validated_config(updated_config)
+    return {
+        "status": "ok",
+        "message": (
+            f"Field '{field_name}' deleted from profile collection "
+            f"'{collection_name}'"
+        ),
+    }
