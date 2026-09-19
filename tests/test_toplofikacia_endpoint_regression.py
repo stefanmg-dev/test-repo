@@ -200,3 +200,209 @@ def test_toplofikacia_endpoint_is_invalid_when_required_field_is_missing(
             "Installation number is required",
         ]
     }
+
+
+def test_toplofikacia_endpoint_returns_services_collection(
+    monkeypatch,
+):
+    text_with_services = (
+        TOPLOFIKACIA_OCR_TEXT
+        + "\n"
+        + "\n".join(
+            [
+                (
+                    "Топлинна енергия за подгряване на вода "
+                    "МВтч 0,143953 73,30 10,55"
+                ),
+                (
+                    "Топлинна енергия за отопление на имот "
+                    "МВтч 0,000000 73,30 0,00"
+                ),
+                (
+                    "Дялово разпределение на топлинна енергия "
+                    "(1/12 част) бр 1 2,05 2,05"
+                ),
+                "Авансово платени суми Евро 0,00",
+            ]
+        )
+    )
+
+    async def fake_extract_document_input(file):
+        await file.read()
+        return {
+            "text": text_with_services,
+            "quality": PDF_QUALITY,
+        }
+
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_document_input",
+        fake_extract_document_input,
+    )
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_values",
+        lambda raw_text: {},
+    )
+
+    response = TestClient(app).post(
+        "/extract-document",
+        data={"document_type": "invoice"},
+        files={
+            "file": (
+                "toplofikacia-services.pdf",
+                b"stable-toplofikacia-services-fixture",
+                "application/pdf",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["profile"] == "heating_toplofikacia_sofia"
+    assert body["processing_status"] == "accepted"
+
+    assert body["collections"]["services"] == [
+        {
+            "description": (
+                "Топлинна енергия за подгряване на вода"
+            ),
+            "unit": "МВтч",
+            "quantity": "0.143953",
+            "unit_price": "73.30",
+            "amount": "10.55",
+        },
+        {
+            "description": (
+                "Топлинна енергия за отопление на имот"
+            ),
+            "unit": "МВтч",
+            "quantity": "0.000000",
+            "unit_price": "73.30",
+            "amount": "0.00",
+        },
+        {
+            "description": (
+                "Дялово разпределение на топлинна енергия "
+                "(1/12 част)"
+            ),
+            "unit": "бр",
+            "quantity": "1",
+            "unit_price": "2.05",
+            "amount": "2.05",
+        },
+    ]
+
+    assert body["collections"]["metering_points"] == []
+    assert body["collections"]["meters"] == []
+    assert body["collections"]["consumption_items"] == []
+
+    assert body["collection_validation"] == {
+        "valid": True,
+        "errors": {},
+    }
+
+
+def test_toplofikacia_endpoint_returns_services_collection(
+    monkeypatch,
+):
+    text_with_services = (
+        TOPLOFIKACIA_OCR_TEXT
+        + "\n"
+        + "\n".join(
+            [
+                (
+                    "Топлинна енергия за подгряване на вода "
+                    "МВтч 0,143953 73,30 10,55"
+                ),
+                (
+                    "Топлинна енергия за отопление на имот "
+                    "МВтч 0,000000 73,30 0,00"
+                ),
+                (
+                    "Дялово разпределение на топлинна енергия "
+                    "(1/12 част) бр 1 2,05 2,05"
+                ),
+                "Авансово платени суми Евро 0,00",
+            ]
+        )
+    )
+
+    async def fake_extract_document_input(file):
+        await file.read()
+        return {
+            "text": text_with_services,
+            "quality": PDF_QUALITY,
+        }
+
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_document_input",
+        fake_extract_document_input,
+    )
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_values",
+        lambda raw_text: {},
+    )
+
+    response = TestClient(app).post(
+        "/extract-document",
+        data={"document_type": "invoice"},
+        files={
+            "file": (
+                "toplofikacia-services.pdf",
+                b"stable-toplofikacia-services-fixture",
+                "application/pdf",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["profile"] == "heating_toplofikacia_sofia"
+    assert body["processing_status"] == "accepted"
+
+    assert body["collections"]["services"] == [
+        {
+            "description": (
+                "Топлинна енергия за подгряване на вода"
+            ),
+            "unit": "МВтч",
+            "quantity": "0.143953",
+            "unit_price": "73.30",
+            "amount": "10.55",
+        },
+        {
+            "description": (
+                "Топлинна енергия за отопление на имот"
+            ),
+            "unit": "МВтч",
+            "quantity": "0.000000",
+            "unit_price": "73.30",
+            "amount": "0.00",
+        },
+        {
+            "description": (
+                "Дялово разпределение на топлинна енергия "
+                "(1/12 част)"
+            ),
+            "unit": "бр",
+            "quantity": "1",
+            "unit_price": "2.05",
+            "amount": "2.05",
+        },
+    ]
+
+    assert body["collections"]["metering_points"] == []
+    assert body["collections"]["meters"] == []
+    assert body["collections"]["consumption_items"] == []
+
+    assert body["collection_validation"] == {
+        "valid": True,
+        "errors": {},
+    }
