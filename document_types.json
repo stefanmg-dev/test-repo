@@ -576,70 +576,76 @@
               }
             ]
           }
-        ]
+        ],
+        "collections": {
+          "services": {
+            "cardinality": "zero_or_more",
+            "start_pattern": "^(?=(?:Топлинна енергия|Дялово разпределение).*\\s(?:МВтч|бр)\\s+[0-9]+(?:[.,][0-9]+)?\\s+[0-9]+[.,][0-9]+\\s+[0-9]+[.,][0-9]+\\s*$)",
+            "fields": [
+              {
+                "name": "description",
+                "type": "regex",
+                "occurrence": "first",
+                "rule": "^(.+?)\\s+(?:МВтч|бр)\\s+",
+                "validation": []
+              },
+              {
+                "name": "unit",
+                "type": "regex",
+                "occurrence": "first",
+                "rule": "^.+?\\s+(МВтч|бр)\\s+",
+                "validation": []
+              },
+              {
+                "name": "quantity",
+                "type": "regex",
+                "occurrence": "first",
+                "rule": "^.+?\\s+(?:МВтч|бр)\\s+([0-9]+(?:[.,][0-9]+)?)\\s+",
+                "validation": [
+                  {
+                    "type": "decimal",
+                    "minimum": "0"
+                  }
+                ]
+              },
+              {
+                "name": "unit_price",
+                "type": "regex",
+                "occurrence": "first",
+                "rule": "^.+?\\s+(?:МВтч|бр)\\s+[0-9]+(?:[.,][0-9]+)?\\s+([0-9]+[.,][0-9]+)\\s+",
+                "validation": [
+                  {
+                    "type": "decimal",
+                    "minimum": "0"
+                  }
+                ]
+              },
+              {
+                "name": "amount",
+                "type": "regex",
+                "occurrence": "last",
+                "rule": "^.+?\\s+(?:МВтч|бр)\\s+[0-9]+(?:[.,][0-9]+)?\\s+[0-9]+[.,][0-9]+\\s+([0-9]+[.,][0-9]+)",
+                "validation": [
+                  {
+                    "type": "required",
+                    "message": "Service amount is required"
+                  },
+                  {
+                    "type": "decimal",
+                    "minimum": "0",
+                    "message": "Service amount must be a non-negative decimal"
+                  }
+                ]
+              }
+            ]
+          }
+        }
       }
     },
     "collections": {
       "services": {
         "cardinality": "zero_or_more",
-        "start_pattern": "^(?=(?:Топлинна енергия|Дялово разпределение).*\\s(?:МВтч|бр)\\s+[0-9]+(?:[.,][0-9]+)?\\s+[0-9]+[.,][0-9]+\\s+[0-9]+[.,][0-9]+\\s*$)",
-        "fields": [
-          {
-            "name": "description",
-            "type": "regex",
-            "occurrence": "first",
-            "rule": "^(.+?)\\s+(?:МВтч|бр)\\s+",
-            "validation": []
-          },
-          {
-            "name": "unit",
-            "type": "regex",
-            "occurrence": "first",
-            "rule": "^.+?\\s+(МВтч|бр)\\s+",
-            "validation": []
-          },
-          {
-            "name": "quantity",
-            "type": "regex",
-            "occurrence": "first",
-            "rule": "^.+?\\s+(?:МВтч|бр)\\s+([0-9]+(?:[.,][0-9]+)?)\\s+",
-            "validation": [
-              {
-                "type": "decimal",
-                "minimum": "0"
-              }
-            ]
-          },
-          {
-            "name": "unit_price",
-            "type": "regex",
-            "occurrence": "first",
-            "rule": "^.+?\\s+(?:МВтч|бр)\\s+[0-9]+(?:[.,][0-9]+)?\\s+([0-9]+[.,][0-9]+)\\s+",
-            "validation": [
-              {
-                "type": "decimal",
-                "minimum": "0"
-              }
-            ]
-          },
-          {
-            "name": "amount",
-            "type": "regex",
-            "occurrence": "last",
-            "rule": "^.+?\\s+(?:МВтч|бр)\\s+[0-9]+(?:[.,][0-9]+)?\\s+[0-9]+[.,][0-9]+\\s+([0-9]+[.,][0-9]+)",
-            "validation": [
-              {
-                "type": "required",
-                "message": "Service amount is required"
-              },
-              {
-                "type": "decimal",
-                "minimum": "0",
-                "message": "Service amount must be a non-negative decimal"
-              }
-            ]
-          }
-        ]
+        "fields": []
       },
       "metering_points": {
         "cardinality": "zero_or_more",
@@ -647,8 +653,7 @@
       },
       "meters": {
         "cardinality": "zero_or_more",
-        "fields": [],
-        "start_pattern": "^(?:Електромер\\s*№|Фабричен\\s+номер)"
+        "fields": []
       },
       "consumption_items": {
         "cardinality": "zero_or_more",

@@ -40,7 +40,10 @@ def test_current_document_types_config_is_valid():
         "meters",
         "consumption_items",
     }
-    assert invoice["collections"]["meters"]["start_pattern"]
+    assert invoice["collections"]["meters"]["fields"] == []
+    assert invoice["collections"]["meters"].get(
+        "start_pattern"
+    ) in {None, ""}
 
 
 def test_rejects_duplicate_field_names():
@@ -123,7 +126,10 @@ def test_rejects_invalid_collection_start_pattern():
 
 def test_collection_start_pattern_is_optional():
     config = copy.deepcopy(load_config())
-    config["invoice"]["collections"]["meters"].pop("start_pattern")
+    config["invoice"]["collections"]["meters"].pop(
+        "start_pattern",
+        None,
+    )
     validate_config(config)
 
 
