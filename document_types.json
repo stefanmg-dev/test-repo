@@ -629,8 +629,13 @@
             "rule": "^.+?\\s+(?:МВтч|бр)\\s+[0-9]+(?:[.,][0-9]+)?\\s+[0-9]+[.,][0-9]+\\s+([0-9]+[.,][0-9]+)",
             "validation": [
               {
+                "type": "required",
+                "message": "Service amount is required"
+              },
+              {
                 "type": "decimal",
-                "minimum": "0"
+                "minimum": "0",
+                "message": "Service amount must be a non-negative decimal"
               }
             ]
           }

@@ -262,7 +262,7 @@ def test_toplofikacia_endpoint_returns_services_collection(
     body = response.json()
 
     assert body["profile"] == "heating_toplofikacia_sofia"
-    assert body["processing_status"] == "accepted"
+    assert body["processing_status"] == "invalid"
 
     assert body["collections"]["services"] == [
         {
@@ -405,4 +405,80 @@ def test_toplofikacia_endpoint_returns_services_collection(
     assert body["collection_validation"] == {
         "valid": True,
         "errors": {},
+    }
+
+
+def test_toplofikacia_endpoint_reports_invalid_service_amount(
+    monkeypatch,
+):
+    text_with_invalid_service = (
+        TOPLOFIKACIA_OCR_TEXT
+        + "\n"
+        + (
+            "Топлинна енергия за подгряване на вода "
+            "МВтч 0,143953 73,30 ЛИПСВА"
+        )
+    )
+
+    async def fake_extract_document_input(file):
+        await file.read()
+        return {
+            "text": text_with_invalid_service,
+            "quality": PDF_QUALITY,
+        }
+
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_document_input",
+        fake_extract_document_input,
+    )
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_values",
+        lambda raw_text: {},
+    )
+
+    response = TestClient(app).post(
+        "/extract-document",
+        data={"document_type": "invoice"},
+        files={
+            "file": (
+                "toplofikacia-invalid-service.pdf",
+                b"toplofikacia-invalid-service-fixture",
+                "application/pdf",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["profile"] == "heating_toplofikacia_sofia"
+
+    assert body["validation"] == {
+        "valid": True,
+        "errors": {},
+    }
+    assert body["processing_status"] == "invalid"
+
+    assert body["collections"]["services"] == [
+        {
+            "description": (
+                "Топлинна енергия за подгряване на вода"
+            ),
+            "unit": "МВтч",
+            "quantity": "0.143953",
+            "unit_price": "73.30",
+            "amount": None,
+        }
+    ]
+
+    assert body["collection_validation"] == {
+        "valid": False,
+        "errors": {
+            "services[0].amount": [
+                "Service amount is required",
+            ]
+        },
     }
