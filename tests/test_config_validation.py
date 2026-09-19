@@ -96,7 +96,7 @@ def test_rejects_duplicate_common_field():
 def test_rejects_invalid_collection_cardinality():
     invalid = copy.deepcopy(load_config())
     invalid["invoice"]["collections"]["meters"]["cardinality"] = (
-        "one_or_more"
+        "many"
     )
     with pytest.raises(ConfigValidationError, match="cardinality"):
         validate_config(invalid)

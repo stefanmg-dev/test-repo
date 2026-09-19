@@ -8,12 +8,14 @@ from fastapi import (
 )
 
 from config_models import (
+    AddCollectionRequest,
     AddFieldRequest,
     ConfigResponse,
     CreateDocumentTypeRequest,
     DocumentTypeModel,
     OperationResponse,
     RenameDocumentTypeRequest,
+    UpdateCollectionRequest,
     UpdateFieldRequest,
 )
 from config_store import load_config, save_config
@@ -708,3 +710,127 @@ def delete_profile_field(
         "message": f"Field '{field_name}' deleted from profile '{profile_name}'",
     }
 
+
+
+@router.post(
+    "/document-types/{document_type}/collections/{collection_name}",
+    response_model=OperationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_collection(
+    document_type: str,
+    collection_name: str,
+    request: AddCollectionRequest,
+):
+    config = load_config()
+    document_config = get_document_type_or_404(
+        config=config,
+        document_type=document_type,
+    )
+    collections = document_config.get("collections", {})
+    if collection_name in collections:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Collection '{collection_name}' already exists "
+                f"in document type '{document_type}'"
+            ),
+        )
+
+    collection_data = request.collection.model_dump(
+        exclude_none=True
+    )
+    updated_config = deepcopy(config)
+    updated_config[document_type].setdefault(
+        "collections",
+        {},
+    )[collection_name] = collection_data
+    save_validated_config(updated_config)
+    return {
+        "status": "ok",
+        "message": (
+            f"Collection '{collection_name}' added to "
+            f"document type '{document_type}'"
+        ),
+    }
+
+
+@router.put(
+    "/document-types/{document_type}/collections/{collection_name}",
+    response_model=OperationResponse,
+)
+def update_collection(
+    document_type: str,
+    collection_name: str,
+    request: UpdateCollectionRequest,
+):
+    config = load_config()
+    document_config = get_document_type_or_404(
+        config=config,
+        document_type=document_type,
+    )
+    collections = document_config.get("collections", {})
+    if collection_name not in collections:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"Collection '{collection_name}' was not found "
+                f"in document type '{document_type}'"
+            ),
+        )
+
+    collection_data = request.collection.model_dump(
+        exclude_none=True
+    )
+    updated_config = deepcopy(config)
+    updated_config[document_type]["collections"][
+        collection_name
+    ] = collection_data
+    save_validated_config(updated_config)
+    return {
+        "status": "ok",
+        "message": (
+            f"Collection '{collection_name}' updated in "
+            f"document type '{document_type}'"
+        ),
+    }
+
+
+@router.delete(
+    "/document-types/{document_type}/collections/{collection_name}",
+    response_model=OperationResponse,
+)
+def delete_collection(
+    document_type: str,
+    collection_name: str,
+):
+    config = load_config()
+    document_config = get_document_type_or_404(
+        config=config,
+        document_type=document_type,
+    )
+    collections = document_config.get("collections", {})
+    if collection_name not in collections:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"Collection '{collection_name}' was not found "
+                f"in document type '{document_type}'"
+            ),
+        )
+
+    updated_config = deepcopy(config)
+    updated_collections = updated_config[document_type][
+        "collections"
+    ]
+    del updated_collections[collection_name]
+    if not updated_collections:
+        del updated_config[document_type]["collections"]
+    save_validated_config(updated_config)
+    return {
+        "status": "ok",
+        "message": (
+            f"Collection '{collection_name}' deleted from "
+            f"document type '{document_type}'"
+        ),
+    }

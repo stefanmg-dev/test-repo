@@ -175,6 +175,18 @@ class UpdateFieldRequest(BaseModel):
     field: DocumentFieldModel
 
 
+class AddCollectionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    collection: DocumentCollectionModel
+
+
+class UpdateCollectionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    collection: DocumentCollectionModel
+
+
 class ResolvedDocumentTypeModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
