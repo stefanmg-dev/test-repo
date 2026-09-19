@@ -1,0 +1,99 @@
+from fastapi.testclient import TestClient
+
+import routes_extract
+from api import app
+
+
+TOPLOFIKACIA_OCR_TEXT = """
+ДОСТАВЧИК: „ТОПЛОФИКАЦИЯ СОФИЯ“ ЕАД
+ЕИК: 123456789
+№ ПО ДДС: BG123456789
+www.toplo.bg
+
+ПОЛУЧАТЕЛ: ТЕСТОВ КЛИЕНТ ПРИМЕРЕН
+ГР. СОФИЯ 1618 КРАСНО СЕЛО БЛ. 201-А ВХ. 4 АПАРТАМЕНТ 68
+БИЗНЕС ПАРТНЬОР №1000000001
+ДОГОВОРНА СМЕТКА №002100000001
+НОМЕР НА ИНСТАЛАЦИЯ №4000000001
+
+ФАКТУРА № 1200000001 - ОРИГИНАЛ
+Дата на издаване/Дата на данъчно събитие - 31.08.2026 г.
+ВСИЧКО по фактура: 15,12
+Оставаща сума за плащане по фактура 1200000001 15,12 Евро
+Срок за плащане на фактура № 1200000001 - 15.10.2026 г.
+""".strip()
+
+PDF_QUALITY = {
+    "status": "accepted",
+    "requires_review": False,
+    "input": {
+        "format": "PDF",
+        "source": "native_pdf",
+        "page_count": 1,
+    },
+    "warnings": [],
+}
+
+
+def test_toplofikacia_endpoint_selects_profile_and_returns_fields(
+    monkeypatch,
+):
+    async def fake_extract_document_input(file):
+        await file.read()
+        return {
+            "text": TOPLOFIKACIA_OCR_TEXT,
+            "quality": PDF_QUALITY,
+        }
+
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_document_input",
+        fake_extract_document_input,
+    )
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_values",
+        lambda raw_text: {},
+    )
+
+    response = TestClient(app).post(
+        "/extract-document",
+        data={"document_type": "invoice"},
+        files={
+            "file": (
+                "toplofikacia-invoice.pdf",
+                b"stable-toplofikacia-fixture",
+                "application/pdf",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["document_type"] == "invoice"
+    assert body["profile"] == "heating_toplofikacia_sofia"
+
+    final_values = body["final_values"]
+    expected = {
+        "supplier_name": "Топлофикация София ЕАД",
+        "supplier_id": "123456789",
+        "invoice_number": "1200000001",
+        "issue_date": "31.08.2026",
+        "customer_name": "ТЕСТОВ КЛИЕНТ ПРИМЕРЕН",
+        "customer_address": (
+            "ГР. СОФИЯ 1618 КРАСНО СЕЛО БЛ. 201-А ВХ. 4 "
+            "АПАРТАМЕНТ 68"
+        ),
+        "due_date": "15.10.2026",
+        "total_amount": "15.12",
+        "business_partner_number": "1000000001",
+        "contract_account_number": "002100000001",
+        "installation_number": "4000000001",
+    }
+    assert final_values == expected
+
+    warning_codes = {
+        warning["code"]
+        for warning in body["quality"]["warnings"]
+    }
+    assert "unknown_supplier_profile" not in warning_codes
