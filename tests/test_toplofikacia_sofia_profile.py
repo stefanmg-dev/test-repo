@@ -4,6 +4,7 @@ from extraction_orchestrator import apply_rules
 
 
 TOPLOFIKACIA_TEXT = """
+ПОЛУЧАТЕЛ: ТЕСТОВ КЛИЕНТ ПРИМЕРЕН ГР. СОФИЯ 1618 КРАСНО СЕЛО БЛ. 201-А ВХ. 4 АПАРТАМЕНТ 68 БИЗНЕС ПАРТНЬОР №1000215239
 ФАКТУРА № 1204458225 - ОРИГИНАЛ
 Дата на издаване/Дата на данъчно събитие - 31.08.2026 г.
 ВСИЧКО по фактура: 15,12
@@ -41,3 +42,17 @@ def test_extracts_toplofikacia_due_date_override():
 def test_extracts_toplofikacia_total_amount_override():
     fields = extract_toplofikacia_fields()
     assert fields["total_amount"] == "15.12"
+
+
+
+def test_extracts_toplofikacia_customer_name_override():
+    fields = extract_toplofikacia_fields()
+    assert fields["customer_name"] == "ТЕСТОВ КЛИЕНТ ПРИМЕРЕН"
+
+
+def test_extracts_toplofikacia_customer_address_override():
+    fields = extract_toplofikacia_fields()
+    assert fields["customer_address"] == (
+        "ГР. СОФИЯ 1618 КРАСНО СЕЛО БЛ. 201-А ВХ. 4 "
+        "АПАРТАМЕНТ 68"
+    )
