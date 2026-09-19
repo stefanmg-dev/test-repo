@@ -731,3 +731,146 @@ def test_rejects_invalid_profile_collection_payload(
         },
     )
     assert response.status_code == 422
+
+
+def create_profile_collection(client, isolated_config):
+    write_profile_config(isolated_config)
+    return client.post(
+        profile_collection_url(),
+        json=profile_collection_payload(),
+    )
+
+
+def profile_collection_field_url(field_name=None):
+    url = profile_collection_url() + "/fields"
+    if field_name is not None:
+        url += f"/{field_name}"
+    return url
+
+
+def test_profile_collection_field_crud_flow(
+    client,
+    isolated_config,
+):
+    assert create_profile_collection(
+        client,
+        isolated_config,
+    ).status_code == 201
+    add_response = client.post(
+        profile_collection_field_url(),
+        json=collection_field_payload(),
+    )
+    assert add_response.status_code == 201
+    update_response = client.put(
+        profile_collection_field_url("meter_number"),
+        json=collection_field_payload("serial_number"),
+    )
+    assert update_response.status_code == 200
+    delete_response = client.delete(
+        profile_collection_field_url("serial_number")
+    )
+    assert delete_response.status_code == 200
+    config = read_temporary_config(isolated_config)
+    assert config["invoice"]["profiles"][
+        "electricity_electrohold"
+    ]["collections"]["meters"]["fields"] == []
+
+
+def test_profile_collection_field_rejects_legacy_config(client):
+    response = client.post(
+        profile_collection_field_url(),
+        json=collection_field_payload(),
+    )
+    assert response.status_code == 409
+
+
+def test_profile_collection_field_requires_existing_collection(
+    client,
+    isolated_config,
+):
+    write_profile_config(isolated_config)
+    response = client.post(
+        profile_collection_url("missing") + "/fields",
+        json=collection_field_payload(),
+    )
+    assert response.status_code == 404
+
+
+def test_rejects_duplicate_profile_collection_field(
+    client,
+    isolated_config,
+):
+    assert create_profile_collection(
+        client,
+        isolated_config,
+    ).status_code == 201
+    first = client.post(
+        profile_collection_field_url(),
+        json=collection_field_payload(),
+    )
+    assert first.status_code == 201
+    duplicate = client.post(
+        profile_collection_field_url(),
+        json=collection_field_payload(),
+    )
+    assert duplicate.status_code == 409
+
+
+def test_profile_collection_field_update_rejects_duplicate_name(
+    client,
+    isolated_config,
+):
+    assert create_profile_collection(
+        client,
+        isolated_config,
+    ).status_code == 201
+    for name in ("meter_number", "serial_number"):
+        response = client.post(
+            profile_collection_field_url(),
+            json=collection_field_payload(name),
+        )
+        assert response.status_code == 201
+    response = client.put(
+        profile_collection_field_url("meter_number"),
+        json=collection_field_payload("serial_number"),
+    )
+    assert response.status_code == 409
+
+
+def test_profile_collection_field_update_delete_require_existing(
+    client,
+    isolated_config,
+):
+    assert create_profile_collection(
+        client,
+        isolated_config,
+    ).status_code == 201
+    update_response = client.put(
+        profile_collection_field_url("missing"),
+        json=collection_field_payload(),
+    )
+    assert update_response.status_code == 404
+    delete_response = client.delete(
+        profile_collection_field_url("missing")
+    )
+    assert delete_response.status_code == 404
+
+
+def test_rejects_invalid_profile_collection_field_payload(
+    client,
+    isolated_config,
+):
+    assert create_profile_collection(
+        client,
+        isolated_config,
+    ).status_code == 201
+    response = client.post(
+        profile_collection_field_url(),
+        json={
+            "field": {
+                "name": "broken",
+                "type": "invalid_type",
+            }
+        },
+    )
+    assert response.status_code == 422
