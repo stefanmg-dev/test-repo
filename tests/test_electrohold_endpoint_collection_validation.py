@@ -1,0 +1,134 @@
+from fastapi.testclient import TestClient
+
+import collection_pipeline
+import routes_extract
+from api import app
+
+
+ELECTROHOLD_TEXT = """
+ФАКТУРА № 0484935637 / 26.08.2026
+Доставчик Електрохолд Продажби ЕАД
+ЗДДС № BG175133827
+Идент. № 175133827
+Име ТЕСТОВ КЛИЕНТ ПРИМЕРЕН
+Адрес бул. ТЕСТОВ, бл. 1, вх. А, ап. 1
+Обща стойност на сделката 37,91
+Срок за плащане на фактурата от 26.08.2026 до 09.09.2026
+КЛИЕНТСКИ НОМЕР 300000000001
+Абонатен № 9000000001
+electrohold.bg/sales
+""".strip()
+
+
+PDF_QUALITY = {
+    "status": "accepted",
+    "requires_review": False,
+    "input": {
+        "format": "PDF",
+        "source": "native_pdf",
+        "page_count": 1,
+    },
+    "warnings": [],
+}
+
+
+def test_endpoint_reports_invalid_electrical_collection_item(
+    monkeypatch,
+):
+    async def fake_extract_document_input(file):
+        await file.read()
+
+        return {
+            "text": ELECTROHOLD_TEXT,
+            "quality": PDF_QUALITY,
+        }
+
+    def fake_extract_collections_from_schemas(
+        raw_text,
+        collections,
+    ):
+        return {
+            "services": [],
+            "metering_points": [
+                {
+                    "metering_point_number": (
+                        "32Z1030003158785"
+                    ),
+                }
+            ],
+            "meters": [
+                {
+                    "meter_number": "ABC",
+                }
+            ],
+            "consumption_items": [
+                {
+                    "tariff": "Дневна",
+                    "previous_reading": "19 719",
+                    "current_reading": "19 929",
+                    "difference": "210",
+                    "correction": "0",
+                    "quantity": "210",
+                    "unit": "kWh",
+                }
+            ],
+        }
+
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_document_input",
+        fake_extract_document_input,
+    )
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_values",
+        lambda raw_text: {},
+    )
+    monkeypatch.setattr(
+        collection_pipeline,
+        "extract_collections_from_schemas",
+        fake_extract_collections_from_schemas,
+    )
+
+    response = TestClient(app).post(
+        "/extract-document",
+        data={"document_type": "invoice"},
+        files={
+            "file": (
+                "electrohold-invalid-meter.pdf",
+                b"electrohold-invalid-meter-fixture",
+                "application/pdf",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["profile"] == "electricity_electrohold"
+
+    assert body["validation"] == {
+        "valid": True,
+        "errors": {},
+    }
+
+    assert body["collection_validation"] == {
+        "valid": False,
+        "errors": {
+            "meters[0].meter_number": [
+                "Meter number is invalid",
+            ]
+        },
+    }
+
+    assert body["processing_status"] == "invalid"
+
+    assert body["quality"] == PDF_QUALITY
+    assert body["quality"]["requires_review"] is False
+
+    assert body["collections"]["meters"] == [
+        {
+            "meter_number": "ABC",
+        }
+    ]
