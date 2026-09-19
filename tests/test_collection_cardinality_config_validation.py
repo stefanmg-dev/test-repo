@@ -53,6 +53,7 @@ def test_validate_config_rejects_invalid_profile_cardinality():
     [
         "zero_or_more",
         "one_or_more",
+        "exactly_one",
     ],
 )
 def test_collection_model_accepts_supported_cardinalities(
