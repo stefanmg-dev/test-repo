@@ -132,3 +132,106 @@ def test_endpoint_reports_invalid_electrical_collection_item(
             "meter_number": "ABC",
         }
     ]
+
+
+def test_endpoint_reports_invalid_consumption_quantity(
+    monkeypatch,
+):
+    async def fake_extract_document_input(file):
+        await file.read()
+
+        return {
+            "text": ELECTROHOLD_TEXT,
+            "quality": PDF_QUALITY,
+        }
+
+    def fake_extract_collections_from_schemas(
+        raw_text,
+        collections,
+    ):
+        return {
+            "services": [],
+            "metering_points": [
+                {
+                    "metering_point_number": (
+                        "32Z1030003158785"
+                    ),
+                }
+            ],
+            "meters": [
+                {
+                    "meter_number": "1021015029",
+                }
+            ],
+            "consumption_items": [
+                {
+                    "tariff": "Дневна",
+                    "previous_reading": "19 719",
+                    "current_reading": "19 929",
+                    "difference": "210",
+                    "correction": "0",
+                    "quantity": "-1",
+                    "unit": "kWh",
+                }
+            ],
+        }
+
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_document_input",
+        fake_extract_document_input,
+    )
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_values",
+        lambda raw_text: {},
+    )
+    monkeypatch.setattr(
+        collection_pipeline,
+        "extract_collections_from_schemas",
+        fake_extract_collections_from_schemas,
+    )
+
+    response = TestClient(app).post(
+        "/extract-document",
+        data={"document_type": "invoice"},
+        files={
+            "file": (
+                "electrohold-invalid-quantity.pdf",
+                b"electrohold-invalid-quantity-fixture",
+                "application/pdf",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["profile"] == "electricity_electrohold"
+
+    assert body["validation"] == {
+        "valid": True,
+        "errors": {},
+    }
+
+    assert body["collection_validation"] == {
+        "valid": False,
+        "errors": {
+            "consumption_items[0].quantity": [
+                (
+                    "Consumption quantity must be "
+                    "a non-negative decimal"
+                ),
+            ]
+        },
+    }
+
+    assert body["processing_status"] == "invalid"
+
+    assert body["quality"] == PDF_QUALITY
+    assert body["quality"]["requires_review"] is False
+
+    assert body["collections"][
+        "consumption_items"
+    ][0]["quantity"] == "-1"
