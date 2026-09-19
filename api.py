@@ -4,6 +4,9 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
+from routes_config_collections_v1 import (
+    router as config_collections_v1_router,
+)
 from routes_config_v1 import router as config_v1_router
 from routes_extract import router as extract_router
 
@@ -20,6 +23,7 @@ app = FastAPI(
 
 app.include_router(extract_router)
 app.include_router(config_v1_router)
+app.include_router(config_collections_v1_router)
 
 
 app.mount(
