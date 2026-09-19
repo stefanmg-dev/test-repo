@@ -1006,3 +1006,150 @@ def delete_collection_field(
             f"'{collection_name}'"
         ),
     }
+
+
+
+@router.post(
+    "/document-types/{document_type}/profiles/{profile_name}/"
+    "collections/{collection_name}",
+    response_model=OperationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_profile_collection(
+    document_type: str,
+    profile_name: str,
+    collection_name: str,
+    request: AddCollectionRequest,
+):
+    config = load_config()
+    document_config = get_document_type_or_404(
+        config=config,
+        document_type=document_type,
+    )
+    ensure_profile_based_config(document_config)
+    profile_config = get_profile_or_404(
+        document_config=document_config,
+        profile_name=profile_name,
+    )
+    collections = profile_config.get("collections", {})
+    if collection_name in collections:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Collection '{collection_name}' already exists "
+                f"in profile '{profile_name}'"
+            ),
+        )
+
+    collection_data = request.collection.model_dump(
+        exclude_none=True
+    )
+    updated_config = deepcopy(config)
+    updated_config[document_type]["profiles"][
+        profile_name
+    ].setdefault("collections", {})[
+        collection_name
+    ] = collection_data
+    save_validated_config(updated_config)
+    return {
+        "status": "ok",
+        "message": (
+            f"Collection '{collection_name}' added to "
+            f"profile '{profile_name}'"
+        ),
+    }
+
+
+@router.put(
+    "/document-types/{document_type}/profiles/{profile_name}/"
+    "collections/{collection_name}",
+    response_model=OperationResponse,
+)
+def update_profile_collection(
+    document_type: str,
+    profile_name: str,
+    collection_name: str,
+    request: UpdateCollectionRequest,
+):
+    config = load_config()
+    document_config = get_document_type_or_404(
+        config=config,
+        document_type=document_type,
+    )
+    ensure_profile_based_config(document_config)
+    profile_config = get_profile_or_404(
+        document_config=document_config,
+        profile_name=profile_name,
+    )
+    collections = profile_config.get("collections", {})
+    if collection_name not in collections:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"Collection '{collection_name}' was not found "
+                f"in profile '{profile_name}'"
+            ),
+        )
+
+    collection_data = request.collection.model_dump(
+        exclude_none=True
+    )
+    updated_config = deepcopy(config)
+    updated_config[document_type]["profiles"][profile_name][
+        "collections"
+    ][collection_name] = collection_data
+    save_validated_config(updated_config)
+    return {
+        "status": "ok",
+        "message": (
+            f"Collection '{collection_name}' updated in "
+            f"profile '{profile_name}'"
+        ),
+    }
+
+
+@router.delete(
+    "/document-types/{document_type}/profiles/{profile_name}/"
+    "collections/{collection_name}",
+    response_model=OperationResponse,
+)
+def delete_profile_collection(
+    document_type: str,
+    profile_name: str,
+    collection_name: str,
+):
+    config = load_config()
+    document_config = get_document_type_or_404(
+        config=config,
+        document_type=document_type,
+    )
+    ensure_profile_based_config(document_config)
+    profile_config = get_profile_or_404(
+        document_config=document_config,
+        profile_name=profile_name,
+    )
+    collections = profile_config.get("collections", {})
+    if collection_name not in collections:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"Collection '{collection_name}' was not found "
+                f"in profile '{profile_name}'"
+            ),
+        )
+
+    updated_config = deepcopy(config)
+    updated_profile = updated_config[document_type]["profiles"][
+        profile_name
+    ]
+    del updated_profile["collections"][collection_name]
+    if not updated_profile["collections"]:
+        del updated_profile["collections"]
+    save_validated_config(updated_config)
+    return {
+        "status": "ok",
+        "message": (
+            f"Collection '{collection_name}' deleted from "
+            f"profile '{profile_name}'"
+        ),
+    }
