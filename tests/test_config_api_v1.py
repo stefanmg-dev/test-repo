@@ -415,3 +415,161 @@ def test_rejects_invalid_collection_payload(client):
         },
     )
     assert response.status_code == 422
+
+
+
+def create_collection(client, collection_name="meters"):
+    return client.post(
+        "/api/v1/config/document-types/"
+        f"invoice/collections/{collection_name}",
+        json={
+            "collection": {
+                "cardinality": "zero_or_more",
+                "fields": [],
+            }
+        },
+    )
+
+
+def collection_field_payload(name="meter_number"):
+    return {
+        "field": {
+            "name": name,
+            "type": "regex",
+            "rule": r"Електромер\s*№\s*([0-9]{8,15})",
+            "occurrence": "first",
+            "validation": [],
+        }
+    }
+
+
+def test_collection_field_crud_flow(
+    client,
+    isolated_config,
+):
+    assert create_collection(client).status_code == 201
+
+    add_response = client.post(
+        "/api/v1/config/document-types/invoice/"
+        "collections/meters/fields",
+        json=collection_field_payload(),
+    )
+    assert add_response.status_code == 201
+
+    config_after_add = read_temporary_config(
+        isolated_config
+    )
+    fields_after_add = config_after_add["invoice"][
+        "collections"
+    ]["meters"]["fields"]
+    assert [field["name"] for field in fields_after_add] == [
+        "meter_number"
+    ]
+
+    update_response = client.put(
+        "/api/v1/config/document-types/invoice/"
+        "collections/meters/fields/meter_number",
+        json=collection_field_payload("serial_number"),
+    )
+    assert update_response.status_code == 200
+
+    config_after_update = read_temporary_config(
+        isolated_config
+    )
+    fields_after_update = config_after_update["invoice"][
+        "collections"
+    ]["meters"]["fields"]
+    assert [field["name"] for field in fields_after_update] == [
+        "serial_number"
+    ]
+
+    delete_response = client.delete(
+        "/api/v1/config/document-types/invoice/"
+        "collections/meters/fields/serial_number"
+    )
+    assert delete_response.status_code == 200
+
+    config_after_delete = read_temporary_config(
+        isolated_config
+    )
+    assert config_after_delete["invoice"]["collections"][
+        "meters"
+    ]["fields"] == []
+
+
+def test_collection_field_requires_existing_collection(client):
+    response = client.post(
+        "/api/v1/config/document-types/invoice/"
+        "collections/missing/fields",
+        json=collection_field_payload(),
+    )
+    assert response.status_code == 404
+
+
+def test_rejects_duplicate_collection_field(client):
+    assert create_collection(client).status_code == 201
+    first_response = client.post(
+        "/api/v1/config/document-types/invoice/"
+        "collections/meters/fields",
+        json=collection_field_payload(),
+    )
+    assert first_response.status_code == 201
+
+    duplicate_response = client.post(
+        "/api/v1/config/document-types/invoice/"
+        "collections/meters/fields",
+        json=collection_field_payload(),
+    )
+    assert duplicate_response.status_code == 409
+
+
+def test_collection_field_update_rejects_duplicate_name(client):
+    assert create_collection(client).status_code == 201
+    for field_name in ("meter_number", "serial_number"):
+        response = client.post(
+            "/api/v1/config/document-types/invoice/"
+            "collections/meters/fields",
+            json=collection_field_payload(field_name),
+        )
+        assert response.status_code == 201
+
+    response = client.put(
+        "/api/v1/config/document-types/invoice/"
+        "collections/meters/fields/meter_number",
+        json=collection_field_payload("serial_number"),
+    )
+    assert response.status_code == 409
+
+
+def test_collection_field_update_and_delete_require_existing_field(
+    client,
+):
+    assert create_collection(client).status_code == 201
+
+    update_response = client.put(
+        "/api/v1/config/document-types/invoice/"
+        "collections/meters/fields/missing",
+        json=collection_field_payload(),
+    )
+    assert update_response.status_code == 404
+
+    delete_response = client.delete(
+        "/api/v1/config/document-types/invoice/"
+        "collections/meters/fields/missing"
+    )
+    assert delete_response.status_code == 404
+
+
+def test_rejects_invalid_collection_field_payload(client):
+    assert create_collection(client).status_code == 201
+    response = client.post(
+        "/api/v1/config/document-types/invoice/"
+        "collections/meters/fields",
+        json={
+            "field": {
+                "name": "broken",
+                "type": "invalid_type",
+            }
+        },
+    )
+    assert response.status_code == 422

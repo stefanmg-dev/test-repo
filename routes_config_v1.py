@@ -834,3 +834,175 @@ def delete_collection(
             f"document type '{document_type}'"
         ),
     }
+
+
+
+def get_collection_or_404(
+    document_config: dict,
+    collection_name: str,
+) -> dict:
+    collections = document_config.get("collections", {})
+    collection_config = collections.get(collection_name)
+    if collection_config is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"Collection '{collection_name}' was not found"
+            ),
+        )
+    return collection_config
+
+
+@router.post(
+    "/document-types/{document_type}/collections/"
+    "{collection_name}/fields",
+    response_model=OperationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_collection_field(
+    document_type: str,
+    collection_name: str,
+    request: AddFieldRequest,
+):
+    config = load_config()
+    document_config = get_document_type_or_404(
+        config=config,
+        document_type=document_type,
+    )
+    collection_config = get_collection_or_404(
+        document_config=document_config,
+        collection_name=collection_name,
+    )
+    fields = collection_config.get("fields", [])
+    field_data = request.field.model_dump(
+        exclude_none=True
+    )
+    field_name = field_data["name"]
+    if find_field_index(fields, field_name) is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Field '{field_name}' already exists in "
+                f"collection '{collection_name}'"
+            ),
+        )
+
+    updated_config = deepcopy(config)
+    updated_config[document_type]["collections"][
+        collection_name
+    ].setdefault("fields", []).append(field_data)
+    save_validated_config(updated_config)
+    return {
+        "status": "ok",
+        "message": (
+            f"Field '{field_name}' added to collection "
+            f"'{collection_name}'"
+        ),
+    }
+
+
+@router.put(
+    "/document-types/{document_type}/collections/"
+    "{collection_name}/fields/{field_name}",
+    response_model=OperationResponse,
+)
+def update_collection_field(
+    document_type: str,
+    collection_name: str,
+    field_name: str,
+    request: UpdateFieldRequest,
+):
+    config = load_config()
+    document_config = get_document_type_or_404(
+        config=config,
+        document_type=document_type,
+    )
+    collection_config = get_collection_or_404(
+        document_config=document_config,
+        collection_name=collection_name,
+    )
+    fields = collection_config.get("fields", [])
+    field_index = find_field_index(fields, field_name)
+    if field_index is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"Field '{field_name}' was not found in "
+                f"collection '{collection_name}'"
+            ),
+        )
+
+    field_data = request.field.model_dump(
+        exclude_none=True
+    )
+    new_field_name = field_data["name"]
+    if new_field_name != field_name:
+        existing_index = find_field_index(
+            fields=fields,
+            field_name=new_field_name,
+        )
+        if existing_index is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"Field '{new_field_name}' already exists "
+                    f"in collection '{collection_name}'"
+                ),
+            )
+
+    updated_config = deepcopy(config)
+    updated_config[document_type]["collections"][
+        collection_name
+    ]["fields"][field_index] = field_data
+    save_validated_config(updated_config)
+    return {
+        "status": "ok",
+        "message": (
+            f"Field '{field_name}' updated in collection "
+            f"'{collection_name}'"
+        ),
+    }
+
+
+@router.delete(
+    "/document-types/{document_type}/collections/"
+    "{collection_name}/fields/{field_name}",
+    response_model=OperationResponse,
+)
+def delete_collection_field(
+    document_type: str,
+    collection_name: str,
+    field_name: str,
+):
+    config = load_config()
+    document_config = get_document_type_or_404(
+        config=config,
+        document_type=document_type,
+    )
+    collection_config = get_collection_or_404(
+        document_config=document_config,
+        collection_name=collection_name,
+    )
+    fields = collection_config.get("fields", [])
+    field_index = find_field_index(fields, field_name)
+    if field_index is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"Field '{field_name}' was not found in "
+                f"collection '{collection_name}'"
+            ),
+        )
+
+    updated_config = deepcopy(config)
+    del updated_config[document_type]["collections"][
+        collection_name
+    ]["fields"][field_index]
+    save_validated_config(updated_config)
+    return {
+        "status": "ok",
+        "message": (
+            f"Field '{field_name}' deleted from collection "
+            f"'{collection_name}'"
+        ),
+    }
