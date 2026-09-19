@@ -573,3 +573,161 @@ def test_rejects_invalid_collection_field_payload(client):
         },
     )
     assert response.status_code == 422
+
+
+
+def write_profile_config(path):
+    profile_config = {
+        "invoice": {
+            "common_fields": [],
+            "profiles": {
+                "electricity_electrohold": {
+                    "fields": []
+                }
+            },
+            "default_profile": "electricity_electrohold",
+        }
+    }
+    path.write_text(
+        json.dumps(
+            profile_config,
+            ensure_ascii=False,
+            indent=2,
+        ) + "\n",
+        encoding="utf-8",
+    )
+
+
+def profile_collection_url(collection_name="meters"):
+    return (
+        "/api/v1/config/document-types/invoice/profiles/"
+        "electricity_electrohold/collections/"
+        f"{collection_name}"
+    )
+
+
+def profile_collection_payload(cardinality="zero_or_more"):
+    return {
+        "collection": {
+            "cardinality": cardinality,
+            "start_pattern": r"^Електромер\s*№",
+            "fields": [],
+        }
+    }
+
+
+def test_profile_collection_crud_flow(
+    client,
+    isolated_config,
+):
+    write_profile_config(isolated_config)
+
+    add_response = client.post(
+        profile_collection_url(),
+        json=profile_collection_payload(),
+    )
+    assert add_response.status_code == 201
+
+    after_add = read_temporary_config(isolated_config)
+    assert after_add["invoice"]["profiles"][
+        "electricity_electrohold"
+    ]["collections"]["meters"] == (
+        profile_collection_payload()["collection"]
+    )
+
+    update_response = client.put(
+        profile_collection_url(),
+        json=profile_collection_payload("one_or_more"),
+    )
+    assert update_response.status_code == 200
+
+    after_update = read_temporary_config(isolated_config)
+    assert after_update["invoice"]["profiles"][
+        "electricity_electrohold"
+    ]["collections"]["meters"]["cardinality"] == (
+        "one_or_more"
+    )
+
+    delete_response = client.delete(
+        profile_collection_url()
+    )
+    assert delete_response.status_code == 200
+
+    after_delete = read_temporary_config(isolated_config)
+    assert "collections" not in after_delete["invoice"][
+        "profiles"
+    ]["electricity_electrohold"]
+
+
+def test_profile_collection_rejects_legacy_config(client):
+    response = client.post(
+        profile_collection_url(),
+        json=profile_collection_payload(),
+    )
+    assert response.status_code == 409
+
+
+def test_profile_collection_requires_existing_profile(
+    client,
+    isolated_config,
+):
+    write_profile_config(isolated_config)
+    response = client.post(
+        "/api/v1/config/document-types/invoice/profiles/"
+        "missing/collections/meters",
+        json=profile_collection_payload(),
+    )
+    assert response.status_code == 404
+
+
+def test_rejects_duplicate_profile_collection(
+    client,
+    isolated_config,
+):
+    write_profile_config(isolated_config)
+    first = client.post(
+        profile_collection_url(),
+        json=profile_collection_payload(),
+    )
+    assert first.status_code == 201
+
+    duplicate = client.post(
+        profile_collection_url(),
+        json=profile_collection_payload(),
+    )
+    assert duplicate.status_code == 409
+
+
+def test_profile_collection_update_and_delete_require_existing(
+    client,
+    isolated_config,
+):
+    write_profile_config(isolated_config)
+
+    update_response = client.put(
+        profile_collection_url("missing"),
+        json=profile_collection_payload(),
+    )
+    assert update_response.status_code == 404
+
+    delete_response = client.delete(
+        profile_collection_url("missing")
+    )
+    assert delete_response.status_code == 404
+
+
+def test_rejects_invalid_profile_collection_payload(
+    client,
+    isolated_config,
+):
+    write_profile_config(isolated_config)
+    response = client.post(
+        profile_collection_url(),
+        json={
+            "collection": {
+                "cardinality": "many",
+                "fields": [],
+            }
+        },
+    )
+    assert response.status_code == 422
