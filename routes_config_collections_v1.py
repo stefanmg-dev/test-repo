@@ -9,14 +9,14 @@ from config_models import (
     UpdateCollectionRequest,
     UpdateFieldRequest,
 )
-from config_store import load_config
-from routes_config_v1 import (
+from config_api_helpers import (
     ensure_profile_based_config,
     find_field_index,
     get_document_type_or_404,
     get_profile_or_404,
     save_validated_config,
 )
+from config_store import load_config
 
 
 router = APIRouter(

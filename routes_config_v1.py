@@ -16,8 +16,14 @@ from config_models import (
     RenameDocumentTypeRequest,
     UpdateFieldRequest,
 )
-from config_store import load_config, save_config
-from config_validator import ConfigValidationError
+from config_api_helpers import (
+    ensure_profile_based_config,
+    find_field_index,
+    get_document_type_or_404,
+    get_profile_or_404,
+    save_validated_config,
+)
+from config_store import load_config
 from document_config_resolver import resolve_document_fields
 from document_status import build_document_type_metadata
 
@@ -26,46 +32,6 @@ router = APIRouter(
     prefix="/api/v1/config",
     tags=["Configuration API v1"],
 )
-
-
-def save_validated_config(config: dict) -> None:
-    try:
-        save_config(config)
-
-    except ConfigValidationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(exc),
-        ) from exc
-
-
-def get_document_type_or_404(
-    config: dict,
-    document_type: str,
-) -> dict:
-    document_config = config.get(document_type)
-
-    if document_config is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=(
-                f"Document type '{document_type}' "
-                f"was not found"
-            ),
-        )
-
-    return document_config
-
-
-def find_field_index(
-    fields: list[dict],
-    field_name: str,
-) -> int | None:
-    for index, field in enumerate(fields):
-        if field.get("name") == field_name:
-            return index
-
-    return None
 
 
 def build_all_document_type_metadata(
@@ -442,39 +408,6 @@ def delete_field(
 
 
 # Profile-aware field endpoints
-
-def get_profile_or_404(
-    document_config: dict,
-    profile_name: str,
-) -> dict:
-    profiles = document_config.get("profiles")
-
-    if not isinstance(profiles, dict):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Document type does not use profile configuration",
-        )
-
-    profile_config = profiles.get(profile_name)
-
-    if profile_config is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Profile '{profile_name}' was not found",
-        )
-
-    return profile_config
-
-
-def ensure_profile_based_config(
-    document_config: dict,
-) -> None:
-    if "fields" in document_config:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Document type uses legacy fields configuration",
-        )
-
 
 def ensure_field_name_available(
     document_config: dict,
