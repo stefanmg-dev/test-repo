@@ -144,3 +144,59 @@ def test_toplofikacia_endpoint_returns_accepted_validation(
     }
     assert body["quality"]["status"] == "accepted"
     assert body["quality"]["requires_review"] is False
+
+
+def test_toplofikacia_endpoint_is_invalid_when_required_field_is_missing(
+    monkeypatch,
+):
+    incomplete_text = TOPLOFIKACIA_OCR_TEXT.replace(
+        "НОМЕР НА ИНСТАЛАЦИЯ №4000000001\n",
+        "",
+    )
+
+    async def fake_extract_document_input(file):
+        await file.read()
+        return {
+            "text": incomplete_text,
+            "quality": PDF_QUALITY,
+        }
+
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_document_input",
+        fake_extract_document_input,
+    )
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_values",
+        lambda raw_text: {},
+    )
+
+    response = TestClient(app).post(
+        "/extract-document",
+        data={"document_type": "invoice"},
+        files={
+            "file": (
+                "toplofikacia-missing-installation.pdf",
+                b"toplofikacia-missing-installation-fixture",
+                "application/pdf",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["profile"] == "heating_toplofikacia_sofia"
+    assert body["processing_status"] == "invalid"
+    assert body["quality"]["status"] == "accepted"
+    assert body["quality"]["requires_review"] is False
+
+    assert body["final_values"]["installation_number"] is None
+    assert body["validation"]["valid"] is False
+    assert body["validation"]["errors"] == {
+        "installation_number": [
+            "Installation number is required",
+        ]
+    }
