@@ -408,7 +408,7 @@ def test_toplofikacia_endpoint_returns_services_collection(
     }
 
 
-def test_toplofikacia_endpoint_reports_invalid_service_amount(
+def test_toplofikacia_endpoint_ignores_malformed_service_row(
     monkeypatch,
 ):
     text_with_invalid_service = (
@@ -443,8 +443,8 @@ def test_toplofikacia_endpoint_reports_invalid_service_amount(
         data={"document_type": "invoice"},
         files={
             "file": (
-                "toplofikacia-invalid-service.pdf",
-                b"toplofikacia-invalid-service-fixture",
+                "toplofikacia-malformed-service.pdf",
+                b"toplofikacia-malformed-service-fixture",
                 "application/pdf",
             )
         },
@@ -455,30 +455,14 @@ def test_toplofikacia_endpoint_reports_invalid_service_amount(
     body = response.json()
 
     assert body["profile"] == "heating_toplofikacia_sofia"
+    assert body["processing_status"] == "accepted"
 
     assert body["validation"] == {
         "valid": True,
         "errors": {},
     }
-    assert body["processing_status"] == "invalid"
-
-    assert body["collections"]["services"] == [
-        {
-            "description": (
-                "Топлинна енергия за подгряване на вода"
-            ),
-            "unit": "МВтч",
-            "quantity": "0.143953",
-            "unit_price": "73.30",
-            "amount": None,
-        }
-    ]
-
+    assert body["collections"]["services"] == []
     assert body["collection_validation"] == {
-        "valid": False,
-        "errors": {
-            "services[0].amount": [
-                "Service amount is required",
-            ]
-        },
+        "valid": True,
+        "errors": {},
     }
