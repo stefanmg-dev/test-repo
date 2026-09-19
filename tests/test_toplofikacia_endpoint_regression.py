@@ -97,3 +97,50 @@ def test_toplofikacia_endpoint_selects_profile_and_returns_fields(
         for warning in body["quality"]["warnings"]
     }
     assert "unknown_supplier_profile" not in warning_codes
+
+
+def test_toplofikacia_endpoint_returns_accepted_validation(
+    monkeypatch,
+):
+    async def fake_extract_document_input(file):
+        await file.read()
+        return {
+            "text": TOPLOFIKACIA_OCR_TEXT,
+            "quality": PDF_QUALITY,
+        }
+
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_document_input",
+        fake_extract_document_input,
+    )
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_values",
+        lambda raw_text: {},
+    )
+
+    response = TestClient(app).post(
+        "/extract-document",
+        data={"document_type": "invoice"},
+        files={
+            "file": (
+                "toplofikacia-validation.pdf",
+                b"stable-toplofikacia-validation-fixture",
+                "application/pdf",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["profile"] == "heating_toplofikacia_sofia"
+    assert body["processing_status"] == "accepted"
+    assert body["validation"] == {
+        "valid": True,
+        "errors": {},
+    }
+    assert body["quality"]["status"] == "accepted"
+    assert body["quality"]["requires_review"] is False
