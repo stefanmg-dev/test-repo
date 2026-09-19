@@ -16,6 +16,12 @@ from config_api_helpers import (
     get_profile_or_404,
     save_validated_config,
 )
+from config_collection_service import (
+    get_collection_or_404,
+    get_profile_collection_or_404,
+    resolve_document_collection_target,
+    resolve_profile_collection_target,
+)
 from config_store import load_config
 
 
@@ -36,11 +42,12 @@ def add_collection(
     request: AddCollectionRequest,
 ):
     config = load_config()
-    document_config = get_document_type_or_404(
-        config=config,
-        document_type=document_type,
+    document_config, collections = (
+        resolve_document_collection_target(
+            config=config,
+            document_type=document_type,
+        )
     )
-    collections = document_config.get("collections", {})
     if collection_name in collections:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -78,11 +85,12 @@ def update_collection(
     request: UpdateCollectionRequest,
 ):
     config = load_config()
-    document_config = get_document_type_or_404(
-        config=config,
-        document_type=document_type,
+    document_config, collections = (
+        resolve_document_collection_target(
+            config=config,
+            document_type=document_type,
+        )
     )
-    collections = document_config.get("collections", {})
     if collection_name not in collections:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -118,11 +126,12 @@ def delete_collection(
     collection_name: str,
 ):
     config = load_config()
-    document_config = get_document_type_or_404(
-        config=config,
-        document_type=document_type,
+    document_config, collections = (
+        resolve_document_collection_target(
+            config=config,
+            document_type=document_type,
+        )
     )
-    collections = document_config.get("collections", {})
     if collection_name not in collections:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -148,22 +157,6 @@ def delete_collection(
         ),
     }
 
-
-
-def get_collection_or_404(
-    document_config: dict,
-    collection_name: str,
-) -> dict:
-    collections = document_config.get("collections", {})
-    collection_config = collections.get(collection_name)
-    if collection_config is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=(
-                f"Collection '{collection_name}' was not found"
-            ),
-        )
-    return collection_config
 
 
 @router.post(
@@ -335,16 +328,13 @@ def add_profile_collection(
     request: AddCollectionRequest,
 ):
     config = load_config()
-    document_config = get_document_type_or_404(
-        config=config,
-        document_type=document_type,
+    document_config, profile_config, collections = (
+        resolve_profile_collection_target(
+            config=config,
+            document_type=document_type,
+            profile_name=profile_name,
+        )
     )
-    ensure_profile_based_config(document_config)
-    profile_config = get_profile_or_404(
-        document_config=document_config,
-        profile_name=profile_name,
-    )
-    collections = profile_config.get("collections", {})
     if collection_name in collections:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -385,16 +375,13 @@ def update_profile_collection(
     request: UpdateCollectionRequest,
 ):
     config = load_config()
-    document_config = get_document_type_or_404(
-        config=config,
-        document_type=document_type,
+    document_config, profile_config, collections = (
+        resolve_profile_collection_target(
+            config=config,
+            document_type=document_type,
+            profile_name=profile_name,
+        )
     )
-    ensure_profile_based_config(document_config)
-    profile_config = get_profile_or_404(
-        document_config=document_config,
-        profile_name=profile_name,
-    )
-    collections = profile_config.get("collections", {})
     if collection_name not in collections:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -432,16 +419,13 @@ def delete_profile_collection(
     collection_name: str,
 ):
     config = load_config()
-    document_config = get_document_type_or_404(
-        config=config,
-        document_type=document_type,
+    document_config, profile_config, collections = (
+        resolve_profile_collection_target(
+            config=config,
+            document_type=document_type,
+            profile_name=profile_name,
+        )
     )
-    ensure_profile_based_config(document_config)
-    profile_config = get_profile_or_404(
-        document_config=document_config,
-        profile_name=profile_name,
-    )
-    collections = profile_config.get("collections", {})
     if collection_name not in collections:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -466,23 +450,6 @@ def delete_profile_collection(
             f"profile '{profile_name}'"
         ),
     }
-
-
-def get_profile_collection_or_404(
-    profile_config: dict,
-    collection_name: str,
-) -> dict:
-    collections = profile_config.get("collections", {})
-    collection_config = collections.get(collection_name)
-    if collection_config is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=(
-                f"Collection '{collection_name}' was not found "
-                "in profile"
-            ),
-        )
-    return collection_config
 
 
 @router.post(
