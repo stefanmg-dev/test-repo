@@ -431,3 +431,52 @@ def test_rejects_invalid_profile_collection_schema():
             document_config=config,
             profile_name="electricity_electrohold",
         )
+
+
+def test_build_includes_profile_only_collections():
+    config = {
+        "common_fields": [],
+        "profiles": {
+            "electricity_electrohold": {
+                "fields": [],
+                "collections": {
+                    "meters": {
+                        "cardinality": "zero_or_more",
+                        "fields": [],
+                    }
+                },
+            }
+        },
+        "default_profile": "electricity_electrohold",
+    }
+
+    resolved = build_resolved_document_config(
+        document_config=config,
+        profile_name="electricity_electrohold",
+    )
+
+    assert resolved["collections"] == {
+        "meters": {
+            "cardinality": "zero_or_more",
+            "fields": [],
+        }
+    }
+
+
+def test_build_omits_collections_when_resolved_layer_is_empty():
+    config = {
+        "common_fields": [],
+        "profiles": {
+            "electricity_electrohold": {
+                "fields": [],
+            }
+        },
+        "default_profile": "electricity_electrohold",
+    }
+
+    resolved = build_resolved_document_config(
+        document_config=config,
+        profile_name="electricity_electrohold",
+    )
+
+    assert "collections" not in resolved
