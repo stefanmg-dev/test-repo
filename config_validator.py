@@ -17,6 +17,9 @@ SUPPORTED_COLLECTION_CARDINALITIES = {
     "one_or_more",
     "exactly_one",
 }
+SUPPORTED_COLLECTION_ITEM_VALIDATION_TYPES = {
+    "difference_equals",
+}
 COLLECTION_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 PROFILE_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 
@@ -174,6 +177,86 @@ def validate_profile_name(profile_name: Any, path: str) -> str:
     return profile_name
 
 
+def validate_collection_item_validations(
+    validations,
+    field_names,
+    path,
+):
+    if not isinstance(validations, list):
+        raise ConfigValidationError(
+            f"{path} must be a list"
+        )
+
+    for validation_index, validation in enumerate(
+        validations
+    ):
+        validation_path = (
+            f"{path}[{validation_index}]"
+        )
+
+        if not isinstance(validation, dict):
+            raise ConfigValidationError(
+                f"{validation_path} must be an object"
+            )
+
+        unknown_keys = set(validation) - {
+            "type",
+            "minuend",
+            "subtrahend",
+            "result",
+            "message",
+        }
+
+        if unknown_keys:
+            raise ConfigValidationError(
+                f"{validation_path} contains unsupported "
+                f"properties: {sorted(unknown_keys)}"
+            )
+
+        validation_type = require_non_empty_string(
+            validation.get("type"),
+            f"{validation_path}.type",
+        )
+
+        if (
+            validation_type
+            not in
+            SUPPORTED_COLLECTION_ITEM_VALIDATION_TYPES
+        ):
+            raise ConfigValidationError(
+                f"{validation_path}.type must be one of: "
+                f"{sorted(SUPPORTED_COLLECTION_ITEM_VALIDATION_TYPES)}"
+            )
+
+        for property_name in (
+            "minuend",
+            "subtrahend",
+            "result",
+        ):
+            field_name = require_non_empty_string(
+                validation.get(property_name),
+                (
+                    f"{validation_path}."
+                    f"{property_name}"
+                ),
+            )
+
+            if field_name not in field_names:
+                raise ConfigValidationError(
+                    f"{validation_path}.{property_name} "
+                    f"references unknown field "
+                    f"'{field_name}'"
+                )
+
+        message = validation.get("message")
+
+        if message is not None:
+            require_non_empty_string(
+                message,
+                f"{validation_path}.message",
+            )
+
+
 def validate_collections(
     collections: Any,
     path: str,
@@ -196,6 +279,7 @@ def validate_collections(
             "cardinality",
             "start_pattern",
             "fields",
+            "item_validations",
         }
         if unknown_keys:
             raise ConfigValidationError(
@@ -227,9 +311,20 @@ def validate_collections(
                 start_pattern,
                 f"{collection_path}.start_pattern",
             )
-        validate_field_list(
+        field_names = validate_field_list(
             collection_config.get("fields", []),
             f"{collection_path}.fields",
+        )
+
+        validate_collection_item_validations(
+            validations=collection_config.get(
+                "item_validations",
+                [],
+            ),
+            field_names=field_names,
+            path=(
+                f"{collection_path}.item_validations"
+            ),
         )
 
 

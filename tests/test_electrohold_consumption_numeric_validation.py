@@ -177,5 +177,6 @@ def test_reading_format_accepts_grouped_thousands(
 
     item["previous_reading"] = valid_reading
     item["current_reading"] = valid_reading
+    item["difference"] = "0"
 
     assert validate(collections)["valid"] is True
