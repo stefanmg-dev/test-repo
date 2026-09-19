@@ -17,10 +17,14 @@ from config_api_helpers import (
     save_validated_config,
 )
 from config_collection_service import (
+    add_document_collection,
+    add_profile_collection_mutation,
+    delete_document_collection,
+    delete_profile_collection_mutation,
     get_collection_or_404,
     get_profile_collection_or_404,
-    resolve_document_collection_target,
-    resolve_profile_collection_target,
+    update_document_collection,
+    update_profile_collection_mutation,
 )
 from config_store import load_config
 
@@ -42,30 +46,15 @@ def add_collection(
     request: AddCollectionRequest,
 ):
     config = load_config()
-    document_config, collections = (
-        resolve_document_collection_target(
-            config=config,
-            document_type=document_type,
-        )
-    )
-    if collection_name in collections:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                f"Collection '{collection_name}' already exists "
-                f"in document type '{document_type}'"
-            ),
-        )
-
     collection_data = request.collection.model_dump(
         exclude_none=True
     )
-    updated_config = deepcopy(config)
-    updated_config[document_type].setdefault(
-        "collections",
-        {},
-    )[collection_name] = collection_data
-    save_validated_config(updated_config)
+    add_document_collection(
+        config=config,
+        document_type=document_type,
+        collection_name=collection_name,
+        collection_data=collection_data,
+    )
     return {
         "status": "ok",
         "message": (
@@ -73,8 +62,6 @@ def add_collection(
             f"document type '{document_type}'"
         ),
     }
-
-
 @router.put(
     "/document-types/{document_type}/collections/{collection_name}",
     response_model=OperationResponse,
@@ -85,29 +72,15 @@ def update_collection(
     request: UpdateCollectionRequest,
 ):
     config = load_config()
-    document_config, collections = (
-        resolve_document_collection_target(
-            config=config,
-            document_type=document_type,
-        )
-    )
-    if collection_name not in collections:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=(
-                f"Collection '{collection_name}' was not found "
-                f"in document type '{document_type}'"
-            ),
-        )
-
     collection_data = request.collection.model_dump(
         exclude_none=True
     )
-    updated_config = deepcopy(config)
-    updated_config[document_type]["collections"][
-        collection_name
-    ] = collection_data
-    save_validated_config(updated_config)
+    update_document_collection(
+        config=config,
+        document_type=document_type,
+        collection_name=collection_name,
+        collection_data=collection_data,
+    )
     return {
         "status": "ok",
         "message": (
@@ -115,8 +88,6 @@ def update_collection(
             f"document type '{document_type}'"
         ),
     }
-
-
 @router.delete(
     "/document-types/{document_type}/collections/{collection_name}",
     response_model=OperationResponse,
@@ -126,29 +97,11 @@ def delete_collection(
     collection_name: str,
 ):
     config = load_config()
-    document_config, collections = (
-        resolve_document_collection_target(
-            config=config,
-            document_type=document_type,
-        )
+    delete_document_collection(
+        config=config,
+        document_type=document_type,
+        collection_name=collection_name,
     )
-    if collection_name not in collections:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=(
-                f"Collection '{collection_name}' was not found "
-                f"in document type '{document_type}'"
-            ),
-        )
-
-    updated_config = deepcopy(config)
-    updated_collections = updated_config[document_type][
-        "collections"
-    ]
-    del updated_collections[collection_name]
-    if not updated_collections:
-        del updated_config[document_type]["collections"]
-    save_validated_config(updated_config)
     return {
         "status": "ok",
         "message": (
@@ -156,9 +109,6 @@ def delete_collection(
             f"document type '{document_type}'"
         ),
     }
-
-
-
 @router.post(
     "/document-types/{document_type}/collections/"
     "{collection_name}/fields",
@@ -328,32 +278,16 @@ def add_profile_collection(
     request: AddCollectionRequest,
 ):
     config = load_config()
-    document_config, profile_config, collections = (
-        resolve_profile_collection_target(
-            config=config,
-            document_type=document_type,
-            profile_name=profile_name,
-        )
-    )
-    if collection_name in collections:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                f"Collection '{collection_name}' already exists "
-                f"in profile '{profile_name}'"
-            ),
-        )
-
     collection_data = request.collection.model_dump(
         exclude_none=True
     )
-    updated_config = deepcopy(config)
-    updated_config[document_type]["profiles"][
-        profile_name
-    ].setdefault("collections", {})[
-        collection_name
-    ] = collection_data
-    save_validated_config(updated_config)
+    add_profile_collection_mutation(
+        config=config,
+        document_type=document_type,
+        profile_name=profile_name,
+        collection_name=collection_name,
+        collection_data=collection_data,
+    )
     return {
         "status": "ok",
         "message": (
@@ -361,8 +295,6 @@ def add_profile_collection(
             f"profile '{profile_name}'"
         ),
     }
-
-
 @router.put(
     "/document-types/{document_type}/profiles/{profile_name}/"
     "collections/{collection_name}",
@@ -375,30 +307,16 @@ def update_profile_collection(
     request: UpdateCollectionRequest,
 ):
     config = load_config()
-    document_config, profile_config, collections = (
-        resolve_profile_collection_target(
-            config=config,
-            document_type=document_type,
-            profile_name=profile_name,
-        )
-    )
-    if collection_name not in collections:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=(
-                f"Collection '{collection_name}' was not found "
-                f"in profile '{profile_name}'"
-            ),
-        )
-
     collection_data = request.collection.model_dump(
         exclude_none=True
     )
-    updated_config = deepcopy(config)
-    updated_config[document_type]["profiles"][profile_name][
-        "collections"
-    ][collection_name] = collection_data
-    save_validated_config(updated_config)
+    update_profile_collection_mutation(
+        config=config,
+        document_type=document_type,
+        profile_name=profile_name,
+        collection_name=collection_name,
+        collection_data=collection_data,
+    )
     return {
         "status": "ok",
         "message": (
@@ -406,8 +324,6 @@ def update_profile_collection(
             f"profile '{profile_name}'"
         ),
     }
-
-
 @router.delete(
     "/document-types/{document_type}/profiles/{profile_name}/"
     "collections/{collection_name}",
@@ -419,30 +335,12 @@ def delete_profile_collection(
     collection_name: str,
 ):
     config = load_config()
-    document_config, profile_config, collections = (
-        resolve_profile_collection_target(
-            config=config,
-            document_type=document_type,
-            profile_name=profile_name,
-        )
+    delete_profile_collection_mutation(
+        config=config,
+        document_type=document_type,
+        profile_name=profile_name,
+        collection_name=collection_name,
     )
-    if collection_name not in collections:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=(
-                f"Collection '{collection_name}' was not found "
-                f"in profile '{profile_name}'"
-            ),
-        )
-
-    updated_config = deepcopy(config)
-    updated_profile = updated_config[document_type]["profiles"][
-        profile_name
-    ]
-    del updated_profile["collections"][collection_name]
-    if not updated_profile["collections"]:
-        del updated_profile["collections"]
-    save_validated_config(updated_config)
     return {
         "status": "ok",
         "message": (
@@ -450,8 +348,6 @@ def delete_profile_collection(
             f"profile '{profile_name}'"
         ),
     }
-
-
 @router.post(
     "/document-types/{document_type}/profiles/{profile_name}/"
     "collections/{collection_name}/fields",
