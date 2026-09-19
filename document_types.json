@@ -466,8 +466,8 @@
             "type": "regex_list",
             "occurrence": "first",
             "rules": [
-              "ПОЛУЧАТЕЛ\\s*:\\s*[А-Я]+(?:\\s+[А-Я]+){2}\\s+(ГР\\.\\s*СОФИЯ\\s+[0-9]{4}\\s+.*?\\s+БЛ\\.\\s*[0-9А-ЯA-Z-]+\\s+ВХ\\.\\s*[0-9А-ЯA-Z-]+\\s+АПАРТАМЕНТ\\s*[0-9]+)\\s+БИЗНЕС\\s+ПАРТНЬОР",
-              "АДРЕС\\s+ЗА\\s+КОРЕСПОНДЕНЦИЯ\\s+[А-Я]+(?:\\s+[А-Я]+){2}\\s+(ГР\\.\\s*СОФИЯ\\s+[0-9]{4}\\s+.*?\\s+№\\s*[0-9А-ЯA-Z-]+\\s+ВХ\\.\\s*[0-9А-ЯA-Z-]+\\s+АП\\.\\s*[0-9]+)\\s+ФАКТУРА"
+              "ПОЛУЧАТЕЛ\\s*:\\s*[А-Я]+(?:\\s+[А-Я]+){2}\\s+(ГР\\.\\s*СОФИЯ\\s+[0-9]{4}[\\s\\S]*?АПАРТАМЕНТ\\s*[0-9]+)",
+              "АДРЕС ЗА КОРЕСПОНДЕНЦИЯ\\s+[А-Я]+(?:\\s+[А-Я]+){2}\\s+(ГР\\.\\s*СОФИЯ\\s+[0-9]{4}[\\s\\S]*?АП\\.?\\s*[0-9]+)"
             ],
             "validation": [
               {
@@ -582,7 +582,59 @@
     "collections": {
       "services": {
         "cardinality": "zero_or_more",
-        "fields": []
+        "start_pattern": "^(?:Топлинна енергия|Дялово разпределение)",
+        "fields": [
+          {
+            "name": "description",
+            "type": "regex",
+            "occurrence": "first",
+            "rule": "^(.+?)\\s+(?:МВтч|бр)\\s+",
+            "validation": []
+          },
+          {
+            "name": "unit",
+            "type": "regex",
+            "occurrence": "first",
+            "rule": "^.+?\\s+(МВтч|бр)\\s+",
+            "validation": []
+          },
+          {
+            "name": "quantity",
+            "type": "regex",
+            "occurrence": "first",
+            "rule": "^.+?\\s+(?:МВтч|бр)\\s+([0-9]+(?:[.,][0-9]+)?)\\s+",
+            "validation": [
+              {
+                "type": "decimal",
+                "minimum": "0"
+              }
+            ]
+          },
+          {
+            "name": "unit_price",
+            "type": "regex",
+            "occurrence": "first",
+            "rule": "^.+?\\s+(?:МВтч|бр)\\s+[0-9]+(?:[.,][0-9]+)?\\s+([0-9]+[.,][0-9]+)\\s+",
+            "validation": [
+              {
+                "type": "decimal",
+                "minimum": "0"
+              }
+            ]
+          },
+          {
+            "name": "amount",
+            "type": "regex",
+            "occurrence": "last",
+            "rule": "^.+?\\s+(?:МВтч|бр)\\s+[0-9]+(?:[.,][0-9]+)?\\s+[0-9]+[.,][0-9]+\\s+([0-9]+[.,][0-9]+)",
+            "validation": [
+              {
+                "type": "decimal",
+                "minimum": "0"
+              }
+            ]
+          }
+        ]
       },
       "metering_points": {
         "cardinality": "zero_or_more",
