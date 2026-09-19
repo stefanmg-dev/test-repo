@@ -342,7 +342,17 @@
                   "Електромер\\s*№\\s*([0-9]{8,15})",
                   "Фабричен\\s+номер\\s*([0-9]{8,15})"
                 ],
-                "validation": []
+                "validation": [
+                  {
+                    "type": "required",
+                    "message": "Meter number is required"
+                  },
+                  {
+                    "type": "regex",
+                    "pattern": "[0-9]{8,15}",
+                    "message": "Meter number is invalid"
+                  }
+                ]
               }
             ]
           },
@@ -354,7 +364,17 @@
                 "type": "regex",
                 "occurrence": "first",
                 "rule": "Точка\\s+на\\s+измерване\\s+([0-9A-Z]{16})",
-                "validation": []
+                "validation": [
+                  {
+                    "type": "required",
+                    "message": "Metering point number is required"
+                  },
+                  {
+                    "type": "regex",
+                    "pattern": "[0-9A-Z]{16}",
+                    "message": "Metering point number is invalid"
+                  }
+                ]
               }
             ]
           },
@@ -366,7 +386,17 @@
                 "type": "regex",
                 "occurrence": "first",
                 "rule": "^(Дневна|Нощна)\\s+",
-                "validation": []
+                "validation": [
+                  {
+                    "type": "required",
+                    "message": "Tariff is required"
+                  },
+                  {
+                    "type": "regex",
+                    "pattern": "(?:Дневна|Нощна)",
+                    "message": "Tariff is invalid"
+                  }
+                ]
               },
               {
                 "name": "previous_reading",
@@ -401,7 +431,17 @@
                 "type": "regex",
                 "occurrence": "first",
                 "rule": "^(?:Дневна|Нощна)\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+\\s+([0-9]+)",
-                "validation": []
+                "validation": [
+                  {
+                    "type": "required",
+                    "message": "Consumption quantity is required"
+                  },
+                  {
+                    "type": "decimal",
+                    "minimum": "0",
+                    "message": "Consumption quantity must be a non-negative decimal"
+                  }
+                ]
               },
               {
                 "name": "unit",
