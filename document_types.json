@@ -403,28 +403,68 @@
                 "type": "regex",
                 "occurrence": "first",
                 "rule": "^(?:Дневна|Нощна)\\s+([0-9]+\\s+[0-9]+)",
-                "validation": []
+                "validation": [
+                  {
+                    "type": "required",
+                    "message": "Previous reading is required"
+                  },
+                  {
+                    "type": "regex",
+                    "pattern": "[0-9]+(?: [0-9]{3})*",
+                    "message": "Previous reading is invalid"
+                  }
+                ]
               },
               {
                 "name": "current_reading",
                 "type": "regex",
                 "occurrence": "first",
                 "rule": "^(?:Дневна|Нощна)\\s+[0-9]+\\s+[0-9]+\\s+([0-9]+\\s+[0-9]+)",
-                "validation": []
+                "validation": [
+                  {
+                    "type": "required",
+                    "message": "Current reading is required"
+                  },
+                  {
+                    "type": "regex",
+                    "pattern": "[0-9]+(?: [0-9]{3})*",
+                    "message": "Current reading is invalid"
+                  }
+                ]
               },
               {
                 "name": "difference",
                 "type": "regex",
                 "occurrence": "first",
                 "rule": "^(?:Дневна|Нощна)\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+\\s+([0-9]+)",
-                "validation": []
+                "validation": [
+                  {
+                    "type": "required",
+                    "message": "Consumption difference is required"
+                  },
+                  {
+                    "type": "decimal",
+                    "minimum": "0",
+                    "message": "Consumption difference must be a non-negative decimal"
+                  }
+                ]
               },
               {
                 "name": "correction",
                 "type": "regex",
                 "occurrence": "first",
                 "rule": "^(?:Дневна|Нощна)\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+\\s+[0-9]+\\s+([0-9]+)",
-                "validation": []
+                "validation": [
+                  {
+                    "type": "required",
+                    "message": "Consumption correction is required"
+                  },
+                  {
+                    "type": "decimal",
+                    "minimum": "0",
+                    "message": "Consumption correction must be a non-negative decimal"
+                  }
+                ]
               },
               {
                 "name": "quantity",
