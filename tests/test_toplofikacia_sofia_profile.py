@@ -4,7 +4,7 @@ from extraction_orchestrator import apply_rules
 
 
 TOPLOFIKACIA_TEXT = """
-ПОЛУЧАТЕЛ: ТЕСТОВ КЛИЕНТ ПРИМЕРЕН ГР. СОФИЯ 1618 КРАСНО СЕЛО БЛ. 201-А ВХ. 4 АПАРТАМЕНТ 68 БИЗНЕС ПАРТНЬОР №1000215239
+ПОЛУЧАТЕЛ: ТЕСТОВ КЛИЕНТ ПРИМЕРЕН ГР. СОФИЯ 1618 КРАСНО СЕЛО БЛ. 201-А ВХ. 4 АПАРТАМЕНТ 68 БИЗНЕС ПАРТНЬОР №1000215239 ДОГОВОРНА СМЕТКА №002100047756 НОМЕР НА ИНСТАЛАЦИЯ №4000374298
 ФАКТУРА № 1204458225 - ОРИГИНАЛ
 Дата на издаване/Дата на данъчно събитие - 31.08.2026 г.
 ВСИЧКО по фактура: 15,12
@@ -56,3 +56,18 @@ def test_extracts_toplofikacia_customer_address_override():
         "ГР. СОФИЯ 1618 КРАСНО СЕЛО БЛ. 201-А ВХ. 4 "
         "АПАРТАМЕНТ 68"
     )
+
+
+def test_extracts_toplofikacia_business_partner_number():
+    fields = extract_toplofikacia_fields()
+    assert fields["business_partner_number"] == "1000215239"
+
+
+def test_extracts_toplofikacia_contract_account_number():
+    fields = extract_toplofikacia_fields()
+    assert fields["contract_account_number"] == "002100047756"
+
+
+def test_extracts_toplofikacia_installation_number():
+    fields = extract_toplofikacia_fields()
+    assert fields["installation_number"] == "4000374298"
