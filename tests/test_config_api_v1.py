@@ -297,3 +297,121 @@ def test_rejects_invalid_field_payload(
     )
 
     assert response.status_code == 422
+
+
+def test_collection_crud_flow(
+    client,
+    isolated_config,
+):
+    collection_payload = {
+        "collection": {
+            "cardinality": "zero_or_more",
+            "start_pattern": r"^Електромер\s*№",
+            "fields": [],
+        }
+    }
+
+    add_response = client.post(
+        "/api/v1/config/document-types/"
+        "invoice/collections/meters",
+        json=collection_payload,
+    )
+    assert add_response.status_code == 201
+
+    config_after_add = read_temporary_config(
+        isolated_config
+    )
+    assert config_after_add["invoice"]["collections"][
+        "meters"
+    ] == collection_payload["collection"]
+
+    updated_payload = {
+        "collection": {
+            "cardinality": "one_or_more",
+            "start_pattern": r"^Фабричен номер",
+            "fields": [],
+        }
+    }
+    update_response = client.put(
+        "/api/v1/config/document-types/"
+        "invoice/collections/meters",
+        json=updated_payload,
+    )
+    assert update_response.status_code == 200
+
+    config_after_update = read_temporary_config(
+        isolated_config
+    )
+    assert config_after_update["invoice"]["collections"][
+        "meters"
+    ] == updated_payload["collection"]
+
+    delete_response = client.delete(
+        "/api/v1/config/document-types/"
+        "invoice/collections/meters"
+    )
+    assert delete_response.status_code == 200
+
+    config_after_delete = read_temporary_config(
+        isolated_config
+    )
+    assert "collections" not in config_after_delete["invoice"]
+
+
+def test_rejects_duplicate_collection(client):
+    payload = {
+        "collection": {
+            "cardinality": "zero_or_more",
+            "fields": [],
+        }
+    }
+    first_response = client.post(
+        "/api/v1/config/document-types/"
+        "invoice/collections/services",
+        json=payload,
+    )
+    assert first_response.status_code == 201
+
+    duplicate_response = client.post(
+        "/api/v1/config/document-types/"
+        "invoice/collections/services",
+        json=payload,
+    )
+    assert duplicate_response.status_code == 409
+
+
+def test_collection_update_and_delete_require_existing_collection(
+    client,
+):
+    payload = {
+        "collection": {
+            "cardinality": "zero_or_more",
+            "fields": [],
+        }
+    }
+    update_response = client.put(
+        "/api/v1/config/document-types/"
+        "invoice/collections/missing",
+        json=payload,
+    )
+    assert update_response.status_code == 404
+
+    delete_response = client.delete(
+        "/api/v1/config/document-types/"
+        "invoice/collections/missing"
+    )
+    assert delete_response.status_code == 404
+
+
+def test_rejects_invalid_collection_payload(client):
+    response = client.post(
+        "/api/v1/config/document-types/"
+        "invoice/collections/meters",
+        json={
+            "collection": {
+                "cardinality": "many",
+                "fields": [],
+            }
+        },
+    )
+    assert response.status_code == 422

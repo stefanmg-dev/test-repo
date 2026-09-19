@@ -12,7 +12,11 @@ SUPPORTED_FIELD_TYPES = {
 
 SUPPORTED_OCCURRENCES = {"first", "last"}
 SUPPORTED_DIRECTIONS = {"before", "after", "both"}
-SUPPORTED_COLLECTION_CARDINALITIES = {"zero_or_more"}
+SUPPORTED_COLLECTION_CARDINALITIES = {
+    "zero_or_more",
+    "one_or_more",
+    "exactly_one",
+}
 COLLECTION_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 PROFILE_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 
