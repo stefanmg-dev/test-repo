@@ -13,6 +13,7 @@ from extraction_orchestrator import extract_document_data
 from llm_engine import extract_values
 from extraction_models import ExtractionResponseModel
 from ocr_engine import (
+    InvalidDocumentInputError,
     UnsupportedFileTypeError,
     extract_document_input,
     extract_text,
@@ -110,6 +111,13 @@ async def extract_document(
         raise HTTPException(
             status_code=(
                 status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
+            ),
+            detail=str(exc),
+        ) from exc
+    except InvalidDocumentInputError as exc:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_422_UNPROCESSABLE_CONTENT
             ),
             detail=str(exc),
         ) from exc

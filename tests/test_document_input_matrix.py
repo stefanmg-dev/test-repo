@@ -259,3 +259,29 @@ def test_unsupported_input_format_is_rejected(
         extract(
             make_upload(filename)
         )
+
+
+def test_corrupted_pdf_is_rejected_as_invalid_document_input(
+    monkeypatch,
+):
+    def fake_pdf_to_images(path):
+        raise ocr_engine.InvalidPdfError(
+            "Invalid or corrupted PDF file"
+        )
+
+    monkeypatch.setattr(
+        ocr_engine,
+        "pdf_to_images",
+        fake_pdf_to_images,
+    )
+
+    with pytest.raises(
+        ocr_engine.InvalidDocumentInputError,
+        match="Invalid or corrupted PDF file",
+    ):
+        extract(
+            make_upload(
+                "invalid_document.pdf",
+                b"This is not a valid PDF.\n",
+            )
+        )

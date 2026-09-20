@@ -239,3 +239,40 @@ def test_extract_document_rejects_unsupported_file_type():
     assert response.json() == {
         "detail": "Unsupported file type: .csv",
     }
+
+
+async def fake_invalid_document_input(file):
+    await file.read()
+    raise routes_extract.InvalidDocumentInputError(
+        "Invalid or corrupted PDF file"
+    )
+
+
+def test_extract_document_rejects_corrupted_pdf(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_document_input",
+        fake_invalid_document_input,
+    )
+
+    client = TestClient(app)
+    response = client.post(
+        "/extract-document",
+        data={
+            "document_type": "invoice",
+        },
+        files={
+            "file": (
+                "invalid_document.pdf",
+                b"This is not a valid PDF.\n",
+                "application/pdf",
+            ),
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": "Invalid or corrupted PDF file",
+    }
