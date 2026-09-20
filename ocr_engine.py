@@ -7,6 +7,7 @@ from PIL import Image, ImageOps
 
 from input_quality import evaluate_image_quality
 from pdf_engine import (
+    InvalidPdfError,
     extract_pdf_text,
     is_native_pdf,
     pdf_to_images,
@@ -189,8 +190,16 @@ def remove_file(
         pass
 
 
-class UnsupportedFileTypeError(ValueError):
+class DocumentInputError(ValueError):
+    """Base error for invalid uploaded document input."""
+
+
+class UnsupportedFileTypeError(DocumentInputError):
     """Raised when the uploaded document format is not supported."""
+
+
+class InvalidDocumentInputError(DocumentInputError):
+    """Raised when uploaded document content cannot be processed."""
 
 
 async def extract_document_input(file) -> dict:
@@ -228,9 +237,14 @@ async def extract_document_input(file) -> dict:
             temp_file_path = temp_file.name
 
         if extension == ".pdf":
-            generated_image_paths = pdf_to_images(
-                temp_file_path
-            )
+            try:
+                generated_image_paths = pdf_to_images(
+                    temp_file_path
+                )
+            except InvalidPdfError as exc:
+                raise InvalidDocumentInputError(
+                    str(exc)
+                ) from exc
 
             if is_native_pdf(temp_file_path):
                 native_text = extract_pdf_text(

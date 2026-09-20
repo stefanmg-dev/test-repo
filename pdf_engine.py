@@ -1,5 +1,6 @@
 import fitz  # PyMuPDF
 from pdf2image import convert_from_path
+from pdf2image.exceptions import PDFPageCountError
 import tempfile
 
 def is_native_pdf(pdf_path: str) -> bool:
@@ -18,8 +19,17 @@ def extract_pdf_text(pdf_path: str) -> str:
 
     return "\n".join(full_text)
 
+class InvalidPdfError(ValueError):
+    """Raised when PDF content cannot be parsed."""
+
+
 def pdf_to_images(pdf_path: str):
-    pages = convert_from_path(pdf_path)
+    try:
+        pages = convert_from_path(pdf_path)
+    except PDFPageCountError as exc:
+        raise InvalidPdfError(
+            "Invalid or corrupted PDF file"
+        ) from exc
     image_paths = []
 
     for page in pages:
