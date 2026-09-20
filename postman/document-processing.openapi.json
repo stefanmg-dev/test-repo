@@ -1,0 +1,2629 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Document Extraction API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/extract-document": {
+      "post": {
+        "summary": "Extract Document",
+        "operationId": "extract_document_extract_document_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_extract_document_extract_document_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractionResponseModel"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/document-types": {
+      "get": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Get Document Types",
+        "operationId": "get_document_types_api_v1_config_document_types_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Create Document Type",
+        "operationId": "create_document_type_api_v1_config_document_types_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDocumentTypeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/document-types/{document_type}": {
+      "get": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Get Document Type",
+        "operationId": "get_document_type_api_v1_config_document_types__document_type__get",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentTypeModel"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Delete Document Type",
+        "operationId": "delete_document_type_api_v1_config_document_types__document_type__delete",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/document-types/{document_type}/rename": {
+      "put": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Rename Document Type",
+        "operationId": "rename_document_type_api_v1_config_document_types__document_type__rename_put",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameDocumentTypeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/document-types/{document_type}/fields": {
+      "post": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Add Field",
+        "operationId": "add_field_api_v1_config_document_types__document_type__fields_post",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddFieldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/document-types/{document_type}/fields/{field_name}": {
+      "put": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Update Field",
+        "operationId": "update_field_api_v1_config_document_types__document_type__fields__field_name__put",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "field_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFieldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Delete Field",
+        "operationId": "delete_field_api_v1_config_document_types__document_type__fields__field_name__delete",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "field_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/document-types/{document_type}/common-fields": {
+      "post": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Add Common Field",
+        "operationId": "add_common_field_api_v1_config_document_types__document_type__common_fields_post",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddFieldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/document-types/{document_type}/common-fields/{field_name}": {
+      "put": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Update Common Field",
+        "operationId": "update_common_field_api_v1_config_document_types__document_type__common_fields__field_name__put",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "field_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFieldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Delete Common Field",
+        "operationId": "delete_common_field_api_v1_config_document_types__document_type__common_fields__field_name__delete",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "field_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/document-types/{document_type}/profiles/{profile_name}/fields": {
+      "post": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Add Profile Field",
+        "operationId": "add_profile_field_api_v1_config_document_types__document_type__profiles__profile_name__fields_post",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "profile_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Profile Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddFieldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/document-types/{document_type}/profiles/{profile_name}/fields/{field_name}": {
+      "put": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Update Profile Field",
+        "operationId": "update_profile_field_api_v1_config_document_types__document_type__profiles__profile_name__fields__field_name__put",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "profile_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Profile Name"
+            }
+          },
+          {
+            "name": "field_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFieldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Delete Profile Field",
+        "operationId": "delete_profile_field_api_v1_config_document_types__document_type__profiles__profile_name__fields__field_name__delete",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "profile_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Profile Name"
+            }
+          },
+          {
+            "name": "field_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/document-types/{document_type}/collections/{collection_name}": {
+      "post": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Add Collection",
+        "operationId": "add_collection_api_v1_config_document_types__document_type__collections__collection_name__post",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCollectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Update Collection",
+        "operationId": "update_collection_api_v1_config_document_types__document_type__collections__collection_name__put",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCollectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Delete Collection",
+        "operationId": "delete_collection_api_v1_config_document_types__document_type__collections__collection_name__delete",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/document-types/{document_type}/collections/{collection_name}/fields": {
+      "post": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Add Collection Field",
+        "operationId": "add_collection_field_api_v1_config_document_types__document_type__collections__collection_name__fields_post",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddFieldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/document-types/{document_type}/collections/{collection_name}/fields/{field_name}": {
+      "put": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Update Collection Field",
+        "operationId": "update_collection_field_api_v1_config_document_types__document_type__collections__collection_name__fields__field_name__put",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection Name"
+            }
+          },
+          {
+            "name": "field_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFieldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Delete Collection Field",
+        "operationId": "delete_collection_field_api_v1_config_document_types__document_type__collections__collection_name__fields__field_name__delete",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection Name"
+            }
+          },
+          {
+            "name": "field_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/document-types/{document_type}/profiles/{profile_name}/collections/{collection_name}": {
+      "post": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Add Profile Collection",
+        "operationId": "add_profile_collection_api_v1_config_document_types__document_type__profiles__profile_name__collections__collection_name__post",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "profile_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Profile Name"
+            }
+          },
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCollectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Update Profile Collection",
+        "operationId": "update_profile_collection_api_v1_config_document_types__document_type__profiles__profile_name__collections__collection_name__put",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "profile_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Profile Name"
+            }
+          },
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCollectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Delete Profile Collection",
+        "operationId": "delete_profile_collection_api_v1_config_document_types__document_type__profiles__profile_name__collections__collection_name__delete",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "profile_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Profile Name"
+            }
+          },
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/document-types/{document_type}/profiles/{profile_name}/collections/{collection_name}/fields": {
+      "post": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Add Profile Collection Field",
+        "operationId": "add_profile_collection_field_api_v1_config_document_types__document_type__profiles__profile_name__collections__collection_name__fields_post",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "profile_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Profile Name"
+            }
+          },
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddFieldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/document-types/{document_type}/profiles/{profile_name}/collections/{collection_name}/fields/{field_name}": {
+      "put": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Update Profile Collection Field",
+        "operationId": "update_profile_collection_field_api_v1_config_document_types__document_type__profiles__profile_name__collections__collection_name__fields__field_name__put",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "profile_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Profile Name"
+            }
+          },
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection Name"
+            }
+          },
+          {
+            "name": "field_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFieldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Delete Profile Collection Field",
+        "operationId": "delete_profile_collection_field_api_v1_config_document_types__document_type__profiles__profile_name__collections__collection_name__fields__field_name__delete",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "profile_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Profile Name"
+            }
+          },
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection Name"
+            }
+          },
+          {
+            "name": "field_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AddCollectionRequest": {
+        "properties": {
+          "collection": {
+            "$ref": "#/components/schemas/DocumentCollectionModel"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "collection"
+        ],
+        "title": "AddCollectionRequest"
+      },
+      "AddFieldRequest": {
+        "properties": {
+          "field": {
+            "$ref": "#/components/schemas/DocumentFieldModel"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "field"
+        ],
+        "title": "AddFieldRequest"
+      },
+      "Body_extract_document_extract_document_post": {
+        "properties": {
+          "document_type": {
+            "type": "string",
+            "title": "Document Type"
+          },
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "document_type",
+          "file"
+        ],
+        "title": "Body_extract_document_extract_document_post"
+      },
+      "CollectionItemValidationModel": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "difference_equals",
+            "title": "Type"
+          },
+          "minuend": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Minuend"
+          },
+          "subtrahend": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Subtrahend"
+          },
+          "result": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Result"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "minuend",
+          "subtrahend",
+          "result"
+        ],
+        "title": "CollectionItemValidationModel"
+      },
+      "CollectionSummaryValidationModel": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "collection_sum_equals_field",
+            "title": "Type"
+          },
+          "collection": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Collection"
+          },
+          "item_field": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Item Field"
+          },
+          "target_field": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Target Field"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "collection",
+          "item_field",
+          "target_field"
+        ],
+        "title": "CollectionSummaryValidationModel"
+      },
+      "ConfigResponse": {
+        "properties": {
+          "document_types": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/DocumentTypeModel"
+            },
+            "type": "object",
+            "title": "Document Types"
+          },
+          "resolved_document_types": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ResolvedDocumentTypeModel"
+            },
+            "type": "object",
+            "title": "Resolved Document Types"
+          },
+          "document_type_metadata": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/DocumentTypeMetadataModel"
+            },
+            "type": "object",
+            "title": "Document Type Metadata"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "document_types"
+        ],
+        "title": "ConfigResponse"
+      },
+      "CreateDocumentTypeRequest": {
+        "properties": {
+          "document_type": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "title": "Document Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "document_type"
+        ],
+        "title": "CreateDocumentTypeRequest"
+      },
+      "DocumentCollectionModel": {
+        "properties": {
+          "cardinality": {
+            "type": "string",
+            "enum": [
+              "zero_or_more",
+              "one_or_more",
+              "exactly_one"
+            ],
+            "title": "Cardinality",
+            "default": "zero_or_more"
+          },
+          "start_pattern": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Pattern"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentFieldModel"
+            },
+            "type": "array",
+            "title": "Fields"
+          },
+          "item_validations": {
+            "items": {
+              "$ref": "#/components/schemas/CollectionItemValidationModel"
+            },
+            "type": "array",
+            "title": "Item Validations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DocumentCollectionModel"
+      },
+      "DocumentFieldModel": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "constant",
+              "regex",
+              "regex_list",
+              "nearby",
+              "llm"
+            ],
+            "title": "Type"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "value": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule"
+          },
+          "rules": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rules"
+          },
+          "anchor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Anchor"
+          },
+          "pattern": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pattern"
+          },
+          "occurrence": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "first",
+                  "last"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occurrence"
+          },
+          "direction": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "before",
+                  "after",
+                  "both"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direction"
+          },
+          "window_size": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Size"
+          },
+          "validation": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationRuleModel"
+            },
+            "type": "array",
+            "title": "Validation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "type"
+        ],
+        "title": "DocumentFieldModel"
+      },
+      "DocumentProfileModel": {
+        "properties": {
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentFieldModel"
+            },
+            "type": "array",
+            "title": "Fields"
+          },
+          "collections": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/DocumentCollectionModel"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collections"
+          },
+          "summary_validations": {
+            "items": {
+              "$ref": "#/components/schemas/CollectionSummaryValidationModel"
+            },
+            "type": "array",
+            "title": "Summary Validations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DocumentProfileModel"
+      },
+      "DocumentTypeMetadataModel": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "ready"
+            ],
+            "title": "Status"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "field_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Field Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "ready",
+          "field_count"
+        ],
+        "title": "DocumentTypeMetadataModel"
+      },
+      "DocumentTypeModel": {
+        "properties": {
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DocumentFieldModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fields"
+          },
+          "default_profile": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Profile"
+          },
+          "common_fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DocumentFieldModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Common Fields"
+          },
+          "profiles": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/DocumentProfileModel"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profiles"
+          },
+          "collections": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/DocumentCollectionModel"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collections"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DocumentTypeModel"
+      },
+      "ExtractionResponseModel": {
+        "properties": {
+          "document_type": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Document Type"
+          },
+          "processing_status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "review",
+              "invalid"
+            ],
+            "title": "Processing Status"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile"
+          },
+          "quality": {
+            "$ref": "#/components/schemas/InputQualityModel"
+          },
+          "raw_text": {
+            "type": "string",
+            "title": "Raw Text"
+          },
+          "llm_values": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Llm Values"
+          },
+          "final_values": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Final Values"
+          },
+          "collections": {
+            "additionalProperties": {
+              "items": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Collections"
+          },
+          "collection_validation": {
+            "$ref": "#/components/schemas/ExtractionValidationModel"
+          },
+          "validation": {
+            "$ref": "#/components/schemas/ExtractionValidationModel"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "document_type",
+          "processing_status",
+          "quality",
+          "raw_text",
+          "validation"
+        ],
+        "title": "ExtractionResponseModel"
+      },
+      "ExtractionValidationModel": {
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "title": "Valid"
+          },
+          "errors": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Errors"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "valid"
+        ],
+        "title": "ExtractionValidationModel"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ImageQualityInputModel": {
+        "properties": {
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "width": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Height"
+          },
+          "short_edge": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Short Edge"
+          },
+          "long_edge": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Long Edge"
+          },
+          "pixel_count": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Pixel Count"
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode"
+          },
+          "dpi": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dpi"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "format",
+          "width",
+          "height",
+          "short_edge",
+          "long_edge",
+          "pixel_count"
+        ],
+        "title": "ImageQualityInputModel"
+      },
+      "InputQualityModel": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "review"
+            ],
+            "title": "Status"
+          },
+          "requires_review": {
+            "type": "boolean",
+            "title": "Requires Review"
+          },
+          "input": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImageQualityInputModel"
+              },
+              {
+                "$ref": "#/components/schemas/PdfQualityInputModel"
+              }
+            ],
+            "title": "Input"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/QualityWarningModel"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "requires_review",
+          "input"
+        ],
+        "title": "InputQualityModel"
+      },
+      "OperationResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "message"
+        ],
+        "title": "OperationResponse"
+      },
+      "PdfPageQualityInputModel": {
+        "properties": {
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "width": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Height"
+          },
+          "short_edge": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Short Edge"
+          },
+          "long_edge": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Long Edge"
+          },
+          "pixel_count": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Pixel Count"
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode"
+          },
+          "dpi": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dpi"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "format",
+          "width",
+          "height",
+          "short_edge",
+          "long_edge",
+          "pixel_count"
+        ],
+        "title": "PdfPageQualityInputModel"
+      },
+      "PdfQualityInputModel": {
+        "properties": {
+          "format": {
+            "type": "string",
+            "const": "PDF",
+            "title": "Format"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "native_pdf",
+              "scanned_pdf"
+            ],
+            "title": "Source"
+          },
+          "page_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Page Count"
+          },
+          "pages": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PdfPageQualityInputModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pages"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "format",
+          "source",
+          "page_count"
+        ],
+        "title": "PdfQualityInputModel"
+      },
+      "QualityWarningModel": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "QualityWarningModel"
+      },
+      "RenameDocumentTypeRequest": {
+        "properties": {
+          "new_document_type": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "title": "New Document Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "new_document_type"
+        ],
+        "title": "RenameDocumentTypeRequest"
+      },
+      "ResolvedDocumentTypeModel": {
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentFieldModel"
+            },
+            "type": "array",
+            "title": "Fields"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ResolvedDocumentTypeModel"
+      },
+      "UpdateCollectionRequest": {
+        "properties": {
+          "collection": {
+            "$ref": "#/components/schemas/DocumentCollectionModel"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "collection"
+        ],
+        "title": "UpdateCollectionRequest"
+      },
+      "UpdateFieldRequest": {
+        "properties": {
+          "field": {
+            "$ref": "#/components/schemas/DocumentFieldModel"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "field"
+        ],
+        "title": "UpdateFieldRequest"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "ValidationRuleModel": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "required",
+              "regex",
+              "date",
+              "decimal"
+            ],
+            "title": "Type"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "pattern": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pattern"
+          },
+          "format": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Format"
+          },
+          "minimum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minimum"
+          },
+          "maximum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maximum"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "ValidationRuleModel"
+      }
+    }
+  }
+}
