@@ -217,3 +217,25 @@ def test_extract_document_reports_invalid_result(
 
     assert "supplier_id" in errors
     assert "invoice_number" in errors
+
+def test_extract_document_rejects_unsupported_file_type():
+    client = TestClient(app)
+
+    response = client.post(
+        "/extract-document",
+        data={
+            "document_type": "invoice",
+        },
+        files={
+            "file": (
+                "unsupported.csv",
+                b"column_a,column_b\nvalue_a,value_b\n",
+                "text/csv",
+            ),
+        },
+    )
+
+    assert response.status_code == 415
+    assert response.json() == {
+        "detail": "Unsupported file type: .csv",
+    }

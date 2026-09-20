@@ -13,6 +13,7 @@ from extraction_orchestrator import extract_document_data
 from llm_engine import extract_values
 from extraction_models import ExtractionResponseModel
 from ocr_engine import (
+    UnsupportedFileTypeError,
     extract_document_input,
     extract_text,
 )
@@ -79,6 +80,11 @@ def get_extraction_document_config(
     "/extract-document",
     response_model=ExtractionResponseModel,
     response_model_exclude_none=True,
+    responses={
+        status.HTTP_415_UNSUPPORTED_MEDIA_TYPE: {
+            "description": "Unsupported file type",
+        },
+    },
 )
 async def extract_document(
     document_type: str = Form(
@@ -96,9 +102,17 @@ async def extract_document(
         )
     )
 
-    input_result = await extract_document_input(
-        file
-    )
+    try:
+        input_result = await extract_document_input(
+            file
+        )
+    except UnsupportedFileTypeError as exc:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
+            ),
+            detail=str(exc),
+        ) from exc
 
     raw_text = input_result["text"]
     quality = input_result["quality"]

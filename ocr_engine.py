@@ -189,6 +189,10 @@ def remove_file(
         pass
 
 
+class UnsupportedFileTypeError(ValueError):
+    """Raised when the uploaded document format is not supported."""
+
+
 async def extract_document_input(file) -> dict:
     filename = file.filename or ""
 
@@ -204,7 +208,7 @@ async def extract_document_input(file) -> dict:
     }
 
     if extension not in supported_extensions:
-        raise ValueError(
+        raise UnsupportedFileTypeError(
             "Unsupported file type: "
             f"{extension or 'unknown'}"
         )
