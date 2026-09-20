@@ -492,3 +492,143 @@ def test_endpoint_reports_inconsistent_consumption_difference(
         "quantity": "210",
         "unit": "kWh",
     }
+
+
+def test_endpoint_reports_inconsistent_consumption_summary(
+    monkeypatch,
+):
+    raw_text = ELECTROHOLD_TEXT.replace(
+        "Общо\n270\nСнабдяване/Разпределение",
+        "Общо\n271\nСнабдяване/Разпределение",
+    )
+
+    if raw_text == ELECTROHOLD_TEXT:
+        raise AssertionError(
+            "Electrohold total consumption fixture "
+            "was not updated"
+        )
+
+    async def fake_extract_document_input(file):
+        await file.read()
+
+        return {
+            "text": raw_text,
+            "quality": PDF_QUALITY,
+        }
+
+    def fake_extract_collections_from_schemas(
+        raw_text,
+        collections,
+    ):
+        return {
+            "services": [],
+            "metering_points": [
+                {
+                    "metering_point_number": (
+                        "32Z1030003158785"
+                    ),
+                }
+            ],
+            "meters": [
+                {
+                    "meter_number": "1021015029",
+                }
+            ],
+            "consumption_items": [
+                {
+                    "tariff": "Дневна",
+                    "previous_reading": "19 719",
+                    "current_reading": "19 929",
+                    "difference": "210",
+                    "correction": "0",
+                    "quantity": "210",
+                    "unit": "kWh",
+                },
+                {
+                    "tariff": "Нощна",
+                    "previous_reading": "3 991",
+                    "current_reading": "4 051",
+                    "difference": "60",
+                    "correction": "0",
+                    "quantity": "60",
+                    "unit": "kWh",
+                },
+            ],
+        }
+
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_document_input",
+        fake_extract_document_input,
+    )
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_values",
+        lambda raw_text: {},
+    )
+    monkeypatch.setattr(
+        collection_pipeline,
+        "extract_collections_from_schemas",
+        fake_extract_collections_from_schemas,
+    )
+
+    response = TestClient(app).post(
+        "/extract-document",
+        data={
+            "document_type": "invoice",
+        },
+        files={
+            "file": (
+                "electrohold-invalid-summary.pdf",
+                b"electrohold-invalid-summary-fixture",
+                "application/pdf",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["profile"] == (
+        "electricity_electrohold"
+    )
+
+    assert body["final_values"][
+        "total_consumption"
+    ] == "271"
+
+    assert body["validation"] == {
+        "valid": True,
+        "errors": {},
+    }
+
+    assert body["collection_validation"] == {
+        "valid": False,
+        "errors": {
+            "_summary.total_consumption": [
+                (
+                    "Consumption item quantities "
+                    "must equal total consumption"
+                ),
+            ]
+        },
+    }
+
+    assert body["processing_status"] == "invalid"
+
+    assert body["quality"] == PDF_QUALITY
+    assert body["quality"]["status"] == "accepted"
+    assert body["quality"]["requires_review"] is False
+
+    quantities = [
+        item["quantity"]
+        for item in body["collections"][
+            "consumption_items"
+        ]
+    ]
+
+    assert quantities == [
+        "210",
+        "60",
+    ]
