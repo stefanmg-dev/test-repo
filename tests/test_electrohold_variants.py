@@ -21,6 +21,7 @@ EXPECTED_VALUES = {
     "total_amount": "37.91",
     "client_number": "300031587847",
     "abonat_number": "9430804222",
+    "total_consumption": None,
 }
 
 

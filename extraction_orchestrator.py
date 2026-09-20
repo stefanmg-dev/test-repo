@@ -4,6 +4,7 @@ from typing import Any
 from document_config_resolver import (
     resolve_document_collections,
     resolve_document_fields,
+    resolve_document_summary_validations,
 )
 
 
@@ -261,12 +262,58 @@ def extract_document_data(
     )
 
     from collection_validator import validate_collections
+    from collection_summary_validator import (
+        validate_collection_summaries,
+    )
+
+    collection_validation = validate_collections(
+        collections=extracted_collections,
+        collection_schemas=collections,
+    )
+
+    summary_validations = (
+        resolve_document_summary_validations(
+            document_config=document_config,
+            profile_name=profile_name,
+        )
+    )
+
+    summary_validation = {
+        "valid": True,
+        "errors": {},
+    }
+
+    if collection_validation.get("valid") is True:
+        summary_validation = (
+            validate_collection_summaries(
+                fields=fields,
+                collections=extracted_collections,
+                validations=summary_validations,
+            )
+        )
+
+    validation_errors = dict(
+        collection_validation.get(
+            "errors",
+            {},
+        )
+    )
+    validation_errors.update(
+        summary_validation.get(
+            "errors",
+            {},
+        )
+    )
+
+    combined_collection_validation = {
+        "valid": not bool(validation_errors),
+        "errors": validation_errors,
+    }
 
     return {
         "fields": fields,
         "collections": extracted_collections,
-        "collection_validation": validate_collections(
-            collections=extracted_collections,
-            collection_schemas=collections,
+        "collection_validation": (
+            combined_collection_validation
         ),
     }

@@ -422,3 +422,42 @@ def build_resolved_document_config(
     if resolved_collections:
         resolved_config["collections"] = resolved_collections
     return resolved_config
+
+
+def resolve_document_summary_validations(
+    document_config,
+    profile_name=None,
+):
+    if not isinstance(document_config, dict):
+        raise DocumentConfigResolutionError(
+            "Document configuration must be an object"
+        )
+
+    if profile_name is None:
+        return []
+
+    profiles = get_profiles(document_config)
+    profile_config = profiles.get(profile_name)
+
+    if profile_config is None:
+        raise DocumentConfigResolutionError(
+            f"Profile '{profile_name}' was not found"
+        )
+
+    if not isinstance(profile_config, dict):
+        raise DocumentConfigResolutionError(
+            f"Profile '{profile_name}' must be an object"
+        )
+
+    validations = profile_config.get(
+        "summary_validations",
+        [],
+    )
+
+    if not isinstance(validations, list):
+        raise DocumentConfigResolutionError(
+            f"Profile '{profile_name}' "
+            "summary_validations must be a list"
+        )
+
+    return deepcopy(validations)
