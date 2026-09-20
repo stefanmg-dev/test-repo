@@ -328,6 +328,23 @@
                 "message": "Abonat number must contain between 8 and 15 digits"
               }
             ]
+          },
+          {
+            "name": "total_consumption",
+            "type": "regex",
+            "rule": "Общо[ \\t]*\\n[ \\t]*([0-9]+(?:[.,][0-9]+)?)[ \\t]*\\n[ \\t]*Снабдяване/Разпределение",
+            "occurrence": "first",
+            "validation": [
+              {
+                "type": "required",
+                "message": "Total consumption is required"
+              },
+              {
+                "type": "decimal",
+                "minimum": "0",
+                "message": "Total consumption must be a non-negative decimal"
+              }
+            ]
           }
         ],
         "collections": {
@@ -500,7 +517,16 @@
               }
             ]
           }
-        }
+        },
+        "summary_validations": [
+          {
+            "type": "collection_sum_equals_field",
+            "collection": "consumption_items",
+            "item_field": "quantity",
+            "target_field": "total_consumption",
+            "message": "Consumption item quantities must equal total consumption"
+          }
+        ]
       },
       "heating_toplofikacia_sofia": {
         "fields": [

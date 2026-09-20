@@ -20,6 +20,9 @@ SUPPORTED_COLLECTION_CARDINALITIES = {
 SUPPORTED_COLLECTION_ITEM_VALIDATION_TYPES = {
     "difference_equals",
 }
+SUPPORTED_SUMMARY_VALIDATION_TYPES = {
+    "collection_sum_equals_field",
+}
 COLLECTION_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 PROFILE_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 
@@ -338,6 +341,114 @@ def validate_legacy_document_type(
     )
 
 
+def validate_summary_validations(
+    validations,
+    field_names,
+    collections,
+    path,
+):
+    if not isinstance(validations, list):
+        raise ConfigValidationError(
+            f"{path} must be a list"
+        )
+
+    for validation_index, validation in enumerate(
+        validations
+    ):
+        validation_path = (
+            f"{path}[{validation_index}]"
+        )
+
+        if not isinstance(validation, dict):
+            raise ConfigValidationError(
+                f"{validation_path} must be an object"
+            )
+
+        unknown_keys = set(validation) - {
+            "type",
+            "collection",
+            "item_field",
+            "target_field",
+            "message",
+        }
+
+        if unknown_keys:
+            raise ConfigValidationError(
+                f"{validation_path} contains unsupported "
+                f"properties: {sorted(unknown_keys)}"
+            )
+
+        validation_type = require_non_empty_string(
+            validation.get("type"),
+            f"{validation_path}.type",
+        )
+
+        if (
+            validation_type
+            not in SUPPORTED_SUMMARY_VALIDATION_TYPES
+        ):
+            raise ConfigValidationError(
+                f"{validation_path}.type must be one of: "
+                f"{sorted(SUPPORTED_SUMMARY_VALIDATION_TYPES)}"
+            )
+
+        collection_name = require_non_empty_string(
+            validation.get("collection"),
+            f"{validation_path}.collection",
+        )
+        item_field = require_non_empty_string(
+            validation.get("item_field"),
+            f"{validation_path}.item_field",
+        )
+        target_field = require_non_empty_string(
+            validation.get("target_field"),
+            f"{validation_path}.target_field",
+        )
+
+        if target_field not in field_names:
+            raise ConfigValidationError(
+                f"{validation_path}.target_field "
+                f"references unknown field "
+                f"'{target_field}'"
+            )
+
+        collection_schema = collections.get(
+            collection_name
+        )
+
+        if not isinstance(collection_schema, dict):
+            raise ConfigValidationError(
+                f"{validation_path}.collection "
+                f"references unknown collection "
+                f"'{collection_name}'"
+            )
+
+        collection_field_names = {
+            field.get("name")
+            for field in collection_schema.get(
+                "fields",
+                [],
+            )
+            if isinstance(field, dict)
+        }
+
+        if item_field not in collection_field_names:
+            raise ConfigValidationError(
+                f"{validation_path}.item_field "
+                f"references unknown field "
+                f"'{item_field}' in collection "
+                f"'{collection_name}'"
+            )
+
+        message = validation.get("message")
+
+        if message is not None:
+            require_non_empty_string(
+                message,
+                f"{validation_path}.message",
+            )
+
+
 def validate_profile_document_type(
     document_config: dict,
     path: str,
@@ -380,6 +491,7 @@ def validate_profile_document_type(
         unknown_keys = set(profile_config) - {
             "fields",
             "collections",
+            "summary_validations",
         }
         if unknown_keys:
             raise ConfigValidationError(
@@ -387,7 +499,7 @@ def validate_profile_document_type(
                 f"{sorted(unknown_keys)}"
             )
 
-        validate_field_list(
+        profile_field_names = validate_field_list(
             profile_config.get("fields", []),
             f"{profile_path}.fields",
         )
@@ -395,6 +507,51 @@ def validate_profile_document_type(
             profile_config.get("collections"),
             f"{profile_path}.collections",
             require_cardinality=False,
+        )
+
+        resolved_field_names = set(common_names)
+        resolved_field_names.update(
+            profile_field_names
+        )
+
+        document_collections = document_config.get(
+            "collections",
+            {},
+        )
+        profile_collections = profile_config.get(
+            "collections",
+            {},
+        )
+
+        resolved_collections = dict(
+            document_collections
+        )
+
+        for collection_name, override in (
+            profile_collections.items()
+        ):
+            merged_collection = dict(
+                resolved_collections.get(
+                    collection_name,
+                    {},
+                )
+            )
+            merged_collection.update(override)
+
+            resolved_collections[
+                collection_name
+            ] = merged_collection
+
+        validate_summary_validations(
+            validations=profile_config.get(
+                "summary_validations",
+                [],
+            ),
+            field_names=resolved_field_names,
+            collections=resolved_collections,
+            path=(
+                f"{profile_path}.summary_validations"
+            ),
         )
 
 

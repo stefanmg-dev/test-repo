@@ -102,6 +102,25 @@ class DocumentCollectionModel(BaseModel):
         return self
 
 
+class CollectionSummaryValidationModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["collection_sum_equals_field"]
+    collection: str = Field(
+        min_length=1,
+        max_length=100,
+    )
+    item_field: str = Field(
+        min_length=1,
+        max_length=100,
+    )
+    target_field: str = Field(
+        min_length=1,
+        max_length=100,
+    )
+    message: str | None = None
+
+
 class DocumentProfileModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -110,6 +129,9 @@ class DocumentProfileModel(BaseModel):
         str,
         DocumentCollectionModel,
     ] | None = None
+    summary_validations: list[
+        CollectionSummaryValidationModel
+    ] = Field(default_factory=list)
 
 
 class DocumentTypeModel(BaseModel):

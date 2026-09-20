@@ -20,6 +20,10 @@ ELECTROHOLD_OCR_TEXT = """
 КЛИЕНТСКИ НОМЕР 300031587847
 Абонатен № 9430804222
 electrohold.bg/sales
+
+Общо
+270
+Снабдяване/Разпределение с електрическа енергия
 """.strip()
 
 
@@ -79,7 +83,7 @@ def test_electrohold_endpoint_selects_profile_skeleton(
 
     final_values = body["final_values"]
 
-    assert len(final_values) == 10
+    assert len(final_values) == 11
     assert set(final_values) == {
         "supplier_name",
         "supplier_id",
@@ -91,6 +95,7 @@ def test_electrohold_endpoint_selects_profile_skeleton(
         "total_amount",
         "client_number",
         "abonat_number",
+        "total_consumption",
     }
     assert final_values["supplier_name"] == (
         "Електрохолд Продажби ЕАД"
@@ -109,6 +114,9 @@ def test_electrohold_endpoint_selects_profile_skeleton(
     assert final_values["total_amount"] == "37.91"
     assert final_values["client_number"] == "300031587847"
     assert final_values["abonat_number"] == "9430804222"
+    assert final_values[
+        "total_consumption"
+    ] == "270"
 
     assert "contract_number" not in final_values
 
