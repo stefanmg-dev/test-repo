@@ -81,6 +81,23 @@ PNG_QUALITY = {
 }
 
 
+
+JPEG_QUALITY = {
+    "status": "accepted",
+    "requires_review": False,
+    "input": {
+        "format": "JPEG",
+        "width": 1652,
+        "height": 2338,
+        "short_edge": 1652,
+        "long_edge": 2338,
+        "pixel_count": 3862376,
+        "mode": "RGB",
+    },
+    "warnings": [],
+}
+
+
 EXPECTED_VALUES = {
     "supplier_name": "А1 България ЕАД",
     "supplier_id": "131468980",
@@ -116,9 +133,21 @@ EXPECTED_VALUES = {
             PNG_OCR_TEXT,
             PNG_QUALITY,
         ),
+        (
+            "a1-invoice.jpg",
+            "image/jpeg",
+            PNG_OCR_TEXT,
+            JPEG_QUALITY,
+        ),
+        (
+            "a1-invoice.jpeg",
+            "image/jpeg",
+            PNG_OCR_TEXT,
+            JPEG_QUALITY,
+        ),
     ],
 )
-def test_a1_pdf_and_png_endpoint_regression(
+def test_a1_supported_input_endpoint_regression(
     monkeypatch,
     filename,
     content_type,

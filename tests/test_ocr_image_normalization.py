@@ -155,3 +155,70 @@ def test_jpeg_is_passed_as_three_channels(
 
     assert result == "OCR result"
     assert_rgb_array(image_array)
+
+def test_jpeg_extension_is_passed_as_three_channels(
+    tmp_path,
+    monkeypatch,
+):
+    image_path = tmp_path / "image.jpeg"
+
+    Image.new(
+        "RGB",
+        (20, 10),
+        (240, 230, 220),
+    ).save(
+        image_path,
+        format="JPEG",
+    )
+
+    result, image_array = run_with_fake_reader(
+        monkeypatch,
+        image_path,
+    )
+
+    assert result == "OCR result"
+    assert_rgb_array(image_array)
+    assert image_array.shape == (
+        10,
+        20,
+        3,
+    )
+
+
+def test_jpeg_exif_orientation_is_normalized(
+    tmp_path,
+    monkeypatch,
+):
+    image_path = tmp_path / "rotated.jpg"
+
+    source = Image.new(
+        "RGB",
+        (20, 10),
+        (255, 255, 255),
+    )
+    stored_pixels = source.transpose(
+        Image.Transpose.ROTATE_90
+    )
+
+    exif = Image.Exif()
+    exif[274] = 6
+
+    stored_pixels.save(
+        image_path,
+        format="JPEG",
+        quality=95,
+        exif=exif,
+    )
+
+    result, image_array = run_with_fake_reader(
+        monkeypatch,
+        image_path,
+    )
+
+    assert result == "OCR result"
+    assert_rgb_array(image_array)
+    assert image_array.shape == (
+        10,
+        20,
+        3,
+    )
