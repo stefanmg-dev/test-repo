@@ -81,7 +81,10 @@ def get_extraction_document_config(
     response_model_exclude_none=True,
 )
 async def extract_document(
-    document_type: str = Form(...),
+    document_type: str = Form(
+        ...,
+        examples=["invoice"],
+    ),
     file: UploadFile = File(...),
 ):
     config = load_config()
