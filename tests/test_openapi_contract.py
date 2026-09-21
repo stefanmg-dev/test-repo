@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from api import app
 
 
@@ -58,3 +61,13 @@ def test_extract_document_error_responses_are_documented():
             "DocumentInputErrorResponseModel"
         ),
     }
+
+
+def test_static_openapi_matches_application_schema():
+    static_openapi = json.loads(
+        Path(
+            "postman/document-processing.openapi.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert static_openapi == app.openapi()
