@@ -11,7 +11,11 @@ from config_store import load_config
 from document_status import is_document_type_ready
 from extraction_orchestrator import extract_document_data
 from llm_engine import extract_values
-from extraction_models import ExtractionResponseModel
+from extraction_models import (
+    DocumentInputErrorResponseModel,
+    ExtractionResponseModel,
+    RequestValidationErrorResponseModel,
+)
 from ocr_engine import (
     InvalidDocumentInputError,
     UnsupportedFileTypeError,
@@ -84,6 +88,17 @@ def get_extraction_document_config(
     responses={
         status.HTTP_415_UNSUPPORTED_MEDIA_TYPE: {
             "description": "Unsupported file type",
+            "model": DocumentInputErrorResponseModel,
+        },
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+            "description": (
+                "Request validation error or invalid "
+                "document content"
+            ),
+            "model": (
+                RequestValidationErrorResponseModel
+                | DocumentInputErrorResponseModel
+            ),
         },
     },
 )
