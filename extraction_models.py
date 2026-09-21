@@ -154,6 +154,36 @@ class ExtractionValidationModel(BaseModel):
     )
 
 
+class DocumentInputErrorResponseModel(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid"
+    )
+
+    detail: str = Field(
+        min_length=1
+    )
+
+
+class RequestValidationIssueModel(BaseModel):
+    model_config = ConfigDict(
+        extra="allow"
+    )
+
+    type: str
+    loc: list[str | int]
+    msg: str
+    input: Any = None
+    ctx: dict[str, Any] | None = None
+
+
+class RequestValidationErrorResponseModel(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid"
+    )
+
+    detail: list[RequestValidationIssueModel]
+
+
 class ExtractionResponseModel(BaseModel):
     model_config = ConfigDict(
         extra="forbid"
