@@ -30,12 +30,50 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "404": {
+            "description": "Document type was not found",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorResponseModel"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Document type is not ready for extraction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseModel"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported file type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentInputErrorResponseModel"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request validation error or invalid document content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/RequestValidationErrorResponseModel"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DocumentInputErrorResponseModel"
+                    }
+                  ],
+                  "title": "Response 422 Extract Document Extract Document Post"
                 }
               }
             }
@@ -1558,6 +1596,21 @@
         ],
         "title": "AddFieldRequest"
       },
+      "ApiErrorResponseModel": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "ApiErrorResponseModel"
+      },
       "Body_extract_document_extract_document_post": {
         "properties": {
           "document_type": {
@@ -1912,6 +1965,21 @@
           "type"
         ],
         "title": "DocumentFieldModel"
+      },
+      "DocumentInputErrorResponseModel": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "DocumentInputErrorResponseModel"
       },
       "DocumentProfileModel": {
         "properties": {
@@ -2448,6 +2516,72 @@
           "new_document_type"
         ],
         "title": "RenameDocumentTypeRequest"
+      },
+      "RequestValidationErrorResponseModel": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/RequestValidationIssueModel"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "RequestValidationErrorResponseModel"
+      },
+      "RequestValidationIssueModel": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Loc"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ctx"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "type",
+          "loc",
+          "msg"
+        ],
+        "title": "RequestValidationIssueModel"
       },
       "ResolvedDocumentTypeModel": {
         "properties": {
