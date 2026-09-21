@@ -285,3 +285,29 @@ def test_corrupted_pdf_is_rejected_as_invalid_document_input(
                 b"This is not a valid PDF.\n",
             )
         )
+
+
+def test_corrupted_image_is_rejected_as_invalid_document_input(
+    monkeypatch,
+):
+    def fake_run_ocr_with_quality(path):
+        raise ocr_engine.UnidentifiedImageError(
+            "cannot identify image file"
+        )
+
+    monkeypatch.setattr(
+        ocr_engine,
+        "run_ocr_with_quality",
+        fake_run_ocr_with_quality,
+    )
+
+    with pytest.raises(
+        ocr_engine.InvalidDocumentInputError,
+        match="Invalid or corrupted image file",
+    ):
+        extract(
+            make_upload(
+                "invalid_image.png",
+                b"This is not a valid PNG.\n",
+            )
+        )

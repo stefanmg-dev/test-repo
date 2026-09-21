@@ -276,3 +276,40 @@ def test_extract_document_rejects_corrupted_pdf(
     assert response.json() == {
         "detail": "Invalid or corrupted PDF file",
     }
+
+
+async def fake_invalid_image_input(file):
+    await file.read()
+    raise routes_extract.InvalidDocumentInputError(
+        "Invalid or corrupted image file"
+    )
+
+
+def test_extract_document_rejects_corrupted_image(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        routes_extract,
+        "extract_document_input",
+        fake_invalid_image_input,
+    )
+
+    client = TestClient(app)
+    response = client.post(
+        "/extract-document",
+        data={
+            "document_type": "invoice",
+        },
+        files={
+            "file": (
+                "invalid_image.png",
+                b"This is not a valid PNG.\n",
+                "image/png",
+            ),
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": "Invalid or corrupted image file",
+    }

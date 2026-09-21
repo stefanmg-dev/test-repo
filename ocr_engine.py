@@ -3,7 +3,7 @@ import tempfile
 
 import easyocr
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 from input_quality import evaluate_image_quality
 from pdf_engine import (
@@ -319,9 +319,14 @@ async def extract_document_input(file) -> dict:
                 ),
             }
 
-        image_result = run_ocr_with_quality(
-            temp_file_path
-        )
+        try:
+            image_result = run_ocr_with_quality(
+                temp_file_path
+            )
+        except UnidentifiedImageError as exc:
+            raise InvalidDocumentInputError(
+                "Invalid or corrupted image file"
+            ) from exc
 
         return {
             "text": image_result["text"].strip(),
