@@ -154,6 +154,16 @@ class ExtractionValidationModel(BaseModel):
     )
 
 
+class ApiErrorResponseModel(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid"
+    )
+
+    detail: str = Field(
+        min_length=1
+    )
+
+
 class DocumentInputErrorResponseModel(BaseModel):
     model_config = ConfigDict(
         extra="forbid"

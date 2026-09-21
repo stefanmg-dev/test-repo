@@ -12,6 +12,7 @@ from document_status import is_document_type_ready
 from extraction_orchestrator import extract_document_data
 from llm_engine import extract_values
 from extraction_models import (
+    ApiErrorResponseModel,
     DocumentInputErrorResponseModel,
     ExtractionResponseModel,
     RequestValidationErrorResponseModel,
@@ -86,6 +87,14 @@ def get_extraction_document_config(
     response_model=ExtractionResponseModel,
     response_model_exclude_none=True,
     responses={
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Document type was not found",
+            "model": ApiErrorResponseModel,
+        },
+        status.HTTP_409_CONFLICT: {
+            "description": "Document type is not ready for extraction",
+            "model": ApiErrorResponseModel,
+        },
         status.HTTP_415_UNSUPPORTED_MEDIA_TYPE: {
             "description": "Unsupported file type",
             "model": DocumentInputErrorResponseModel,
