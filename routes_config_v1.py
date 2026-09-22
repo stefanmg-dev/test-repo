@@ -3,12 +3,14 @@ from copy import deepcopy
 from fastapi import (
     APIRouter,
     HTTPException,
+    Path,
     Response,
     status,
 )
 
 from config_models import (
     AddFieldRequest,
+    AddProfileRequest,
     ConfigResponse,
     CreateDocumentTypeRequest,
     DocumentTypeModel,
@@ -124,9 +126,16 @@ def create_document_type(
 
     updated_config = deepcopy(config)
 
-    updated_config[document_type] = {
-        "fields": []
-    }
+    if request.configuration_mode == "profile":
+        updated_config[document_type] = {
+            "common_fields": [],
+            "profiles": {},
+            "collections": {},
+        }
+    else:
+        updated_config[document_type] = {
+            "fields": []
+        }
 
     save_validated_config(updated_config)
 
@@ -407,6 +416,92 @@ def delete_field(
     }
 
 
+@router.post(
+    "/document-types/{document_type}/profiles/{profile_name}",
+    response_model=OperationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_profile(
+    document_type: str,
+    request: AddProfileRequest,
+    profile_name: str = Path(
+        ...,
+        min_length=1,
+        max_length=100,
+        pattern=r"^[a-z][a-z0-9_]*$",
+    ),
+):
+    config = load_config()
+    document_config = get_document_type_or_404(
+        config=config,
+        document_type=document_type,
+    )
+    ensure_profile_based_config(document_config)
+
+    profiles = document_config.get("profiles", {})
+    if profile_name in profiles:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Profile '{profile_name}' already exists",
+        )
+
+    profile_data = request.profile.model_dump(
+        exclude_none=True
+    )
+    updated_config = deepcopy(config)
+    updated_config[document_type]["profiles"][
+        profile_name
+    ] = profile_data
+    save_validated_config(updated_config)
+
+    return {
+        "status": "ok",
+        "message": f"Profile '{profile_name}' added",
+    }
+
+
+@router.delete(
+    "/document-types/{document_type}/profiles/{profile_name}",
+    response_model=OperationResponse,
+)
+def delete_profile(
+    document_type: str,
+    profile_name: str = Path(
+        ...,
+        min_length=1,
+        max_length=100,
+        pattern=r"^[a-z][a-z0-9_]*$",
+    ),
+):
+    config = load_config()
+    document_config = get_document_type_or_404(
+        config=config,
+        document_type=document_type,
+    )
+    ensure_profile_based_config(document_config)
+    get_profile_or_404(document_config, profile_name)
+
+    if document_config.get("default_profile") == profile_name:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Profile '{profile_name}' is the default profile "
+                "and cannot be deleted"
+            ),
+        )
+
+    updated_config = deepcopy(config)
+    del updated_config[document_type]["profiles"][
+        profile_name
+    ]
+    save_validated_config(updated_config)
+
+    return {
+        "status": "ok",
+        "message": f"Profile '{profile_name}' deleted",
+    }
+
+
 # Profile-aware field endpoints
 
 def ensure_field_name_available(
@@ -414,22 +509,31 @@ def ensure_field_name_available(
     field_name: str,
     ignored_field_name: str | None = None,
 ) -> None:
-    resolved_fields = resolve_document_fields(document_config)
+    field_groups = [
+        document_config.get("common_fields", []),
+    ]
 
-    for field in resolved_fields:
-        existing_name = field.get("name")
+    profiles = document_config.get("profiles", {})
+    if isinstance(profiles, dict):
+        field_groups.extend(
+            profile_config.get("fields", [])
+            for profile_config in profiles.values()
+            if isinstance(profile_config, dict)
+        )
 
-        if existing_name == ignored_field_name:
-            continue
-
-        if existing_name == field_name:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=(
-                    f"Field '{field_name}' already exists "
-                    "in the resolved document configuration"
-                ),
-            )
+    for fields in field_groups:
+        for field in fields:
+            existing_name = field.get("name")
+            if existing_name == ignored_field_name:
+                continue
+            if existing_name == field_name:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=(
+                        f"Field '{field_name}' already exists "
+                        "in the resolved document configuration"
+                    ),
+                )
 
 
 @router.post(

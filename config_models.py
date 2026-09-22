@@ -15,6 +15,7 @@ OccurrenceType = Literal["first", "last"]
 DirectionType = Literal["before", "after", "both"]
 ValidationType = Literal["required", "regex", "date", "decimal"]
 DocumentStatusType = Literal["draft", "ready"]
+ConfigurationModeType = Literal["legacy", "profile"]
 CollectionCardinalityType = Literal[
     "zero_or_more",
     "one_or_more",
@@ -205,6 +206,13 @@ class CreateDocumentTypeRequest(BaseModel):
         max_length=100,
         pattern=r"^[a-z][a-z0-9_]*$",
     )
+    configuration_mode: ConfigurationModeType = "legacy"
+
+
+class AddProfileRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    profile: DocumentProfileModel
 
 
 class RenameDocumentTypeRequest(BaseModel):
