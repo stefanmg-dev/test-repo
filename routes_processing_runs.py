@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -51,10 +51,38 @@ def list_processing_runs(
     processing_run_service: ProcessingRunServiceDependency,
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    document_type: Annotated[
+        str | None,
+        Query(min_length=1, max_length=100),
+    ] = None,
+    processing_status: Annotated[
+        Literal[
+            "processing",
+            "accepted",
+            "review",
+            "invalid",
+            "failed",
+        ]
+        | None,
+        Query(),
+    ] = None,
+    profile: Annotated[
+        str | None,
+        Query(
+            min_length=1,
+            max_length=100,
+            pattern=r"^[a-z][a-z0-9_]*$",
+        ),
+    ] = None,
+    requires_review: bool | None = None,
 ):
     items, total = processing_run_service.list_runs(
         offset=offset,
         limit=limit,
+        document_type=document_type,
+        processing_status=processing_status,
+        profile=profile,
+        requires_review=requires_review,
     )
     return {
         "items": items,

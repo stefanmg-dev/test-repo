@@ -23,9 +23,21 @@ class ProcessingRunRepository:
         *,
         offset: int,
         limit: int,
+        document_type: str | None = None,
+        processing_status: str | None = None,
+        profile: str | None = None,
+        requires_review: bool | None = None,
     ) -> list[ProcessingRun]:
+        statement = select(ProcessingRun)
+        statement = self._apply_filters(
+            statement,
+            document_type=document_type,
+            processing_status=processing_status,
+            profile=profile,
+            requires_review=requires_review,
+        )
         statement = (
-            select(ProcessingRun)
+            statement
             .order_by(
                 ProcessingRun.created_at.desc(),
                 ProcessingRun.id.desc(),
@@ -37,10 +49,53 @@ class ProcessingRunRepository:
             self._session.scalars(statement).all()
         )
 
-    def count(self) -> int:
+    def count(
+        self,
+        *,
+        document_type: str | None = None,
+        processing_status: str | None = None,
+        profile: str | None = None,
+        requires_review: bool | None = None,
+    ) -> int:
         statement = select(
             func.count(ProcessingRun.id)
+        )
+        statement = self._apply_filters(
+            statement,
+            document_type=document_type,
+            processing_status=processing_status,
+            profile=profile,
+            requires_review=requires_review,
         )
         return int(
             self._session.scalar(statement) or 0
         )
+
+    @staticmethod
+    def _apply_filters(
+        statement,
+        *,
+        document_type: str | None,
+        processing_status: str | None,
+        profile: str | None,
+        requires_review: bool | None,
+    ):
+        if document_type is not None:
+            statement = statement.where(
+                ProcessingRun.document_type == document_type
+            )
+        if processing_status is not None:
+            statement = statement.where(
+                ProcessingRun.processing_status
+                == processing_status
+            )
+        if profile is not None:
+            statement = statement.where(
+                ProcessingRun.profile == profile
+            )
+        if requires_review is not None:
+            statement = statement.where(
+                ProcessingRun.requires_review
+                == requires_review
+            )
+        return statement
