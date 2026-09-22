@@ -92,6 +92,23 @@ class ProcessingRunService:
         self._session.refresh(processing_run)
         return processing_run
 
+    def get_run(self, run_id: UUID) -> ProcessingRun:
+        return self._get_required(run_id)
+
+    def list_runs(
+        self,
+        *,
+        offset: int,
+        limit: int,
+    ) -> tuple[list[ProcessingRun], int]:
+        return (
+            self._repository.list(
+                offset=offset,
+                limit=limit,
+            ),
+            self._repository.count(),
+        )
+
     def _get_required(self, run_id: UUID) -> ProcessingRun:
         processing_run = self._repository.get(run_id)
         if processing_run is None:

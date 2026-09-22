@@ -9,6 +9,9 @@ from routes_config_collections_v1 import (
 )
 from routes_config_v1 import router as config_v1_router
 from routes_extract import router as extract_router
+from routes_processing_runs import (
+    router as processing_runs_router,
+)
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -22,6 +25,7 @@ app = FastAPI(
 
 
 app.include_router(extract_router)
+app.include_router(processing_runs_router)
 app.include_router(config_v1_router)
 app.include_router(config_collections_v1_router)
 
