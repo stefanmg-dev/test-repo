@@ -100,13 +100,24 @@ class ProcessingRunService:
         *,
         offset: int,
         limit: int,
+        document_type: str | None = None,
+        processing_status: str | None = None,
+        profile: str | None = None,
+        requires_review: bool | None = None,
     ) -> tuple[list[ProcessingRun], int]:
+        filters = {
+            "document_type": document_type,
+            "processing_status": processing_status,
+            "profile": profile,
+            "requires_review": requires_review,
+        }
         return (
             self._repository.list(
                 offset=offset,
                 limit=limit,
+                **filters,
             ),
-            self._repository.count(),
+            self._repository.count(**filters),
         )
 
     def _get_required(self, run_id: UUID) -> ProcessingRun:

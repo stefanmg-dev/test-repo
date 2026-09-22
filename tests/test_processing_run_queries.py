@@ -57,9 +57,20 @@ def test_list_runs_returns_items_and_total():
     items, total = ProcessingRunService(session).list_runs(
         offset=20,
         limit=10,
+        document_type="invoice",
+        processing_status="accepted",
+        profile="telecom_a1",
+        requires_review=False,
     )
 
     assert items == [item]
     assert total == 7
     session.scalars.assert_called_once()
     session.scalar.assert_called_once()
+    list_sql = str(session.scalars.call_args.args[0])
+    count_sql = str(session.scalar.call_args.args[0])
+    for sql in (list_sql, count_sql):
+        assert "processing_runs.document_type" in sql
+        assert "processing_runs.processing_status" in sql
+        assert "processing_runs.profile" in sql
+        assert "processing_runs.requires_review" in sql

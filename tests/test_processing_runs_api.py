@@ -49,8 +49,26 @@ class QueryService:
             )
         return self.run
 
-    def list_runs(self, *, offset, limit):
-        self.list_calls.append((offset, limit))
+    def list_runs(
+        self,
+        *,
+        offset,
+        limit,
+        document_type=None,
+        processing_status=None,
+        profile=None,
+        requires_review=None,
+    ):
+        self.list_calls.append(
+            {
+                "offset": offset,
+                "limit": limit,
+                "document_type": document_type,
+                "processing_status": processing_status,
+                "profile": profile,
+                "requires_review": requires_review,
+            }
+        )
         return [self.run], 1
 
 
@@ -93,7 +111,13 @@ def test_list_processing_runs_uses_pagination():
     install(service)
 
     response = TestClient(app).get(
-        "/api/v1/processing-runs?offset=5&limit=10"
+        "/api/v1/processing-runs"
+        "?offset=5"
+        "&limit=10"
+        "&document_type=invoice"
+        "&processing_status=accepted"
+        "&profile=telecom_a1"
+        "&requires_review=false"
     )
 
     assert response.status_code == 200
@@ -104,12 +128,38 @@ def test_list_processing_runs_uses_pagination():
         str(service.run.id)
     )
     assert "final_values" not in response.json()["items"][0]
-    assert service.list_calls == [(5, 10)]
+    assert service.list_calls == [
+        {
+            "offset": 5,
+            "limit": 10,
+            "document_type": "invoice",
+            "processing_status": "accepted",
+            "profile": "telecom_a1",
+            "requires_review": False,
+        }
+    ]
 
 
 def test_list_processing_runs_validates_limit():
     response = TestClient(app).get(
         "/api/v1/processing-runs?limit=101"
+    )
+
+    assert response.status_code == 422
+
+
+def test_list_processing_runs_validates_status():
+    response = TestClient(app).get(
+        "/api/v1/processing-runs"
+        "?processing_status=unknown"
+    )
+
+    assert response.status_code == 422
+
+
+def test_list_processing_runs_validates_profile():
+    response = TestClient(app).get(
+        "/api/v1/processing-runs?profile=INVALID-PROFILE"
     )
 
     assert response.status_code == 422
