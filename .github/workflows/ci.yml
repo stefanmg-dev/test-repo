@@ -59,6 +59,23 @@ jobs:
       - name: Install locked dependencies
         run: pipenv sync --dev
 
+      - name: Install CPU-only PyTorch
+        run: |
+          pipenv run python -m pip install             --force-reinstall             torch torchvision             --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Verify OCR runtime imports
+        run: |
+          pipenv run python - <<'PYTHON'
+          import easyocr
+          import fitz
+          import torch
+
+          assert torch.version.cuda is None
+          print("easyocr import: OK")
+          print("fitz import: OK")
+          print("torch CPU build: OK")
+          PYTHON
+
       - name: Install Chromium and system dependencies
         run: pipenv run playwright install --with-deps chromium
 
