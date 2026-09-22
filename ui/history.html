@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>История на обработките</title>
+    <link rel="stylesheet" href="/ui/styles.css">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-mark">DX</div>
+                <div>
+                    <div class="brand-title">Document Extractor</div>
+                    <div class="brand-subtitle">Processing Console</div>
+                </div>
+            </div>
+            <nav class="sidebar-nav" aria-label="Основна навигация">
+                <a class="nav-item" href="/ui/index.html">Типове документи</a>
+                <a class="nav-item active" href="/ui/history.html" aria-current="page">
+                    История на обработките
+                </a>
+                <a class="nav-item" href="/ui/test.html">Тест на документ</a>
+                <a class="nav-item" href="/docs" target="_blank" rel="noopener noreferrer">
+                    API документация
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="status-row">
+                    <span id="apiStatusIndicator" class="status-indicator"></span>
+                    <span id="apiStatusText">Проверка на API...</span>
+                </div>
+                <div class="version">Processing API v1</div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div>
+                    <p class="eyebrow">PROCESSING HISTORY</p>
+                    <h1>История на обработките</h1>
+                    <p class="page-description">
+                        Преглед на статуси, време за обработка, telemetry и извлечени резултати.
+                    </p>
+                </div>
+                <button id="refreshHistoryButton" class="button button-primary" type="button">
+                    Обнови
+                </button>
+            </header>
+
+            <section id="historyMessageArea" class="message-area" aria-live="polite"></section>
+
+            <form id="historyFilters" class="history-filters">
+                <div class="form-group">
+                    <label for="filterDocumentType">Тип документ</label>
+                    <input id="filterDocumentType" class="form-control" type="text" maxlength="100">
+                </div>
+                <div class="form-group">
+                    <label for="filterStatus">Статус</label>
+                    <select id="filterStatus" class="form-control">
+                        <option value="">Всички</option>
+                        <option value="processing">processing</option>
+                        <option value="accepted">accepted</option>
+                        <option value="review">review</option>
+                        <option value="invalid">invalid</option>
+                        <option value="failed">failed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filterProfile">Профил</label>
+                    <input id="filterProfile" class="form-control" type="text" maxlength="100" pattern="[a-z][a-z0-9_]*">
+                </div>
+                <div class="form-group">
+                    <label for="filterReview">Изисква проверка</label>
+                    <select id="filterReview" class="form-control">
+                        <option value="">Всички</option>
+                        <option value="true">Да</option>
+                        <option value="false">Не</option>
+                    </select>
+                </div>
+                <div class="history-filter-actions">
+                    <button class="button button-primary" type="submit">Приложи</button>
+                    <button id="clearHistoryFiltersButton" class="button button-secondary" type="button">Изчисти</button>
+                </div>
+            </form>
+
+            <section class="history-panel" aria-labelledby="historyTableTitle">
+                <div class="panel-header">
+                    <div>
+                        <h2 id="historyTableTitle">Processing runs</h2>
+                        <p id="historySummary" role="status" aria-live="polite">Зареждане...</p>
+                    </div>
+                </div>
+                <div class="history-table-wrapper">
+                    <table class="history-table">
+                        <caption class="visually-hidden">История на обработените документи</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Създаден</th>
+                                <th scope="col">Файл</th>
+                                <th scope="col">Тип</th>
+                                <th scope="col">Профил</th>
+                                <th scope="col">Статус</th>
+                                <th scope="col">Време</th>
+                                <th scope="col">Детайли</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyRows"></tbody>
+                    </table>
+                </div>
+                <div class="history-pagination">
+                    <button id="previousPageButton" class="button button-secondary" type="button">Предишна</button>
+                    <span id="historyPageInfo">Страница 1</span>
+                    <button id="nextPageButton" class="button button-secondary" type="button">Следваща</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <dialog id="historyDetailDialog" class="history-dialog" aria-labelledby="historyDetailTitle">
+        <div class="modal-header">
+            <div>
+                <p class="eyebrow">PROCESSING RUN</p>
+                <h2 id="historyDetailTitle">Детайли</h2>
+            </div>
+            <button id="closeHistoryDetailButton" class="icon-button" type="button" aria-label="Затвори">×</button>
+        </div>
+        <div id="historyDetailBody" class="modal-body"></div>
+    </dialog>
+
+    <script src="/ui/history.js"></script>
+</body>
+</html>
