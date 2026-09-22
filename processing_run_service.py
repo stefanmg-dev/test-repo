@@ -46,6 +46,7 @@ class ProcessingRunService:
         profile: str | None,
         requires_review: bool,
         duration_ms: int,
+        step_timings: dict[str, int],
         quality: dict[str, Any],
         final_values: dict[str, Any],
         collections: dict[str, Any],
@@ -57,6 +58,7 @@ class ProcessingRunService:
         processing_run.profile = profile
         processing_run.requires_review = requires_review
         processing_run.duration_ms = duration_ms
+        processing_run.step_timings = step_timings
         processing_run.quality = quality
         processing_run.final_values = final_values
         processing_run.collections = collections
@@ -75,11 +77,13 @@ class ProcessingRunService:
         *,
         error: dict[str, Any],
         duration_ms: int,
+        step_timings: dict[str, int],
         completed_at: datetime | None = None,
     ) -> ProcessingRun:
         processing_run = self._get_required(run_id)
         processing_run.processing_status = "failed"
         processing_run.duration_ms = duration_ms
+        processing_run.step_timings = step_timings
         processing_run.error = error
         processing_run.completed_at = (
             completed_at or datetime.now(timezone.utc)

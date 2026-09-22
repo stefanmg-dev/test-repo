@@ -87,6 +87,10 @@ class ProcessingRun(Base):
         Integer,
         nullable=True,
     )
+    step_timings: Mapped[dict[str, int] | None] = mapped_column(
+        JSONB,
+        nullable=True,
+    )
     quality: Mapped[dict[str, Any] | None] = mapped_column(
         JSONB,
         nullable=True,

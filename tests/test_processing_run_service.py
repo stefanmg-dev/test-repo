@@ -62,6 +62,7 @@ def test_completes_processing_run():
         profile="telecom_a1",
         requires_review=False,
         duration_ms=1250,
+        step_timings={"document_input_ms": 10},
         quality={"status": "accepted"},
         final_values={"invoice_number": "123"},
         collections={"items": []},
@@ -73,6 +74,7 @@ def test_completes_processing_run():
     assert result.processing_status == "accepted"
     assert result.profile == "telecom_a1"
     assert result.duration_ms == 1250
+    assert result.step_timings == {"document_input_ms": 10}
     assert result.completed_at == completed_at
     assert result.error is None
     session.commit.assert_called_once_with()
@@ -100,10 +102,12 @@ def test_marks_processing_run_as_failed():
             "detail": "Invalid or corrupted PDF file",
         },
         duration_ms=15,
+        step_timings={"document_input_ms": 15},
     )
 
     assert result.processing_status == "failed"
     assert result.duration_ms == 15
+    assert result.step_timings == {"document_input_ms": 15}
     assert result.error == {
         "code": "invalid_document",
         "detail": "Invalid or corrupted PDF file",
@@ -126,6 +130,7 @@ def test_requires_existing_processing_run():
             run_id,
             error={"code": "failure"},
             duration_ms=1,
+            step_timings={},
         )
 
     session.commit.assert_not_called()

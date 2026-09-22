@@ -132,6 +132,17 @@ def test_successful_extraction_completes_processing_run(
     assert completed["profile"] is None
     assert completed["requires_review"] is False
     assert completed["duration_ms"] >= 0
+    assert set(completed["step_timings"]) == {
+        "document_input_ms",
+        "profile_resolution_ms",
+        "llm_extraction_ms",
+        "document_engine_ms",
+        "validation_ms",
+    }
+    assert all(
+        value >= 0
+        for value in completed["step_timings"].values()
+    )
     assert completed["final_values"] == {
         "invoice_number": "TEST-123"
     }
@@ -186,6 +197,10 @@ def test_invalid_document_fails_processing_run(monkeypatch):
         "http_status": 422,
     }
     assert failed["duration_ms"] >= 0
+    assert set(failed["step_timings"]) == {
+        "document_input_ms"
+    }
+    assert failed["step_timings"]["document_input_ms"] >= 0
     assert service.completed == []
 
 

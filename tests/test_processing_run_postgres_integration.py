@@ -38,6 +38,10 @@ def test_processing_run_lifecycle_in_postgresql():
             profile="telecom_a1",
             requires_review=True,
             duration_ms=321,
+            step_timings={
+                "document_input_ms": 120,
+                "document_engine_ms": 80,
+            },
             quality={
                 "status": "review",
                 "requires_review": True,
@@ -71,6 +75,10 @@ def test_processing_run_lifecycle_in_postgresql():
         assert completed.profile == "telecom_a1"
         assert completed.requires_review is True
         assert completed.duration_ms == 321
+        assert completed.step_timings == {
+            "document_input_ms": 120,
+            "document_engine_ms": 80,
+        }
         assert completed.quality["warnings"][0]["code"] == (
             "integration_test"
         )
@@ -91,6 +99,10 @@ def test_processing_run_lifecycle_in_postgresql():
 
         assert reloaded is not None
         assert reloaded.processing_status == "review"
+        assert reloaded.step_timings == {
+            "document_input_ms": 120,
+            "document_engine_ms": 80,
+        }
         assert reloaded.final_values == {
             "invoice_number": "TEST-123",
             "total_amount": "42.00",
