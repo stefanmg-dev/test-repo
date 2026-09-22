@@ -141,6 +141,7 @@ async def extract_document(
         )
     )
     timer_started_at = perf_counter()
+    step_timings = {}
     processing_run = processing_run_service.start_run(
         document_type=document_type,
         filename=file.filename or "unknown",
@@ -148,52 +149,76 @@ async def extract_document(
     )
 
     try:
-        input_result = await extract_document_input(
-            file
-        )
+        step_started_at = perf_counter()
+        try:
+            input_result = await extract_document_input(
+                file
+            )
+        finally:
+            step_timings["document_input_ms"] = (
+                elapsed_milliseconds(step_started_at)
+            )
         raw_text = input_result["text"]
         quality = input_result["quality"]
         selected_profile = None
         resolved_fields = None
-        if "profiles" in document_config:
-            profile_result = (
-                resolve_supplier_profile_fields(
-                    document_config=document_config,
-                    ocr_text=raw_text,
+        step_started_at = perf_counter()
+        try:
+            if "profiles" in document_config:
+                profile_result = (
+                    resolve_supplier_profile_fields(
+                        document_config=document_config,
+                        ocr_text=raw_text,
+                    )
                 )
-            )
-            selected_profile = profile_result[
-                "profile"
-            ]
-            resolved_fields = profile_result[
-                "fields"
-            ]
-            if profile_result[
-                "requires_review"
-            ]:
-                quality = {
-                    **quality,
-                    "status": "review",
-                    "requires_review": True,
-                    "warnings": [
-                        *quality.get(
-                            "warnings",
-                            [],
-                        ),
-                        *profile_result[
-                            "warnings"
+                selected_profile = profile_result[
+                    "profile"
+                ]
+                resolved_fields = profile_result[
+                    "fields"
+                ]
+                if profile_result[
+                    "requires_review"
+                ]:
+                    quality = {
+                        **quality,
+                        "status": "review",
+                        "requires_review": True,
+                        "warnings": [
+                            *quality.get(
+                                "warnings",
+                                [],
+                            ),
+                            *profile_result[
+                                "warnings"
+                            ],
                         ],
-                    ],
-                }
-        llm_values = extract_values(raw_text)
-        engine_result = extract_document_data(
-            document_type=document_type,
-            config=config,
-            raw_text=raw_text,
-            llm_values=llm_values,
-            profile_name=selected_profile,
-            resolved_fields=resolved_fields,
-        )
+                    }
+        finally:
+            step_timings["profile_resolution_ms"] = (
+                elapsed_milliseconds(step_started_at)
+            )
+        step_started_at = perf_counter()
+        try:
+            llm_values = extract_values(raw_text)
+        finally:
+            step_timings["llm_extraction_ms"] = (
+                elapsed_milliseconds(step_started_at)
+            )
+        step_started_at = perf_counter()
+        try:
+            engine_result = extract_document_data(
+                document_type=document_type,
+                config=config,
+                raw_text=raw_text,
+                llm_values=llm_values,
+                profile_name=selected_profile,
+                resolved_fields=resolved_fields,
+            )
+        finally:
+            step_timings["document_engine_ms"] = (
+                elapsed_milliseconds(step_started_at)
+            )
         final_values = engine_result["fields"]
         collection_validation = engine_result.get(
             "collection_validation",
@@ -202,17 +227,23 @@ async def extract_document(
                 "errors": {},
             },
         )
-        validation = validate_result(
-            document_type=document_type,
-            config=config,
-            final_values=final_values,
-            resolved_fields=resolved_fields,
-        )
-        processing_status = determine_processing_status(
-            validation=validation,
-            quality=quality,
-            collection_validation=collection_validation,
-        )
+        step_started_at = perf_counter()
+        try:
+            validation = validate_result(
+                document_type=document_type,
+                config=config,
+                final_values=final_values,
+                resolved_fields=resolved_fields,
+            )
+            processing_status = determine_processing_status(
+                validation=validation,
+                quality=quality,
+                collection_validation=collection_validation,
+            )
+        finally:
+            step_timings["validation_ms"] = (
+                elapsed_milliseconds(step_started_at)
+            )
         response = {
             "document_type": document_type,
             "processing_status": processing_status,
@@ -235,6 +266,7 @@ async def extract_document(
             duration_ms=elapsed_milliseconds(
                 timer_started_at
             ),
+            step_timings=step_timings,
             quality=quality,
             final_values=final_values,
             collections=engine_result["collections"],
@@ -257,6 +289,7 @@ async def extract_document(
             duration_ms=elapsed_milliseconds(
                 timer_started_at
             ),
+            step_timings=step_timings,
         )
         raise HTTPException(
             status_code=(
@@ -277,6 +310,7 @@ async def extract_document(
             duration_ms=elapsed_milliseconds(
                 timer_started_at
             ),
+            step_timings=step_timings,
         )
         raise HTTPException(
             status_code=(
@@ -294,5 +328,6 @@ async def extract_document(
             duration_ms=elapsed_milliseconds(
                 timer_started_at
             ),
+            step_timings=step_timings,
         )
         raise
