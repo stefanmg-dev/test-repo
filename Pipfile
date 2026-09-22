@@ -12,6 +12,8 @@ sqlalchemy = "<3,>=2"
 psycopg = {extras = ["binary"], version = "<4,>=3"}
 alembic = "<2,>=1"
 python-dotenv = "<2,>=1"
+easyocr = "*"
+pymupdf = "*"
 
 [dev-packages]
 pytest = "*"
