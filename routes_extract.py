@@ -1,3 +1,6 @@
+from pathlib import Path
+from time import perf_counter
+
 from fastapi import (
     APIRouter,
     File,
@@ -9,19 +12,22 @@ from fastapi import (
 
 from config_store import load_config
 from document_status import is_document_type_ready
-from extraction_orchestrator import extract_document_data
-from llm_engine import extract_values
 from extraction_models import (
     ApiErrorResponseModel,
     DocumentInputErrorResponseModel,
     ExtractionResponseModel,
     RequestValidationErrorResponseModel,
 )
+from extraction_orchestrator import extract_document_data
+from llm_engine import extract_values
 from ocr_engine import (
     InvalidDocumentInputError,
     UnsupportedFileTypeError,
     extract_document_input,
     extract_text,
+)
+from processing_run_dependencies import (
+    ProcessingRunServiceDependency,
 )
 from result_validator import validate_result
 from supplier_profile_pipeline import (
@@ -39,16 +45,13 @@ def determine_processing_status(
 ) -> str:
     if validation.get("valid") is not True:
         return "invalid"
-
     if (
         collection_validation is not None
         and collection_validation.get("valid") is not True
     ):
         return "invalid"
-
     if quality.get("requires_review") is True:
         return "review"
-
     return "accepted"
 
 
@@ -57,7 +60,6 @@ def get_extraction_document_config(
     config: dict,
 ) -> dict:
     document_config = config.get(document_type)
-
     if document_config is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -66,7 +68,6 @@ def get_extraction_document_config(
                 f"was not found"
             ),
         )
-
     if not is_document_type_ready(
         document_config
     ):
@@ -78,8 +79,19 @@ def get_extraction_document_config(
                 f"it has no configured fields"
             ),
         )
-
     return document_config
+
+
+def elapsed_milliseconds(started_at: float) -> int:
+    return max(
+        0,
+        round((perf_counter() - started_at) * 1000),
+    )
+
+
+def get_input_format(filename: str | None) -> str:
+    suffix = Path(filename or "").suffix.lower()
+    return suffix.removeprefix(".") or "unknown"
 
 
 @router.post(
@@ -92,7 +104,9 @@ def get_extraction_document_config(
             "model": ApiErrorResponseModel,
         },
         status.HTTP_409_CONFLICT: {
-            "description": "Document type is not ready for extraction",
+            "description": (
+                "Document type is not ready for extraction"
+            ),
             "model": ApiErrorResponseModel,
         },
         status.HTTP_415_UNSUPPORTED_MEDIA_TYPE: {
@@ -112,6 +126,7 @@ def get_extraction_document_config(
     },
 )
 async def extract_document(
+    processing_run_service: ProcessingRunServiceDependency,
     document_type: str = Form(
         ...,
         examples=["invoice"],
@@ -119,19 +134,130 @@ async def extract_document(
     file: UploadFile = File(...),
 ):
     config = load_config()
-
     document_config = (
         get_extraction_document_config(
             document_type=document_type,
             config=config,
         )
     )
+    timer_started_at = perf_counter()
+    processing_run = processing_run_service.start_run(
+        document_type=document_type,
+        filename=file.filename or "unknown",
+        input_format=get_input_format(file.filename),
+    )
 
     try:
         input_result = await extract_document_input(
             file
         )
+        raw_text = input_result["text"]
+        quality = input_result["quality"]
+        selected_profile = None
+        resolved_fields = None
+        if "profiles" in document_config:
+            profile_result = (
+                resolve_supplier_profile_fields(
+                    document_config=document_config,
+                    ocr_text=raw_text,
+                )
+            )
+            selected_profile = profile_result[
+                "profile"
+            ]
+            resolved_fields = profile_result[
+                "fields"
+            ]
+            if profile_result[
+                "requires_review"
+            ]:
+                quality = {
+                    **quality,
+                    "status": "review",
+                    "requires_review": True,
+                    "warnings": [
+                        *quality.get(
+                            "warnings",
+                            [],
+                        ),
+                        *profile_result[
+                            "warnings"
+                        ],
+                    ],
+                }
+        llm_values = extract_values(raw_text)
+        engine_result = extract_document_data(
+            document_type=document_type,
+            config=config,
+            raw_text=raw_text,
+            llm_values=llm_values,
+            profile_name=selected_profile,
+            resolved_fields=resolved_fields,
+        )
+        final_values = engine_result["fields"]
+        collection_validation = engine_result.get(
+            "collection_validation",
+            {
+                "valid": True,
+                "errors": {},
+            },
+        )
+        validation = validate_result(
+            document_type=document_type,
+            config=config,
+            final_values=final_values,
+            resolved_fields=resolved_fields,
+        )
+        processing_status = determine_processing_status(
+            validation=validation,
+            quality=quality,
+            collection_validation=collection_validation,
+        )
+        response = {
+            "document_type": document_type,
+            "processing_status": processing_status,
+            "profile": selected_profile,
+            "quality": quality,
+            "raw_text": raw_text,
+            "llm_values": llm_values,
+            "final_values": final_values,
+            "collections": engine_result["collections"],
+            "collection_validation": collection_validation,
+            "validation": validation,
+        }
+        processing_run_service.complete_run(
+            processing_run.id,
+            processing_status=processing_status,
+            profile=selected_profile,
+            requires_review=(
+                quality.get("requires_review") is True
+            ),
+            duration_ms=elapsed_milliseconds(
+                timer_started_at
+            ),
+            quality=quality,
+            final_values=final_values,
+            collections=engine_result["collections"],
+            validation={
+                "fields": validation,
+                "collections": collection_validation,
+            },
+        )
+        return response
     except UnsupportedFileTypeError as exc:
+        processing_run_service.fail_run(
+            processing_run.id,
+            error={
+                "type": type(exc).__name__,
+                "detail": str(exc),
+                "http_status": (
+                    status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
+                ),
+            },
+            duration_ms=elapsed_milliseconds(
+                timer_started_at
+            ),
+        )
         raise HTTPException(
             status_code=(
                 status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
@@ -139,93 +265,34 @@ async def extract_document(
             detail=str(exc),
         ) from exc
     except InvalidDocumentInputError as exc:
+        processing_run_service.fail_run(
+            processing_run.id,
+            error={
+                "type": type(exc).__name__,
+                "detail": str(exc),
+                "http_status": (
+                    status.HTTP_422_UNPROCESSABLE_CONTENT
+                ),
+            },
+            duration_ms=elapsed_milliseconds(
+                timer_started_at
+            ),
+        )
         raise HTTPException(
             status_code=(
                 status.HTTP_422_UNPROCESSABLE_CONTENT
             ),
             detail=str(exc),
         ) from exc
-
-    raw_text = input_result["text"]
-    quality = input_result["quality"]
-
-    selected_profile = None
-    resolved_fields = None
-
-    if "profiles" in document_config:
-        profile_result = (
-            resolve_supplier_profile_fields(
-                document_config=document_config,
-                ocr_text=raw_text,
-            )
+    except Exception as exc:
+        processing_run_service.fail_run(
+            processing_run.id,
+            error={
+                "type": type(exc).__name__,
+                "detail": str(exc),
+            },
+            duration_ms=elapsed_milliseconds(
+                timer_started_at
+            ),
         )
-
-        selected_profile = profile_result[
-            "profile"
-        ]
-        resolved_fields = profile_result[
-            "fields"
-        ]
-
-        if profile_result[
-            "requires_review"
-        ]:
-            quality = {
-                **quality,
-                "status": "review",
-                "requires_review": True,
-                "warnings": [
-                    *quality.get(
-                        "warnings",
-                        [],
-                    ),
-                    *profile_result[
-                        "warnings"
-                    ],
-                ],
-            }
-
-    llm_values = extract_values(raw_text)
-
-    engine_result = extract_document_data(
-        document_type=document_type,
-        config=config,
-        raw_text=raw_text,
-        llm_values=llm_values,
-        profile_name=selected_profile,
-        resolved_fields=resolved_fields,
-    )
-    final_values = engine_result["fields"]
-    collection_validation = engine_result.get(
-        "collection_validation",
-        {
-            "valid": True,
-            "errors": {},
-        },
-    )
-
-    validation = validate_result(
-        document_type=document_type,
-        config=config,
-        final_values=final_values,
-        resolved_fields=resolved_fields,
-    )
-
-    processing_status = determine_processing_status(
-        validation=validation,
-        quality=quality,
-        collection_validation=collection_validation,
-    )
-
-    return {
-        "document_type": document_type,
-        "processing_status": processing_status,
-        "profile": selected_profile,
-        "quality": quality,
-        "raw_text": raw_text,
-        "llm_values": llm_values,
-        "final_values": final_values,
-        "collections": engine_result["collections"],
-        "collection_validation": collection_validation,
-        "validation": validation,
-    }
+        raise
