@@ -15,6 +15,7 @@ python-dotenv = "<2,>=1"
 easyocr = "*"
 pymupdf = "*"
 pdf2image = "*"
+python-multipart = "*"
 
 [dev-packages]
 pytest = "*"
