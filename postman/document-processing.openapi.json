@@ -430,6 +430,122 @@
         }
       }
     },
+    "/api/v1/config/document-types/{document_type}/profiles/{profile_name}": {
+      "post": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Add Profile",
+        "operationId": "add_profile_api_v1_config_document_types__document_type__profiles__profile_name__post",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "profile_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "^[a-z][a-z0-9_]*$",
+              "title": "Profile Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddProfileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Delete Profile",
+        "operationId": "delete_profile_api_v1_config_document_types__document_type__profiles__profile_name__delete",
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Type"
+            }
+          },
+          {
+            "name": "profile_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "^[a-z][a-z0-9_]*$",
+              "title": "Profile Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/config/document-types/{document_type}/common-fields": {
       "post": {
         "tags": [
@@ -1596,6 +1712,19 @@
         ],
         "title": "AddFieldRequest"
       },
+      "AddProfileRequest": {
+        "properties": {
+          "profile": {
+            "$ref": "#/components/schemas/DocumentProfileModel"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "profile"
+        ],
+        "title": "AddProfileRequest"
+      },
       "ApiErrorResponseModel": {
         "properties": {
           "detail": {
@@ -1766,6 +1895,15 @@
             "minLength": 1,
             "pattern": "^[a-z][a-z0-9_]*$",
             "title": "Document Type"
+          },
+          "configuration_mode": {
+            "type": "string",
+            "enum": [
+              "legacy",
+              "profile"
+            ],
+            "title": "Configuration Mode",
+            "default": "legacy"
           }
         },
         "additionalProperties": false,

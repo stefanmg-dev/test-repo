@@ -881,3 +881,38 @@ def test_rejects_invalid_profile_collection_field_payload(
         },
     )
     assert response.status_code == 422
+
+
+def test_creates_profile_based_document_type(
+    client,
+    isolated_config,
+):
+    response = client.post(
+        "/api/v1/config/document-types",
+        json={
+            "document_type": "profile_invoice",
+            "configuration_mode": "profile",
+        },
+    )
+
+    assert response.status_code == 201
+    config = read_temporary_config(isolated_config)
+    assert config["profile_invoice"] == {
+        "common_fields": [],
+        "profiles": {},
+        "collections": {},
+    }
+
+
+def test_rejects_invalid_document_type_configuration_mode(
+    client,
+):
+    response = client.post(
+        "/api/v1/config/document-types",
+        json={
+            "document_type": "profile_invoice",
+            "configuration_mode": "unsupported",
+        },
+    )
+
+    assert response.status_code == 422

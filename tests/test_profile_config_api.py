@@ -335,3 +335,134 @@ def test_unknown_profile_returns_404(
     assert "unknown_profile" in (
         response.json()["detail"]
     )
+
+
+def profile_payload():
+    return {
+        "profile": {
+            "fields": [],
+            "summary_validations": [],
+        }
+    }
+
+
+def test_profile_crud_flow(monkeypatch):
+    state = configure_in_memory_store(monkeypatch)
+    state["config"]["invoice"]["default_profile"] = None
+    state["config"]["invoice"]["profiles"] = {}
+
+    client = TestClient(app)
+    url = (
+        "/api/v1/config/document-types/invoice/"
+        "profiles/postman_profile"
+    )
+
+    create_response = client.post(url, json=profile_payload())
+    assert create_response.status_code == 201
+    assert state["config"]["invoice"]["profiles"][
+        "postman_profile"
+    ] == {
+        "fields": [],
+        "summary_validations": [],
+    }
+
+    duplicate_response = client.post(url, json=profile_payload())
+    assert duplicate_response.status_code == 409
+
+    delete_response = client.delete(url)
+    assert delete_response.status_code == 200
+    assert "postman_profile" not in state["config"][
+        "invoice"
+    ]["profiles"]
+
+
+def test_profile_crud_rejects_legacy_document_type(monkeypatch):
+    state = configure_in_memory_store(monkeypatch)
+    state["config"]["invoice"] = {"fields": []}
+
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/config/document-types/invoice/"
+        "profiles/postman_profile",
+        json=profile_payload(),
+    )
+    assert response.status_code == 409
+
+
+def test_delete_profile_requires_existing_profile(monkeypatch):
+    configure_in_memory_store(monkeypatch)
+    client = TestClient(app)
+    response = client.delete(
+        "/api/v1/config/document-types/invoice/"
+        "profiles/missing_profile"
+    )
+    assert response.status_code == 404
+
+
+def test_default_profile_cannot_be_deleted(monkeypatch):
+    configure_in_memory_store(monkeypatch)
+    client = TestClient(app)
+    response = client.delete(
+        "/api/v1/config/document-types/invoice/"
+        "profiles/telecom_a1"
+    )
+    assert response.status_code == 409
+    assert response.json()["detail"] == (
+        "Profile 'telecom_a1' is the default profile "
+        "and cannot be deleted"
+    )
+
+
+def test_profile_name_must_match_contract(monkeypatch):
+    configure_in_memory_store(monkeypatch)
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/config/document-types/invoice/"
+        "profiles/Invalid Profile!",
+        json=profile_payload(),
+    )
+    assert response.status_code == 422
+
+
+
+def test_adds_common_field_without_default_profile(monkeypatch):
+    state = configure_in_memory_store(monkeypatch)
+    state["config"]["invoice"]["default_profile"] = None
+
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/config/document-types/invoice/common-fields",
+        json={
+            "field": {
+                "name": "total_amount",
+                "type": "constant",
+                "value": "FIRST_VALUE",
+                "validation": [],
+            }
+        },
+    )
+    assert response.status_code == 201
+    assert state["config"]["invoice"][
+        "common_fields"
+    ][-1]["name"] == "total_amount"
+
+
+def test_common_field_rejects_duplicate_profile_field_without_default(
+    monkeypatch,
+):
+    state = configure_in_memory_store(monkeypatch)
+    state["config"]["invoice"]["default_profile"] = None
+
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/config/document-types/invoice/common-fields",
+        json={
+            "field": {
+                "name": "contract_number",
+                "type": "constant",
+                "value": "DUPLICATE",
+                "validation": [],
+            }
+        },
+    )
+    assert response.status_code == 409
