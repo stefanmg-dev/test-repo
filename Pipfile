@@ -20,6 +20,7 @@ python-multipart = "*"
 [dev-packages]
 pytest = "*"
 pytest-playwright = "*"
+httpx2 = "*"
 
 [requires]
 python_version = "3.14"
