@@ -27,7 +27,8 @@ def test_postman_collection_contract_and_safety():
         "03 Error Contracts", "04 Configuration - Read Only",
     }
     names = {item["name"] for item in requests(data["item"])}
-    assert {"Health Check", "A1 Invoice", "Electrohold Invoice",
+    assert {"Health Check", "Readiness Check", "A1 Invoice",
+            "Electrohold Invoice",
             "Toplofikacia Invoice", "Generic Fallback",
             "Get Processing Run by ID", "Corrupted PDF - 422"} <= names
     serialized = json.dumps(data, ensure_ascii=False)

@@ -1867,6 +1867,25 @@
           }
         }
       }
+    },
+    "/ready": {
+      "get": {
+        "summary": "Readiness Check",
+        "operationId": "readiness_check_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "503": {
+            "description": "Application dependencies are not ready"
+          }
+        }
+      }
     }
   },
   "components": {

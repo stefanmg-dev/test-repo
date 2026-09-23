@@ -71,6 +71,34 @@
               }
             }
           ]
+        },
+        {
+          "name": "Readiness Check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/ready"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"X-Request-ID is present\", function () { pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.be.a(\"string\").and.not.empty; });",
+                  "pm.test(\"Readiness dependencies are healthy\", function () { const body = pm.response.json(); pm.expect(body.status).to.eql(\"ready\"); pm.expect(body.database).to.eql(\"connected\"); pm.expect(body.migrations).to.eql(\"current\"); });"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
