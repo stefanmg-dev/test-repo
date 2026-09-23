@@ -1,0 +1,693 @@
+{
+  "info": {
+    "_postman_id": "2fceda10-1b3c-46e3-8660-64010d2479fe",
+    "name": "Document Processing API - Stable",
+    "description": "Stable local API scenarios. Local file paths belong only in the selected environment and must not be committed.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test(\"Response time is below 30 seconds\", function () { pm.expect(pm.response.responseTime).to.be.below(30000); });",
+          "const requestId = pm.response.headers.get(\"X-Request-ID\"); if (requestId) { pm.collectionVariables.set(\"latest_request_id\", requestId); }"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "latest_processing_run_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "latest_request_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "latest_processing_status",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "latest_profile",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/health"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"X-Request-ID is present\", function () { pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.be.a(\"string\").and.not.empty; });",
+                  "pm.test(\"Response is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"); });",
+                  "pm.test(\"Health status is ok\", function () { pm.expect(pm.response.json()).to.eql({status: \"ok\"}); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 Extract Document",
+      "item": [
+        {
+          "name": "A1 Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/extract-document",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "document_type",
+                  "value": "invoice",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{a1_invoice_path}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"X-Request-ID is present\", function () { pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.be.a(\"string\").and.not.empty; });",
+                  "pm.test(\"Response is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Extraction response has stable top-level contract\", function () { pm.expect(body).to.include.keys(\"document_type\", \"processing_status\", \"quality\", \"final_values\", \"validation\"); });",
+                  "pm.collectionVariables.set(\"latest_processing_status\", body.processing_status || \"\");",
+                  "pm.collectionVariables.set(\"latest_profile\", body.profile || \"\");",
+                  "pm.sendRequest({url: pm.variables.replaceIn(\"{{base_url}}/api/v1/processing-runs?offset=0&limit=1\"), method: \"GET\", header: {\"Accept\": \"application/json\"}}, function (error, response) { if (!error && response.code === 200) { const payload = response.json(); if (payload.items && payload.items.length) { pm.collectionVariables.set(\"latest_processing_run_id\", payload.items[0].id); } } });",
+                  "const expectedProfile = pm.environment.get(\"a1_expected_profile\");",
+                  "pm.test(\"Expected profile is selected\", function () { pm.expect(body.profile).to.eql(expectedProfile); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Electrohold Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/extract-document",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "document_type",
+                  "value": "invoice",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{electrohold_invoice_path}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"X-Request-ID is present\", function () { pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.be.a(\"string\").and.not.empty; });",
+                  "pm.test(\"Response is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Extraction response has stable top-level contract\", function () { pm.expect(body).to.include.keys(\"document_type\", \"processing_status\", \"quality\", \"final_values\", \"validation\"); });",
+                  "pm.collectionVariables.set(\"latest_processing_status\", body.processing_status || \"\");",
+                  "pm.collectionVariables.set(\"latest_profile\", body.profile || \"\");",
+                  "pm.sendRequest({url: pm.variables.replaceIn(\"{{base_url}}/api/v1/processing-runs?offset=0&limit=1\"), method: \"GET\", header: {\"Accept\": \"application/json\"}}, function (error, response) { if (!error && response.code === 200) { const payload = response.json(); if (payload.items && payload.items.length) { pm.collectionVariables.set(\"latest_processing_run_id\", payload.items[0].id); } } });",
+                  "const expectedProfile = pm.environment.get(\"electrohold_expected_profile\");",
+                  "pm.test(\"Expected profile is selected\", function () { pm.expect(body.profile).to.eql(expectedProfile); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Toplofikacia Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/extract-document",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "document_type",
+                  "value": "invoice",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{toplofikacia_invoice_path}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"X-Request-ID is present\", function () { pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.be.a(\"string\").and.not.empty; });",
+                  "pm.test(\"Response is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Extraction response has stable top-level contract\", function () { pm.expect(body).to.include.keys(\"document_type\", \"processing_status\", \"quality\", \"final_values\", \"validation\"); });",
+                  "pm.collectionVariables.set(\"latest_processing_status\", body.processing_status || \"\");",
+                  "pm.collectionVariables.set(\"latest_profile\", body.profile || \"\");",
+                  "pm.sendRequest({url: pm.variables.replaceIn(\"{{base_url}}/api/v1/processing-runs?offset=0&limit=1\"), method: \"GET\", header: {\"Accept\": \"application/json\"}}, function (error, response) { if (!error && response.code === 200) { const payload = response.json(); if (payload.items && payload.items.length) { pm.collectionVariables.set(\"latest_processing_run_id\", payload.items[0].id); } } });",
+                  "const expectedProfile = pm.environment.get(\"toplofikacia_expected_profile\");",
+                  "pm.test(\"Expected profile is selected\", function () { pm.expect(body.profile).to.eql(expectedProfile); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Generic Fallback",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/extract-document",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "document_type",
+                  "value": "invoice",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{generic_invoice_path}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"X-Request-ID is present\", function () { pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.be.a(\"string\").and.not.empty; });",
+                  "pm.test(\"Response is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Extraction response has stable top-level contract\", function () { pm.expect(body).to.include.keys(\"document_type\", \"processing_status\", \"quality\", \"final_values\", \"validation\"); });",
+                  "pm.collectionVariables.set(\"latest_processing_status\", body.processing_status || \"\");",
+                  "pm.collectionVariables.set(\"latest_profile\", body.profile || \"\");",
+                  "pm.sendRequest({url: pm.variables.replaceIn(\"{{base_url}}/api/v1/processing-runs?offset=0&limit=1\"), method: \"GET\", header: {\"Accept\": \"application/json\"}}, function (error, response) { if (!error && response.code === 200) { const payload = response.json(); if (payload.items && payload.items.length) { pm.collectionVariables.set(\"latest_processing_run_id\", payload.items[0].id); } } });",
+                  "pm.test(\"Generic fallback requires review\", function () { pm.expect(body.profile).to.eql(null); pm.expect(body.quality.requires_review).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 Processing History",
+      "item": [
+        {
+          "name": "List Processing Runs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/processing-runs?offset=0&limit=20"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"X-Request-ID is present\", function () { pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.be.a(\"string\").and.not.empty; });",
+                  "pm.test(\"Response is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"); });",
+                  "const body = pm.response.json(); pm.test(\"Pagination contract is present\", function () { pm.expect(body).to.include.keys(\"items\", \"total\", \"offset\", \"limit\"); }); if (body.items.length) { pm.collectionVariables.set(\"latest_processing_run_id\", body.items[0].id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filter by Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/processing-runs?offset=0&limit=20&processing_status={{history_status}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"X-Request-ID is present\", function () { pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.be.a(\"string\").and.not.empty; });",
+                  "pm.test(\"Response is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"); });",
+                  "const body = pm.response.json(); pm.test(\"All items match status filter\", function () { body.items.forEach(item => pm.expect(item.processing_status).to.eql(pm.environment.get(\"history_status\"))); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filter by Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/processing-runs?offset=0&limit=20&profile={{history_profile}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"X-Request-ID is present\", function () { pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.be.a(\"string\").and.not.empty; });",
+                  "pm.test(\"Response is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"); });",
+                  "const body = pm.response.json(); pm.test(\"All items match profile filter\", function () { body.items.forEach(item => pm.expect(item.profile).to.eql(pm.environment.get(\"history_profile\"))); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filter by Review Requirement",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/processing-runs?offset=0&limit=20&requires_review={{history_requires_review}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"X-Request-ID is present\", function () { pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.be.a(\"string\").and.not.empty; });",
+                  "pm.test(\"Response is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"); });",
+                  "const expected = pm.environment.get(\"history_requires_review\") === \"true\"; const body = pm.response.json(); pm.test(\"All items match review filter\", function () { body.items.forEach(item => pm.expect(item.requires_review).to.eql(expected)); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Processing Run by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/processing-runs/{{latest_processing_run_id}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"X-Request-ID is present\", function () { pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.be.a(\"string\").and.not.empty; });",
+                  "pm.test(\"Response is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"); });",
+                  "const body = pm.response.json(); pm.test(\"Detail contract is present\", function () { pm.expect(body).to.include.keys(\"id\", \"document_type\", \"filename\", \"processing_status\", \"step_timings\"); }); pm.test(\"Requested processing run is returned\", function () { pm.expect(body.id).to.eql(pm.collectionVariables.get(\"latest_processing_run_id\")); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 Error Contracts",
+      "item": [
+        {
+          "name": "Unsupported File Type - 415",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/extract-document",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "document_type",
+                  "value": "invoice",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{unsupported_file_path}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 415\", function () { pm.response.to.have.status(415); });",
+                  "pm.test(\"X-Request-ID is present\", function () { pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.be.a(\"string\").and.not.empty; });",
+                  "pm.test(\"Response is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Corrupted PDF - 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/extract-document",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "document_type",
+                  "value": "invoice",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{corrupted_pdf_path}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 422\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"X-Request-ID is present\", function () { pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.be.a(\"string\").and.not.empty; });",
+                  "pm.test(\"Response is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown Document Type - 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/extract-document",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "document_type",
+                  "value": "unknown_document_type",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{a1_invoice_path}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () { pm.response.to.have.status(404); });",
+                  "pm.test(\"X-Request-ID is present\", function () { pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.be.a(\"string\").and.not.empty; });",
+                  "pm.test(\"Response is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Missing File - 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/extract-document",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "document_type",
+                  "value": "invoice",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 422\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"X-Request-ID is present\", function () { pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.be.a(\"string\").and.not.empty; });",
+                  "pm.test(\"Response is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Processing Run Not Found - 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/processing-runs/00000000-0000-0000-0000-000000000000"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () { pm.response.to.have.status(404); });",
+                  "pm.test(\"X-Request-ID is present\", function () { pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.be.a(\"string\").and.not.empty; });",
+                  "pm.test(\"Response is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 Configuration - Read Only",
+      "item": [
+        {
+          "name": "List Document Types",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/config/document-types"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"X-Request-ID is present\", function () { pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.be.a(\"string\").and.not.empty; });",
+                  "pm.test(\"Response is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Invoice Configuration",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/config/document-types/invoice"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"X-Request-ID is present\", function () { pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.be.a(\"string\").and.not.empty; });",
+                  "pm.test(\"Response is JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
