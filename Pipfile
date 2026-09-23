@@ -16,6 +16,7 @@ easyocr = "*"
 pymupdf = "*"
 pdf2image = "*"
 python-multipart = "*"
+pydantic-settings = "*"
 
 [dev-packages]
 pytest = "*"
