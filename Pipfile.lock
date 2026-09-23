@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "bfc747e29679f7a1abc5faf9dbe2d4aa123ef49d67761f2bc67635258768bf65"
+            "sha256": "eaf9eb08c0a36af2834c70c895276db49638e7f88bf79d2ab2f339ff627a8473"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -928,6 +928,15 @@
             ],
             "markers": "python_version >= '3.9'",
             "version": "==2.46.5"
+        },
+        "pydantic-settings": {
+            "hashes": [
+                "sha256:0ba092c291c94baceb5eff768aa0d56400a457585bc0175925a5a5510303da42",
+                "sha256:694b793e84f766ba76a90ebdefc01d0a9a045dab0382bee70393da93712ad117"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.10'",
+            "version": "==2.15.0"
         },
         "pymupdf": {
             "hashes": [
