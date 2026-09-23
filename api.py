@@ -1,14 +1,14 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, status
 
 from app_settings import get_settings
 from database import engine
 from logging_config import configure_logging
 from request_logging import request_logging_middleware
 from startup_validation import validate_database_startup
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from routes_config_collections_v1 import (
@@ -78,4 +78,34 @@ def open_ui():
 def health_check():
     return {
         "status": "ok"
+    }
+
+@app.get(
+    "/ready",
+    responses={
+        status.HTTP_503_SERVICE_UNAVAILABLE: {
+            "description": "Application dependencies are not ready",
+        },
+    },
+)
+def readiness_check():
+    try:
+        result = validate_database_startup(engine)
+    except Exception:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "status": "not_ready",
+            },
+        )
+
+    return {
+        "status": "ready",
+        "database": "connected",
+        "migrations": "current",
+        "revision": (
+            result.current_revisions[0]
+            if len(result.current_revisions) == 1
+            else list(result.current_revisions)
+        ),
     }

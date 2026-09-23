@@ -13,3 +13,8 @@ Health; A1, Electrohold, and Toplofikacia extraction; processing history list/de
 ## Pending manual fixtures
 
 Generic fallback and corrupted PDF 422 remain defined with empty path variables.
+
+## Health endpoints
+
+- `GET /health` is a low-cost liveness check and does not query PostgreSQL.
+- `GET /ready` verifies PostgreSQL connectivity and the current Alembic revision.
