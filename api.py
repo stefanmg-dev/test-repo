@@ -1,10 +1,13 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
 
 from app_settings import get_settings
+from database import engine
 from logging_config import configure_logging
 from request_logging import request_logging_middleware
+from startup_validation import validate_database_startup
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -28,9 +31,17 @@ configure_logging(
 )
 
 
+@asynccontextmanager
+async def application_lifespan(app: FastAPI):
+    validate_database_startup(engine)
+    yield
+    engine.dispose()
+
+
 app = FastAPI(
     title="Document Extraction API",
     version="1.0.0",
+    lifespan=application_lifespan,
 )
 
 
