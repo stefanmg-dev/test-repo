@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from time import perf_counter
 
@@ -29,6 +30,7 @@ from ocr_engine import (
 from processing_run_dependencies import (
     ProcessingRunServiceDependency,
 )
+from request_context import set_processing_run_id
 from result_validator import validate_result
 from supplier_profile_pipeline import (
     resolve_supplier_profile_fields,
@@ -36,6 +38,7 @@ from supplier_profile_pipeline import (
 
 
 router = APIRouter()
+logger = logging.getLogger("document_processing.extraction")
 
 
 def determine_processing_status(
@@ -142,10 +145,19 @@ async def extract_document(
     )
     timer_started_at = perf_counter()
     step_timings = {}
+    input_format = get_input_format(file.filename)
     processing_run = processing_run_service.start_run(
         document_type=document_type,
         filename=file.filename or "unknown",
-        input_format=get_input_format(file.filename),
+        input_format=input_format,
+    )
+    set_processing_run_id(str(processing_run.id))
+    logger.info(
+        "Document processing started",
+        extra={
+            "event": "processing_run.started",
+            "input_format": input_format,
+        },
     )
 
     try:
@@ -275,6 +287,17 @@ async def extract_document(
                 "collections": collection_validation,
             },
         )
+        logger.info(
+            "Document processing completed",
+            extra={
+                "event": "processing_run.completed",
+                "processing_status": processing_status,
+                "profile": selected_profile,
+                "duration_ms": elapsed_milliseconds(
+                    timer_started_at
+                ),
+            },
+        )
         return response
     except UnsupportedFileTypeError as exc:
         processing_run_service.fail_run(
@@ -290,6 +313,19 @@ async def extract_document(
                 timer_started_at
             ),
             step_timings=step_timings,
+        )
+        logger.warning(
+            "Document processing rejected",
+            extra={
+                "event": "processing_run.failed",
+                "error_type": type(exc).__name__,
+                "http_status": (
+                    status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
+                ),
+                "duration_ms": elapsed_milliseconds(
+                    timer_started_at
+                ),
+            },
         )
         raise HTTPException(
             status_code=(
@@ -312,6 +348,19 @@ async def extract_document(
             ),
             step_timings=step_timings,
         )
+        logger.warning(
+            "Document processing rejected",
+            extra={
+                "event": "processing_run.failed",
+                "error_type": type(exc).__name__,
+                "http_status": (
+                    status.HTTP_422_UNPROCESSABLE_CONTENT
+                ),
+                "duration_ms": elapsed_milliseconds(
+                    timer_started_at
+                ),
+            },
+        )
         raise HTTPException(
             status_code=(
                 status.HTTP_422_UNPROCESSABLE_CONTENT
@@ -329,5 +378,15 @@ async def extract_document(
                 timer_started_at
             ),
             step_timings=step_timings,
+        )
+        logger.exception(
+            "Document processing failed",
+            extra={
+                "event": "processing_run.failed",
+                "error_type": type(exc).__name__,
+                "duration_ms": elapsed_milliseconds(
+                    timer_started_at
+                ),
+            },
         )
         raise
