@@ -88,6 +88,18 @@ jobs:
       - name: Apply database migrations
         run: pipenv run alembic upgrade head
 
+      - name: Validate application startup
+        run: |
+          pipenv run python - <<'PYTHON'
+          from database import engine
+          from startup_validation import validate_database_startup
+
+          result = validate_database_startup(engine)
+          assert result.database_connected is True
+          assert result.current_revisions == result.expected_revisions
+          print("application startup validation: OK")
+          PYTHON
+
       - name: Run test suite
         run: |
           mkdir -p test-results
