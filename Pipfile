@@ -16,6 +16,7 @@ pdf2image = "*"
 python-multipart = "*"
 pydantic-settings = "*"
 greenlet = "<4,>=1"
+pyjwt = {extras = ["crypto"], version = "*"}
 
 [dev-packages]
 pytest = "*"

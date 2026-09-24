@@ -62,3 +62,33 @@ def test_settings_reject_invalid_pool_configuration(monkeypatch):
 
     with pytest.raises(ValidationError):
         AppSettings(_env_file=None)
+
+
+def test_oidc_settings_require_complete_configuration(monkeypatch):
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql+psycopg://user:secret@localhost/db",
+    )
+    monkeypatch.setenv("OIDC_ENABLED", "true")
+    monkeypatch.delenv("OIDC_ISSUER", raising=False)
+    monkeypatch.delenv("OIDC_AUDIENCE", raising=False)
+    monkeypatch.delenv("OIDC_JWKS_URL", raising=False)
+
+    with pytest.raises(ValidationError):
+        AppSettings(_env_file=None)
+
+
+def test_oidc_settings_parse_algorithms(monkeypatch):
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql+psycopg://user:secret@localhost/db",
+    )
+    monkeypatch.setenv("OIDC_ENABLED", "true")
+    monkeypatch.setenv("OIDC_ISSUER", "https://issuer.example")
+    monkeypatch.setenv("OIDC_AUDIENCE", "api-audience")
+    monkeypatch.setenv("OIDC_JWKS_URL", "https://issuer.example/keys")
+    monkeypatch.setenv("OIDC_ALGORITHMS", "RS256, RS384")
+
+    settings = AppSettings(_env_file=None)
+
+    assert settings.oidc_algorithms_list() == ["RS256", "RS384"]
