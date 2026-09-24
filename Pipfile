@@ -15,6 +15,7 @@ pymupdf = "*"
 pdf2image = "*"
 python-multipart = "*"
 pydantic-settings = "*"
+greenlet = "<4,>=1"
 
 [dev-packages]
 pytest = "*"
