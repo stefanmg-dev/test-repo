@@ -111,6 +111,62 @@ jobs:
       - name: Verify patch whitespace
         run: git diff --check
 
+      - name: Build production container image
+        run: docker build --tag document-processing-api:ci .
+
+      - name: Verify production container runtime
+        run: |
+          docker run --rm --interactive \
+            document-processing-api:ci \
+            python - <<'PYTHON'
+          import os
+          import easyocr
+          import fitz
+          import torch
+
+          assert os.getuid() == 10001
+          assert torch.version.cuda is None
+          assert os.environ["EASYOCR_DOWNLOAD_ENABLED"] == "false"
+          assert easyocr.Reader is not None
+          assert fitz.open is not None
+          print("production container runtime: OK")
+          PYTHON
+
+      - name: Smoke test production container health
+        run: |
+          container_id=$(docker run --detach \
+            --network host \
+            --env DATABASE_URL="$DATABASE_URL" \
+            --env ENVIRONMENT=production \
+            --env PORT=8010 \
+            document-processing-api:ci)
+          trap 'docker logs "$container_id"; docker rm --force "$container_id"' EXIT
+
+          python - <<'PYTHON'
+          import json
+          import time
+          import urllib.request
+
+          for _ in range(60):
+              try:
+                  with urllib.request.urlopen(
+                      "http://127.0.0.1:8010/ready",
+                      timeout=2,
+                  ) as response:
+                      payload = json.load(response)
+                      assert payload["status"] == "ready"
+                      assert payload["database"] == "connected"
+                      assert payload["migrations"] == "current"
+                      print("production container readiness: OK")
+                      break
+              except Exception:
+                  time.sleep(1)
+          else:
+              raise RuntimeError(
+                  "Production container did not become ready"
+              )
+          PYTHON
+
       - name: Upload test results on failure
         if: failure()
         uses: actions/upload-artifact@v4

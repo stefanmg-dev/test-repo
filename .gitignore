@@ -48,3 +48,6 @@ htmlcov/
 
 # Local assistant memory
 memory.json
+
+# Safe production environment template
+!.env.production.example
