@@ -23,6 +23,7 @@ from extraction_orchestrator import extract_document_data
 from llm_engine import extract_values
 from ocr_engine import (
     InvalidDocumentInputError,
+    PayloadTooLargeError,
     UnsupportedFileTypeError,
     extract_document_input,
     extract_text,
@@ -111,6 +112,10 @@ def get_input_format(filename: str | None) -> str:
                 "Document type is not ready for extraction"
             ),
             "model": ApiErrorResponseModel,
+        },
+        status.HTTP_413_CONTENT_TOO_LARGE: {
+            "description": "Uploaded file is too large",
+            "model": DocumentInputErrorResponseModel,
         },
         status.HTTP_415_UNSUPPORTED_MEDIA_TYPE: {
             "description": "Unsupported file type",
@@ -299,6 +304,30 @@ async def extract_document(
             },
         )
         return response
+    except PayloadTooLargeError as exc:
+        processing_run_service.fail_run(
+            processing_run.id,
+            error={
+                "type": type(exc).__name__,
+                "detail": str(exc),
+                "http_status": status.HTTP_413_CONTENT_TOO_LARGE,
+            },
+            duration_ms=elapsed_milliseconds(timer_started_at),
+            step_timings=step_timings,
+        )
+        logger.warning(
+            "Document processing rejected",
+            extra={
+                "event": "processing_run.failed",
+                "error_type": type(exc).__name__,
+                "http_status": status.HTTP_413_CONTENT_TOO_LARGE,
+                "duration_ms": elapsed_milliseconds(timer_started_at),
+            },
+        )
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail=str(exc),
+        ) from exc
     except UnsupportedFileTypeError as exc:
         processing_run_service.fail_run(
             processing_run.id,

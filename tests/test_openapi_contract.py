@@ -30,6 +30,16 @@ def test_extract_document_error_responses_are_documented():
         "$ref": "#/components/schemas/ApiErrorResponseModel"
     }
 
+
+    assert responses["413"]["description"] == (
+        "Uploaded file is too large"
+    )
+    assert response_schema(responses, "413") == {
+        "$ref": (
+            "#/components/schemas/"
+            "DocumentInputErrorResponseModel"
+        )
+    }
     assert responses["415"]["description"] == (
         "Unsupported file type"
     )

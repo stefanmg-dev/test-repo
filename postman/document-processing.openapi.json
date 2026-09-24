@@ -50,6 +50,16 @@
               }
             }
           },
+          "413": {
+            "description": "Uploaded file is too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentInputErrorResponseModel"
+                }
+              }
+            }
+          },
           "415": {
             "description": "Unsupported file type",
             "content": {
