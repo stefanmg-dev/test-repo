@@ -52,3 +52,12 @@ The container runs as UID and GID `10001`. `/tmp` is used for temporary uploaded
 ## Security boundary
 
 The image excludes local environment files, invoices, uploaded documents, local databases, test caches, AI model directories, Postman assets, and Git metadata. Authentication, authorization, upload limits, rate limiting, and production HTTP hardening are separate planned security packages.
+
+## Network and API boundary
+
+- Set `ALLOWED_HOSTS` to the public API hostname and any internal health-check hostname.
+- Keep `CORS_ALLOWED_ORIGINS` empty for the bundled same-origin UI.
+- If a separate browser frontend is deployed, list only its explicit HTTPS origins.
+- Keep `EXPOSE_API_DOCS=false` in production until authenticated documentation is implemented.
+- Set `FORWARDED_ALLOW_IPS` only to the trusted reverse proxy or load balancer addresses.
+- TLS terminates at the trusted ingress or reverse proxy. The application does not force HTTPS redirects internally.
