@@ -14,9 +14,25 @@ from pdf_engine import (
 )
 
 
+easyocr_model_directory = os.getenv(
+    "EASYOCR_MODEL_STORAGE_DIRECTORY"
+)
+easyocr_user_network_directory = os.getenv(
+    "EASYOCR_USER_NETWORK_DIRECTORY"
+)
+easyocr_download_enabled = os.getenv(
+    "EASYOCR_DOWNLOAD_ENABLED",
+    "true",
+).lower() in {"1", "true", "yes"}
+
 reader = easyocr.Reader(
     ["bg", "en"],
     gpu=False,
+    model_storage_directory=easyocr_model_directory,
+    user_network_directory=(
+        easyocr_user_network_directory
+    ),
+    download_enabled=easyocr_download_enabled,
 )
 
 

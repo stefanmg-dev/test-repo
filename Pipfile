@@ -4,8 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-llama-cpp-python = "*"
-requests = "*"
 uvicorn = "*"
 fastapi = "*"
 sqlalchemy = "<3,>=2"
