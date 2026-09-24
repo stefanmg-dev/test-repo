@@ -6,6 +6,13 @@ import numpy as np
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from input_quality import evaluate_image_quality
+from upload_security import (
+    DocumentInputError,
+    InvalidDocumentInputError,
+    PayloadTooLargeError,
+    UnsupportedFileTypeError,
+    persist_validated_upload,
+)
 from pdf_engine import (
     InvalidPdfError,
     extract_pdf_text,
@@ -206,52 +213,15 @@ def remove_file(
         pass
 
 
-class DocumentInputError(ValueError):
-    """Base error for invalid uploaded document input."""
-
-
-class UnsupportedFileTypeError(DocumentInputError):
-    """Raised when the uploaded document format is not supported."""
-
-
-class InvalidDocumentInputError(DocumentInputError):
-    """Raised when uploaded document content cannot be processed."""
 
 
 async def extract_document_input(file) -> dict:
-    filename = file.filename or ""
-
-    extension = os.path.splitext(
-        filename
-    )[1].lower()
-
-    supported_extensions = {
-        ".pdf",
-        ".jpg",
-        ".jpeg",
-        ".png",
-    }
-
-    if extension not in supported_extensions:
-        raise UnsupportedFileTypeError(
-            "Unsupported file type: "
-            f"{extension or 'unknown'}"
-        )
-
-    temp_file_path = None
+    validated_upload = await persist_validated_upload(file)
+    extension = validated_upload.extension
+    temp_file_path = validated_upload.path
     generated_image_paths = []
 
     try:
-        with tempfile.NamedTemporaryFile(
-            delete=False,
-            suffix=extension,
-        ) as temp_file:
-            content = await file.read()
-
-            temp_file.write(content)
-
-            temp_file_path = temp_file.name
-
         if extension == ".pdf":
             try:
                 generated_image_paths = pdf_to_images(
@@ -354,6 +324,7 @@ async def extract_document_input(file) -> dict:
 
         for image_path in generated_image_paths:
             remove_file(image_path)
+
 
 
 async def extract_text(file) -> str:

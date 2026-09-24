@@ -58,6 +58,42 @@ class AppSettings(BaseSettings):
         le=300,
         validation_alias="DATABASE_POOL_TIMEOUT_SECONDS",
     )
+    max_upload_size_bytes: int = Field(
+        default=20 * 1024 * 1024,
+        ge=1024,
+        le=200 * 1024 * 1024,
+        validation_alias="MAX_UPLOAD_SIZE_BYTES",
+    )
+    max_filename_length: int = Field(
+        default=255,
+        ge=1,
+        le=1024,
+        validation_alias="MAX_FILENAME_LENGTH",
+    )
+    max_pdf_pages: int = Field(
+        default=50,
+        ge=1,
+        le=1000,
+        validation_alias="MAX_PDF_PAGES",
+    )
+    max_image_width: int = Field(
+        default=20000,
+        ge=1,
+        le=100000,
+        validation_alias="MAX_IMAGE_WIDTH",
+    )
+    max_image_height: int = Field(
+        default=20000,
+        ge=1,
+        le=100000,
+        validation_alias="MAX_IMAGE_HEIGHT",
+    )
+    max_image_pixels: int = Field(
+        default=100_000_000,
+        ge=1,
+        le=1_000_000_000,
+        validation_alias="MAX_IMAGE_PIXELS",
+    )
 
     def database_url_value(self) -> str:
         return self.database_url.get_secret_value()

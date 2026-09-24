@@ -1,16 +1,49 @@
 import asyncio
 from io import BytesIO
+from pathlib import Path
 
+import pymupdf
 import pytest
 from fastapi import UploadFile
+from PIL import Image
 
 import ocr_engine
 
 
+def build_valid_fixture(filename):
+    extension = Path(filename).suffix.lower()
+
+    if extension == ".pdf":
+        document = pymupdf.open()
+        document.new_page()
+        content = document.tobytes()
+        document.close()
+        return content
+
+    if extension in {".png", ".jpg", ".jpeg"}:
+        image_format = (
+            "PNG"
+            if extension == ".png"
+            else "JPEG"
+        )
+        buffer = BytesIO()
+        Image.new(
+            "RGB",
+            (2, 2),
+            "white",
+        ).save(buffer, image_format)
+        return buffer.getvalue()
+
+    return b"fixture-content"
+
+
 def make_upload(
     filename,
-    content=b"fixture-content",
+    content=None,
 ):
+    if content is None:
+        content = build_valid_fixture(filename)
+
     return UploadFile(
         file=BytesIO(content),
         filename=filename,
@@ -282,7 +315,7 @@ def test_corrupted_pdf_is_rejected_as_invalid_document_input(
         extract(
             make_upload(
                 "invalid_document.pdf",
-                b"This is not a valid PDF.\n",
+                b"%PDF-1.7\ncorrupted-content",
             )
         )
 
@@ -308,6 +341,6 @@ def test_corrupted_image_is_rejected_as_invalid_document_input(
         extract(
             make_upload(
                 "invalid_image.png",
-                b"This is not a valid PNG.\n",
+                b"\x89PNG\r\n\x1a\ncorrupted-content",
             )
         )
