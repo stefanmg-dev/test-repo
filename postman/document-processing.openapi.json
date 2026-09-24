@@ -92,6 +92,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
           }
         ]
       }
@@ -106,6 +109,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
           }
         ],
         "parameters": [
@@ -164,6 +170,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
           }
         ],
         "parameters": [
@@ -3425,6 +3434,11 @@
         "description": "Service API key",
         "in": "header",
         "name": "X-API-Key"
+      },
+      "BearerAuth": {
+        "type": "http",
+        "description": "OIDC access token",
+        "scheme": "bearer"
       }
     }
   }
