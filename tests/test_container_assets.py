@@ -60,3 +60,9 @@ def test_production_environment_template_is_safe():
     assert "localhost" not in template
     assert "/Users/" not in template
     assert "change_me" in template
+
+
+def test_linux_sqlalchemy_runtime_dependency_is_explicit():
+    pipfile = read("Pipfile")
+
+    assert "greenlet" in pipfile
