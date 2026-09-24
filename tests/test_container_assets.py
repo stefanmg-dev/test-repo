@@ -57,6 +57,8 @@ def test_production_environment_template_is_safe():
 
     assert "ENVIRONMENT=production" in template
     assert "EASYOCR_DOWNLOAD_ENABLED=false" in template
+    assert "EXPOSE_API_DOCS=false" in template
+    assert "ALLOWED_HOSTS=api.example.com" in template
     assert "localhost" not in template
     assert "/Users/" not in template
     assert "change_me" in template

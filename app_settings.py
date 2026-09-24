@@ -94,6 +94,38 @@ class AppSettings(BaseSettings):
         le=1_000_000_000,
         validation_alias="MAX_IMAGE_PIXELS",
     )
+    allowed_hosts: str = Field(
+        default="localhost,127.0.0.1,testserver",
+        validation_alias="ALLOWED_HOSTS",
+    )
+    cors_allowed_origins: str = Field(
+        default="",
+        validation_alias="CORS_ALLOWED_ORIGINS",
+    )
+    expose_api_docs: bool = Field(
+        default=True,
+        validation_alias="EXPOSE_API_DOCS",
+    )
+
+    def allowed_hosts_list(self) -> list[str]:
+        hosts = [
+            value.strip()
+            for value in self.allowed_hosts.split(",")
+            if value.strip()
+        ]
+        if not hosts:
+            raise ValueError("ALLOWED_HOSTS must not be empty")
+        return hosts
+
+    def cors_allowed_origins_list(self) -> list[str]:
+        return [
+            value.strip()
+            for value in self.cors_allowed_origins.split(",")
+            if value.strip()
+        ]
+
+    def api_docs_enabled(self) -> bool:
+        return self.expose_api_docs
 
     def database_url_value(self) -> str:
         return self.database_url.get_secret_value()

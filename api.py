@@ -2,6 +2,8 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from app_settings import get_settings
 from database import engine
@@ -38,12 +40,32 @@ async def application_lifespan(app: FastAPI):
     engine.dispose()
 
 
+docs_enabled = SETTINGS.api_docs_enabled()
+
 app = FastAPI(
     title="Document Extraction API",
     version="1.0.0",
     lifespan=application_lifespan,
+    docs_url="/docs" if docs_enabled else None,
+    redoc_url="/redoc" if docs_enabled else None,
+    openapi_url="/openapi.json" if docs_enabled else None,
 )
 
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=SETTINGS.allowed_hosts_list(),
+)
+
+cors_origins = SETTINGS.cors_allowed_origins_list()
+if cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_headers=["Accept", "Content-Type", "X-Request-ID"],
+        expose_headers=["X-Request-ID"],
+    )
 
 app.middleware("http")(request_logging_middleware)
 

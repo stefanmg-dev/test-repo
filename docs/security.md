@@ -11,3 +11,7 @@ The extraction boundary enforces configured limits for upload size, filename len
 - Trusted hosts, explicit CORS, proxy trust, and production documentation exposure
 - Retention, privacy, audit trail, backup protection, and deletion workflows
 - Dependency scanning and security regression automation
+
+## Network and API hardening
+
+Production uses an explicit host allowlist, disables public OpenAPI and interactive documentation, and leaves CORS disabled by default. Cross-origin browser access is enabled only through explicit origins. Forwarded headers are trusted only from deployment-configured proxy addresses.
