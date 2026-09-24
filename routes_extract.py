@@ -32,6 +32,7 @@ from processing_run_dependencies import (
     ProcessingRunServiceDependency,
 )
 from request_context import set_processing_run_id
+from security_dependencies import OptionalApiKeyPrincipal
 from result_validator import validate_result
 from supplier_profile_pipeline import (
     resolve_supplier_profile_fields,
@@ -135,6 +136,7 @@ def get_input_format(filename: str | None) -> str:
 )
 async def extract_document(
     processing_run_service: ProcessingRunServiceDependency,
+    principal: OptionalApiKeyPrincipal,
     document_type: str = Form(
         ...,
         examples=["invoice"],
@@ -155,6 +157,21 @@ async def extract_document(
         document_type=document_type,
         filename=file.filename or "unknown",
         input_format=input_format,
+        tenant_id=(
+            principal.tenant_id
+            if principal is not None
+            else "default"
+        ),
+        created_by_type=(
+            principal.principal_type
+            if principal is not None
+            else "system"
+        ),
+        created_by_subject=(
+            principal.subject
+            if principal is not None
+            else "legacy"
+        ),
     )
     set_processing_run_id(str(processing_run.id))
     logger.info(
