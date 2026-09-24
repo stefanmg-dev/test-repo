@@ -42,7 +42,7 @@ class QueryService:
         self.run = run or build_run()
         self.list_calls = []
 
-    def get_run(self, run_id):
+    def get_run(self, run_id, *, tenant_id=None):
         if run_id != self.run.id:
             raise ProcessingRunNotFoundError(
                 f"Processing run '{run_id}' was not found"
@@ -58,6 +58,7 @@ class QueryService:
         processing_status=None,
         profile=None,
         requires_review=None,
+        tenant_id=None,
     ):
         self.list_calls.append(
             {
@@ -67,6 +68,7 @@ class QueryService:
                 "processing_status": processing_status,
                 "profile": profile,
                 "requires_review": requires_review,
+                "tenant_id": tenant_id,
             }
         )
         return [self.run], 1
@@ -136,6 +138,7 @@ def test_list_processing_runs_uses_pagination():
             "processing_status": "accepted",
             "profile": "telecom_a1",
             "requires_review": False,
+            "tenant_id": "default",
         }
     ]
 

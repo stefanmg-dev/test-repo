@@ -12,6 +12,7 @@ from processing_run_models import (
     ProcessingRunListResponseModel,
 )
 from processing_run_service import ProcessingRunNotFoundError
+from security_dependencies import OptionalApiKeyPrincipal
 
 
 router = APIRouter(
@@ -33,9 +34,17 @@ router = APIRouter(
 def get_processing_run(
     run_id: UUID,
     processing_run_service: ProcessingRunServiceDependency,
+    principal: OptionalApiKeyPrincipal,
 ):
     try:
-        return processing_run_service.get_run(run_id)
+        return processing_run_service.get_run(
+            run_id,
+            tenant_id=(
+                principal.tenant_id
+                if principal is not None
+                else "default"
+            ),
+        )
     except ProcessingRunNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -49,6 +58,7 @@ def get_processing_run(
 )
 def list_processing_runs(
     processing_run_service: ProcessingRunServiceDependency,
+    principal: OptionalApiKeyPrincipal,
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     document_type: Annotated[
@@ -83,6 +93,11 @@ def list_processing_runs(
         processing_status=processing_status,
         profile=profile,
         requires_review=requires_review,
+        tenant_id=(
+            principal.tenant_id
+            if principal is not None
+            else "default"
+        ),
     )
     return {
         "items": items,

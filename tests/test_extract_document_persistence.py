@@ -123,6 +123,9 @@ def test_successful_extraction_completes_processing_run(
             "document_type": "invoice",
             "filename": "invoice.pdf",
             "input_format": "pdf",
+            "tenant_id": "default",
+            "created_by_type": "system",
+            "created_by_subject": "legacy",
         }
     ]
     assert len(service.completed) == 1

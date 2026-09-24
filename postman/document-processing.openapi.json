@@ -88,7 +88,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
       }
     },
     "/api/v1/processing-runs/{run_id}": {
@@ -98,6 +103,11 @@
         ],
         "summary": "Get Processing Run",
         "operationId": "get_processing_run_api_v1_processing_runs__run_id__get",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "run_id",
@@ -151,6 +161,11 @@
         ],
         "summary": "List Processing Runs",
         "operationId": "list_processing_runs_api_v1_processing_runs_get",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "offset",
@@ -3402,6 +3417,14 @@
           "type"
         ],
         "title": "ValidationRuleModel"
+      }
+    },
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "description": "Service API key",
+        "in": "header",
+        "name": "X-API-Key"
       }
     }
   }
