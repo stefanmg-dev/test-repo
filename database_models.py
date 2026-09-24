@@ -44,6 +44,25 @@ class ProcessingRun(Base):
         primary_key=True,
         default=uuid4,
     )
+    tenant_id: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        default="default",
+        server_default="default",
+        index=True,
+    )
+    created_by_type: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="system",
+        server_default="system",
+    )
+    created_by_subject: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        default="legacy",
+        server_default="legacy",
+    )
     document_type: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
@@ -121,4 +140,61 @@ class ProcessingRun(Base):
         nullable=False,
         server_default=func.now(),
         onupdate=func.now(),
+    )
+
+
+class ApiKey(Base):
+    __tablename__ = "api_keys"
+    __table_args__ = (
+        CheckConstraint(
+            "expires_at IS NULL OR expires_at > created_at",
+            name="ck_api_keys_expiry_after_creation",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+    )
+    name: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+    )
+    tenant_id: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        index=True,
+    )
+    secret_hash: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+    secret_prefix: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    scopes: Mapped[list[str]] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=list,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    last_used_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
     )

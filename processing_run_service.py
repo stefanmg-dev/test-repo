@@ -23,12 +23,18 @@ class ProcessingRunService:
         document_type: str,
         filename: str,
         input_format: str,
+        tenant_id: str = "default",
+        created_by_type: str = "system",
+        created_by_subject: str = "legacy",
         started_at: datetime | None = None,
     ) -> ProcessingRun:
         processing_run = ProcessingRun(
             document_type=document_type,
             filename=filename,
             input_format=input_format,
+            tenant_id=tenant_id,
+            created_by_type=created_by_type,
+            created_by_subject=created_by_subject,
             processing_status="processing",
             requires_review=False,
             started_at=started_at or datetime.now(timezone.utc),

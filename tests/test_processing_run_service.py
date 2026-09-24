@@ -34,6 +34,9 @@ def test_starts_processing_run():
     assert processing_run.input_format == "pdf"
     assert processing_run.processing_status == "processing"
     assert processing_run.requires_review is False
+    assert processing_run.tenant_id == "default"
+    assert processing_run.created_by_type == "system"
+    assert processing_run.created_by_subject == "legacy"
     assert processing_run.started_at == started_at
     session.add.assert_called_once_with(processing_run)
     session.flush.assert_called_once_with()
