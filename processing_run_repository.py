@@ -15,8 +15,19 @@ class ProcessingRunRepository:
         self._session.flush()
         return processing_run
 
-    def get(self, run_id: UUID) -> ProcessingRun | None:
-        return self._session.get(ProcessingRun, run_id)
+    def get(
+        self,
+        run_id: UUID,
+        *,
+        tenant_id: str | None = None,
+    ) -> ProcessingRun | None:
+        if tenant_id is None:
+            return self._session.get(ProcessingRun, run_id)
+        statement = select(ProcessingRun).where(
+            ProcessingRun.id == run_id,
+            ProcessingRun.tenant_id == tenant_id,
+        )
+        return self._session.scalar(statement)
 
     def list(
         self,
@@ -27,6 +38,7 @@ class ProcessingRunRepository:
         processing_status: str | None = None,
         profile: str | None = None,
         requires_review: bool | None = None,
+        tenant_id: str | None = None,
     ) -> list[ProcessingRun]:
         statement = select(ProcessingRun)
         statement = self._apply_filters(
@@ -35,6 +47,7 @@ class ProcessingRunRepository:
             processing_status=processing_status,
             profile=profile,
             requires_review=requires_review,
+            tenant_id=tenant_id,
         )
         statement = (
             statement
@@ -56,6 +69,7 @@ class ProcessingRunRepository:
         processing_status: str | None = None,
         profile: str | None = None,
         requires_review: bool | None = None,
+        tenant_id: str | None = None,
     ) -> int:
         statement = select(
             func.count(ProcessingRun.id)
@@ -66,6 +80,7 @@ class ProcessingRunRepository:
             processing_status=processing_status,
             profile=profile,
             requires_review=requires_review,
+            tenant_id=tenant_id,
         )
         return int(
             self._session.scalar(statement) or 0
@@ -79,7 +94,12 @@ class ProcessingRunRepository:
         processing_status: str | None,
         profile: str | None,
         requires_review: bool | None,
+        tenant_id: str | None,
     ):
+        if tenant_id is not None:
+            statement = statement.where(
+                ProcessingRun.tenant_id == tenant_id
+            )
         if document_type is not None:
             statement = statement.where(
                 ProcessingRun.document_type == document_type

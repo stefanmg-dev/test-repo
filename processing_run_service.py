@@ -98,8 +98,16 @@ class ProcessingRunService:
         self._session.refresh(processing_run)
         return processing_run
 
-    def get_run(self, run_id: UUID) -> ProcessingRun:
-        return self._get_required(run_id)
+    def get_run(
+        self,
+        run_id: UUID,
+        *,
+        tenant_id: str | None = None,
+    ) -> ProcessingRun:
+        return self._get_required(
+            run_id,
+            tenant_id=tenant_id,
+        )
 
     def list_runs(
         self,
@@ -110,12 +118,14 @@ class ProcessingRunService:
         processing_status: str | None = None,
         profile: str | None = None,
         requires_review: bool | None = None,
+        tenant_id: str | None = None,
     ) -> tuple[list[ProcessingRun], int]:
         filters = {
             "document_type": document_type,
             "processing_status": processing_status,
             "profile": profile,
             "requires_review": requires_review,
+            "tenant_id": tenant_id,
         }
         return (
             self._repository.list(
@@ -126,8 +136,16 @@ class ProcessingRunService:
             self._repository.count(**filters),
         )
 
-    def _get_required(self, run_id: UUID) -> ProcessingRun:
-        processing_run = self._repository.get(run_id)
+    def _get_required(
+        self,
+        run_id: UUID,
+        *,
+        tenant_id: str | None = None,
+    ) -> ProcessingRun:
+        processing_run = self._repository.get(
+            run_id,
+            tenant_id=tenant_id,
+        )
         if processing_run is None:
             raise ProcessingRunNotFoundError(
                 f"Processing run '{run_id}' was not found"
