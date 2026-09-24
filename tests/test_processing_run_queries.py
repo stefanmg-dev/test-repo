@@ -19,6 +19,7 @@ def test_get_run_returns_existing_run():
         input_format="pdf",
         processing_status="accepted",
         requires_review=False,
+        tenant_id="tenant-1",
     )
     session.get.return_value = processing_run
 
@@ -61,6 +62,7 @@ def test_list_runs_returns_items_and_total():
         processing_status="accepted",
         profile="telecom_a1",
         requires_review=False,
+        tenant_id="tenant-1",
     )
 
     assert items == [item]
@@ -74,3 +76,30 @@ def test_list_runs_returns_items_and_total():
         assert "processing_runs.processing_status" in sql
         assert "processing_runs.profile" in sql
         assert "processing_runs.requires_review" in sql
+        assert "processing_runs.tenant_id" in sql
+
+
+def test_get_run_can_be_tenant_scoped():
+    session = Mock()
+    item = ProcessingRun(
+        id=uuid4(),
+        tenant_id="tenant-1",
+        created_by_type="service",
+        created_by_subject="service-1",
+        document_type="invoice",
+        filename="invoice.pdf",
+        input_format="pdf",
+        processing_status="accepted",
+        requires_review=False,
+    )
+    session.scalar.return_value = item
+
+    result = ProcessingRunService(session).get_run(
+        item.id,
+        tenant_id="tenant-1",
+    )
+
+    assert result is item
+    sql = str(session.scalar.call_args.args[0])
+    assert "processing_runs.id" in sql
+    assert "processing_runs.tenant_id" in sql
