@@ -138,6 +138,33 @@ class AppSettings(BaseSettings):
         default="scp",
         validation_alias="OIDC_SCOPES_CLAIM",
     )
+    rate_limit_enabled: bool = Field(
+        default=False,
+        validation_alias="RATE_LIMIT_ENABLED",
+    )
+    rate_limit_storage_uri: SecretStr = Field(
+        default="memory://",
+        validation_alias="RATE_LIMIT_STORAGE_URI",
+        repr=False,
+    )
+    rate_limit_extract_per_minute: int = Field(
+        default=10,
+        ge=1,
+        le=10000,
+        validation_alias="RATE_LIMIT_EXTRACT_PER_MINUTE",
+    )
+    rate_limit_api_keys_per_minute: int = Field(
+        default=30,
+        ge=1,
+        le=10000,
+        validation_alias="RATE_LIMIT_API_KEYS_PER_MINUTE",
+    )
+    rate_limit_read_per_minute: int = Field(
+        default=120,
+        ge=1,
+        le=100000,
+        validation_alias="RATE_LIMIT_READ_PER_MINUTE",
+    )
 
     @model_validator(mode="after")
     def validate_oidc_configuration(self):
@@ -153,6 +180,16 @@ class AppSettings(BaseSettings):
                     "OIDC is enabled but required settings are missing: "
                     + ", ".join(missing)
                 )
+        if (
+            self.rate_limit_enabled
+            and self.environment == "production"
+            and self.rate_limit_storage_uri.get_secret_value().startswith(
+                "memory://"
+            )
+        ):
+            raise ValueError(
+                "Production rate limiting requires shared storage"
+            )
         return self
 
     def oidc_algorithms_list(self) -> list[str]:
@@ -187,6 +224,9 @@ class AppSettings(BaseSettings):
 
     def database_url_value(self) -> str:
         return self.database_url.get_secret_value()
+
+    def rate_limit_storage_uri_value(self) -> str:
+        return self.rate_limit_storage_uri.get_secret_value()
 
 
 @lru_cache(maxsize=1)

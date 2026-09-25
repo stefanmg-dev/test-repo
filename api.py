@@ -8,6 +8,8 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from app_settings import get_settings
 from database import engine
 from logging_config import configure_logging
+from rate_limit_middleware import create_rate_limit_middleware
+from rate_limiting import ApplicationRateLimiter
 from request_logging import request_logging_middleware
 from startup_validation import validate_database_startup
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -68,6 +70,12 @@ if cors_origins:
         expose_headers=["X-Request-ID"],
     )
 
+rate_limiter = ApplicationRateLimiter(
+    SETTINGS.rate_limit_storage_uri_value()
+)
+app.middleware("http")(
+    create_rate_limit_middleware(SETTINGS, rate_limiter)
+)
 app.middleware("http")(request_logging_middleware)
 
 

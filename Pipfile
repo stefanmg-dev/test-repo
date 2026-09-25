@@ -17,6 +17,7 @@ python-multipart = "*"
 pydantic-settings = "*"
 greenlet = "<4,>=1"
 pyjwt = {extras = ["crypto"], version = "*"}
+limits = {extras = ["redis"], version = "*"}
 
 [dev-packages]
 pytest = "*"
