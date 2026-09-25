@@ -79,3 +79,16 @@ def test_versioned_browser_auth_assets_exist():
         "ui/auth-controls.js",
     ):
         assert (ROOT / asset).is_file(), asset
+
+
+def test_ci_rebuilds_versioned_browser_auth_bundle():
+    workflow = read(".github/workflows/ci.yml")
+
+    assert "actions/setup-node@v6" in workflow
+    assert 'node-version: "22"' in workflow
+    assert "npm ci" in workflow
+    assert "npm run build" in workflow
+    assert (
+        "git diff --exit-code -- ui/auth.bundle.js package-lock.json"
+        in workflow
+    )

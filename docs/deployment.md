@@ -61,3 +61,7 @@ The image excludes local environment files, invoices, uploaded documents, local 
 - Keep `EXPOSE_API_DOCS=false` in production until authenticated documentation is implemented.
 - Set `FORWARDED_ALLOW_IPS` only to the trusted reverse proxy or load balancer addresses.
 - TLS terminates at the trusted ingress or reverse proxy. The application does not force HTTPS redirects internally.
+
+## Browser authentication asset
+
+The versioned `ui/auth.bundle.js` file is built from `ui/auth.js` with the locked npm dependencies. CI runs `npm ci`, rebuilds the bundle, and fails when the committed bundle or lock file is stale. The production image consumes the verified versioned asset and does not require Node.js at runtime.
