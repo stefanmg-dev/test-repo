@@ -68,3 +68,14 @@ def test_linux_sqlalchemy_runtime_dependency_is_explicit():
     pipfile = read("Pipfile")
 
     assert "greenlet" in pipfile
+
+
+def test_versioned_browser_auth_assets_exist():
+    for asset in (
+        "package.json",
+        "package-lock.json",
+        "ui/auth.js",
+        "ui/auth.bundle.js",
+        "ui/auth-controls.js",
+    ):
+        assert (ROOT / asset).is_file(), asset
