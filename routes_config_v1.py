@@ -2,6 +2,7 @@ from copy import deepcopy
 
 from fastapi import (
     APIRouter,
+    Depends,
     HTTPException,
     Path,
     Response,
@@ -26,6 +27,7 @@ from config_api_helpers import (
     save_validated_config,
 )
 from config_store import load_config
+from security_scopes import enforce_config_scope
 from document_config_resolver import resolve_document_fields
 from document_status import build_document_type_metadata
 
@@ -33,6 +35,7 @@ from document_status import build_document_type_metadata
 router = APIRouter(
     prefix="/api/v1/config",
     tags=["Configuration API v1"],
+    dependencies=[Depends(enforce_config_scope)],
 )
 
 

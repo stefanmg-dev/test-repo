@@ -1,5 +1,5 @@
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from config_models import (
     AddCollectionRequest,
@@ -23,11 +23,13 @@ from config_collection_service import (
     update_profile_collection_mutation,
 )
 from config_store import load_config
+from security_scopes import enforce_config_scope
 
 
 router = APIRouter(
     prefix="/api/v1/config",
     tags=["Configuration API v1"],
+    dependencies=[Depends(enforce_config_scope)],
 )
 
 

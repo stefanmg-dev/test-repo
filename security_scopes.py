@@ -1,5 +1,8 @@
-from fastapi import HTTPException, status
+from typing import Annotated
 
+from fastapi import Depends, HTTPException, Request, status
+
+from security_dependencies import get_optional_principal
 from security_principal import SecurityPrincipal
 
 
@@ -22,3 +25,21 @@ def enforce_scope_if_authenticated(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Missing required scope: {required_scope}",
         )
+
+
+async def enforce_config_scope(
+    request: Request,
+    principal: Annotated[
+        SecurityPrincipal | None,
+        Depends(get_optional_principal),
+    ],
+) -> None:
+    required_scope = (
+        CONFIG_READ
+        if request.method == "GET"
+        else CONFIG_WRITE
+    )
+    enforce_scope_if_authenticated(
+        principal,
+        required_scope,
+    )
