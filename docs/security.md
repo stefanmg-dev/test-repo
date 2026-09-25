@@ -15,3 +15,7 @@ The extraction boundary enforces configured limits for upload size, filename len
 ## Network and API hardening
 
 Production uses an explicit host allowlist, disables public OpenAPI and interactive documentation, and leaves CORS disabled by default. Cross-origin browser access is enabled only through explicit origins. Forwarded headers are trusted only from deployment-configured proxy addresses.
+
+## Legacy anonymous access transition
+
+`LEGACY_ANONYMOUS_ACCESS_ENABLED` defaults to `true` while the browser UI has no OIDC sign-in flow. Setting it to `false` requires authentication for extraction, processing history, and configuration API operations. Health, readiness, and static UI assets remain public. Production deployments should switch it to `false` only after browser authentication is configured and tested.

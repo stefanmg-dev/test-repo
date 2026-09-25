@@ -71,3 +71,18 @@ async def test_configuration_scope_is_selected_from_http_method():
     assert exc_info.value.detail == (
         "Missing required scope: config:write"
     )
+
+
+def test_anonymous_access_is_rejected_when_transition_flag_is_disabled():
+    with pytest.raises(HTTPException) as exc_info:
+        enforce_scope_if_authenticated(
+            None,
+            DOCUMENTS_EXTRACT,
+            legacy_anonymous_access_enabled=False,
+        )
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Authentication required"
+    assert exc_info.value.headers == {
+        "WWW-Authenticate": "APIKey, Bearer"
+    }

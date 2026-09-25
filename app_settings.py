@@ -106,6 +106,10 @@ class AppSettings(BaseSettings):
         default=True,
         validation_alias="EXPOSE_API_DOCS",
     )
+    legacy_anonymous_access_enabled: bool = Field(
+        default=True,
+        validation_alias="LEGACY_ANONYMOUS_ACCESS_ENABLED",
+    )
     oidc_enabled: bool = Field(
         default=False,
         validation_alias="OIDC_ENABLED",

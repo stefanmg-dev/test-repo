@@ -92,3 +92,29 @@ def test_oidc_settings_parse_algorithms(monkeypatch):
     settings = AppSettings(_env_file=None)
 
     assert settings.oidc_algorithms_list() == ["RS256", "RS384"]
+
+
+def test_legacy_anonymous_access_is_enabled_by_default(monkeypatch):
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql+psycopg://user:secret@localhost/db",
+    )
+
+    settings = AppSettings(_env_file=None)
+
+    assert settings.legacy_anonymous_access_enabled is True
+
+
+def test_legacy_anonymous_access_can_be_disabled(monkeypatch):
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql+psycopg://user:secret@localhost/db",
+    )
+    monkeypatch.setenv(
+        "LEGACY_ANONYMOUS_ACCESS_ENABLED",
+        "false",
+    )
+
+    settings = AppSettings(_env_file=None)
+
+    assert settings.legacy_anonymous_access_enabled is False
