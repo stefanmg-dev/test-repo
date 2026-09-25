@@ -65,3 +65,37 @@ The image excludes local environment files, invoices, uploaded documents, local 
 ## Browser authentication asset
 
 The versioned `ui/auth.bundle.js` file is built from `ui/auth.js` with the locked npm dependencies. CI runs `npm ci`, rebuilds the bundle, and fails when the committed bundle or lock file is stale. The production image consumes the verified versioned asset and does not require Node.js at runtime.
+
+## Microsoft Entra production cutover
+
+Use two Microsoft Entra app registrations: one resource application for the API and one public client application for the browser SPA.
+
+### API application
+
+1. Record the tenant ID and API application client ID.
+2. Keep the Application ID URI as `api://<API_CLIENT_ID>` unless the deployment uses another verified unique URI.
+3. Expose `documents.extract`, `processing-runs.read`, `config.read`, and `config.write`.
+4. Do not expose the internal `admin` permission as a delegated browser scope.
+5. Use the API application client ID as `OIDC_AUDIENCE`.
+
+### Browser SPA application
+
+1. Configure the application as a Single-page application.
+2. Register the exact HTTPS redirect URI `<PUBLIC_ORIGIN>/ui/index.html`.
+3. Add delegated permissions for all four API scopes.
+4. Grant tenant admin consent when required by tenant policy.
+5. Use the SPA application client ID as `OIDC_BROWSER_CLIENT_ID`.
+
+### Production environment
+
+Replace every `your-*` placeholder in `.env.production.example`, then initially set:
+
+```text
+OIDC_ENABLED=true
+OIDC_BROWSER_ENABLED=true
+LEGACY_ANONYMOUS_ACCESS_ENABLED=true
+```
+
+Confirm interactive sign-in, silent token acquisition, extraction, history reads, configuration reads, and configuration writes. Inspect the access token and confirm `iss`, `aud`, `tid`, `sub`, `exp`, `iat`, and `scp` match the configured API contract.
+
+Only after the authenticated smoke test succeeds, set `LEGACY_ANONYMOUS_ACCESS_ENABLED=false`. Redeploy and verify protected routes return HTTP 401 without credentials while `/health`, `/ready`, `/api/v1/auth/config`, and static UI assets remain public.
