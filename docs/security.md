@@ -19,3 +19,7 @@ Production uses an explicit host allowlist, disables public OpenAPI and interact
 ## Legacy anonymous access transition
 
 `LEGACY_ANONYMOUS_ACCESS_ENABLED` defaults to `true` while the browser UI has no OIDC sign-in flow. Setting it to `false` requires authentication for extraction, processing history, and configuration API operations. Health, readiness, and static UI assets remain public. Production deployments should switch it to `false` only after browser authentication is configured and tested.
+
+## Browser OIDC configuration
+
+`GET /api/v1/auth/config` exposes only public SPA configuration. Browser OIDC remains disabled by default. Enabling it requires the API OIDC validator settings plus the SPA client ID, authority, redirect path, and delegated API scopes. No client secret, token, JWKS URL, or private credential is returned to the browser.
