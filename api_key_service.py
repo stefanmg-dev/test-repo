@@ -3,6 +3,7 @@ import hmac
 import secrets
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from uuid import UUID
 
 from sqlalchemy.orm import Session
 
@@ -20,6 +21,10 @@ API_KEY_SECRET_BYTES = 32
 class CreatedApiKey:
     api_key: ApiKey
     secret: str
+
+
+class ApiKeyNotFoundError(LookupError):
+    pass
 
 
 class ApiKeyService:
@@ -50,6 +55,64 @@ class ApiKeyService:
         self._session.commit()
         self._session.refresh(api_key)
         return CreatedApiKey(api_key=api_key, secret=secret)
+
+
+    def list_keys(self, *, tenant_id: str) -> list[ApiKey]:
+        return self._repository.list_for_tenant(tenant_id)
+
+    def get_key(self, api_key_id: UUID, *, tenant_id: str) -> ApiKey:
+        api_key = self._repository.get(
+            api_key_id,
+            tenant_id=tenant_id,
+        )
+        if api_key is None:
+            raise ApiKeyNotFoundError(
+                f"API key '{api_key_id}' was not found"
+            )
+        return api_key
+
+    def revoke_key(
+        self,
+        api_key_id: UUID,
+        *,
+        tenant_id: str,
+        revoked_at: datetime | None = None,
+    ) -> ApiKey:
+        api_key = self.get_key(api_key_id, tenant_id=tenant_id)
+        if api_key.revoked_at is None:
+            api_key.revoked_at = revoked_at or datetime.now(timezone.utc)
+            self._session.commit()
+            self._session.refresh(api_key)
+        return api_key
+
+    def rotate_key(
+        self,
+        api_key_id: UUID,
+        *,
+        tenant_id: str,
+        expires_at: datetime | None = None,
+    ) -> CreatedApiKey:
+        old_key = self.get_key(api_key_id, tenant_id=tenant_id)
+        if old_key.revoked_at is not None:
+            raise ValueError("Revoked API key cannot be rotated")
+
+        prefix = secrets.token_hex(API_KEY_PREFIX_BYTES)
+        secret_part = secrets.token_urlsafe(API_KEY_SECRET_BYTES)
+        secret = f"{API_KEY_MARKER}_{prefix}_{secret_part}"
+        replacement = ApiKey(
+            name=old_key.name,
+            tenant_id=old_key.tenant_id,
+            secret_prefix=prefix,
+            secret_hash=self.hash_secret(secret),
+            scopes=list(old_key.scopes),
+            expires_at=expires_at,
+        )
+        self._repository.add(replacement)
+        old_key.revoked_at = datetime.now(timezone.utc)
+        self._session.commit()
+        self._session.refresh(replacement)
+        self._session.refresh(old_key)
+        return CreatedApiKey(api_key=replacement, secret=secret)
 
     def authenticate(
         self,

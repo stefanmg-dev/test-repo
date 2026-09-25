@@ -146,3 +146,9 @@ def require_scope(
         return principal
 
     return dependency
+
+
+AdminPrincipal = Annotated[
+    SecurityPrincipal,
+    Depends(require_scope("admin")),
+]
