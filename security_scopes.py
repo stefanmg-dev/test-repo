@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, status
 
+from security_audit import audit_security_event
 from security_dependencies import get_optional_principal
 from security_principal import SecurityPrincipal
 
@@ -21,6 +22,13 @@ def enforce_scope_if_authenticated(
     if principal is None:
         return
     if not principal.has_scope(required_scope):
+        audit_security_event(
+            "security.authorization_denied",
+            message="Authorization scope denied",
+            result="denied",
+            principal=principal,
+            required_scope=required_scope,
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Missing required scope: {required_scope}",
