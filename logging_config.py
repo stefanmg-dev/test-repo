@@ -14,6 +14,8 @@ STANDARD_LOG_RECORD_FIELDS = frozenset(
 )
 SAFE_EXTRA_FIELDS = frozenset(
     {
+        "api_key_id",
+        "authentication_method",
         "duration_ms",
         "environment",
         "error_type",
@@ -23,7 +25,12 @@ SAFE_EXTRA_FIELDS = frozenset(
         "http_status",
         "input_format",
         "processing_status",
+        "principal_subject",
+        "principal_type",
         "profile",
+        "required_scope",
+        "result",
+        "tenant_id",
     }
 )
 
