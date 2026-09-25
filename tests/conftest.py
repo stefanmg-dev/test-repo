@@ -7,7 +7,10 @@ from api import app
 from processing_run_dependencies import (
     get_processing_run_service,
 )
-from security_dependencies import get_optional_api_key_principal
+from security_dependencies import (
+    get_optional_api_key_principal,
+    get_optional_principal,
+)
 
 
 class NoOpProcessingRunService:
@@ -34,5 +37,9 @@ def override_processing_run_service():
     )
     app.dependency_overrides.pop(
         get_optional_api_key_principal,
+        None,
+    )
+    app.dependency_overrides.pop(
+        get_optional_principal,
         None,
     )
