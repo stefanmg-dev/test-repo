@@ -5,6 +5,7 @@ from jwt import PyJWKClient
 from jwt.exceptions import InvalidTokenError
 
 from app_settings import AppSettings
+from oidc_scope_mapping import normalize_oidc_scopes
 from security_principal import SecurityPrincipal
 
 
@@ -58,11 +59,11 @@ class OidcTokenValidator:
 
         raw_scopes = claims.get(self._settings.oidc_scopes_claim, "")
         if isinstance(raw_scopes, str):
-            scopes = frozenset(raw_scopes.split())
+            scopes = normalize_oidc_scopes(raw_scopes.split())
         elif isinstance(raw_scopes, list) and all(
             isinstance(value, str) for value in raw_scopes
         ):
-            scopes = frozenset(raw_scopes)
+            scopes = normalize_oidc_scopes(raw_scopes)
         else:
             raise OidcTokenValidationError("Bearer token has invalid scopes")
 
