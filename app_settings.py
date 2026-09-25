@@ -142,6 +142,26 @@ class AppSettings(BaseSettings):
         default="scp",
         validation_alias="OIDC_SCOPES_CLAIM",
     )
+    oidc_browser_enabled: bool = Field(
+        default=False,
+        validation_alias="OIDC_BROWSER_ENABLED",
+    )
+    oidc_browser_client_id: str | None = Field(
+        default=None,
+        validation_alias="OIDC_BROWSER_CLIENT_ID",
+    )
+    oidc_browser_authority: str | None = Field(
+        default=None,
+        validation_alias="OIDC_BROWSER_AUTHORITY",
+    )
+    oidc_browser_redirect_path: str = Field(
+        default="/ui/index.html",
+        validation_alias="OIDC_BROWSER_REDIRECT_PATH",
+    )
+    oidc_browser_scopes: str = Field(
+        default="",
+        validation_alias="OIDC_BROWSER_SCOPES",
+    )
     rate_limit_enabled: bool = Field(
         default=False,
         validation_alias="RATE_LIMIT_ENABLED",
@@ -184,6 +204,24 @@ class AppSettings(BaseSettings):
                     "OIDC is enabled but required settings are missing: "
                     + ", ".join(missing)
                 )
+        if self.oidc_browser_enabled:
+            required = {
+                "OIDC_BROWSER_CLIENT_ID": self.oidc_browser_client_id,
+                "OIDC_BROWSER_AUTHORITY": self.oidc_browser_authority,
+                "OIDC_BROWSER_SCOPES": self.oidc_browser_scopes,
+            }
+            missing = [
+                name for name, value in required.items() if not value
+            ]
+            if missing:
+                raise ValueError(
+                    "OIDC browser authentication is enabled but required "
+                    "settings are missing: " + ", ".join(missing)
+                )
+            if not self.oidc_enabled:
+                raise ValueError(
+                    "OIDC browser authentication requires OIDC_ENABLED=true"
+                )
         if (
             self.rate_limit_enabled
             and self.environment == "production"
@@ -205,6 +243,13 @@ class AppSettings(BaseSettings):
         if not algorithms:
             raise ValueError("OIDC_ALGORITHMS must not be empty")
         return algorithms
+
+    def oidc_browser_scopes_list(self) -> list[str]:
+        return [
+            value.strip()
+            for value in self.oidc_browser_scopes.split(",")
+            if value.strip()
+        ]
 
     def allowed_hosts_list(self) -> list[str]:
         hosts = [

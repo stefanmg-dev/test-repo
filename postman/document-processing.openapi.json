@@ -280,6 +280,27 @@
         }
       }
     },
+    "/api/v1/auth/config": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Get Browser Auth Config",
+        "operationId": "get_browser_auth_config_api_v1_auth_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserAuthConfigModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/processing-runs/{run_id}": {
       "get": {
         "tags": [
@@ -2643,6 +2664,55 @@
           "file"
         ],
         "title": "Body_extract_document_extract_document_post"
+      },
+      "BrowserAuthConfigModel": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Id"
+          },
+          "authority": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authority"
+          },
+          "redirect_path": {
+            "type": "string",
+            "title": "Redirect Path"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scopes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "enabled",
+          "redirect_path",
+          "scopes"
+        ],
+        "title": "BrowserAuthConfigModel"
       },
       "CollectionItemValidationModel": {
         "properties": {
