@@ -23,3 +23,20 @@ Production uses an explicit host allowlist, disables public OpenAPI and interact
 ## Browser OIDC configuration
 
 `GET /api/v1/auth/config` exposes only public SPA configuration. Browser OIDC remains disabled by default. Enabling it requires the API OIDC validator settings plus the SPA client ID, authority, redirect path, and delegated API scopes. No client secret, token, JWKS URL, or private credential is returned to the browser.
+
+## OIDC delegated scope boundary
+
+Microsoft Entra delegated scopes are mapped through an explicit allowlist:
+
+```text
+documents.extract    -> documents:extract
+processing-runs.read -> processing-runs:read
+config.read           -> config:read
+config.write          -> config:write
+```
+
+Unknown delegated scopes are ignored. The internal `admin` permission is not granted from the OIDC `scp` claim. API-key scopes keep their existing internal names.
+
+## Authentication cutover gate
+
+Do not disable legacy anonymous access until the production SPA redirect URI, delegated permissions, admin consent, token claims, and authenticated API calls have been verified. Roll back by restoring `LEGACY_ANONYMOUS_ACCESS_ENABLED=true`; do not weaken issuer, audience, signature, or scope validation.
