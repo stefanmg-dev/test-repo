@@ -1,10 +1,15 @@
+from types import SimpleNamespace
+
 import pytest
 from fastapi import HTTPException
 
 from security_principal import SecurityPrincipal
 from security_scopes import (
+    CONFIG_READ,
+    CONFIG_WRITE,
     DOCUMENTS_EXTRACT,
     PROCESSING_RUNS_READ,
+    enforce_config_scope,
     enforce_scope_if_authenticated,
 )
 
@@ -43,4 +48,26 @@ def test_explicit_scope_and_admin_are_allowed():
     enforce_scope_if_authenticated(
         principal("admin"),
         DOCUMENTS_EXTRACT,
+    )
+
+
+@pytest.mark.anyio
+async def test_configuration_scope_is_selected_from_http_method():
+    await enforce_config_scope(
+        SimpleNamespace(method="GET"),
+        principal(CONFIG_READ),
+    )
+    await enforce_config_scope(
+        SimpleNamespace(method="POST"),
+        principal(CONFIG_WRITE),
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await enforce_config_scope(
+            SimpleNamespace(method="DELETE"),
+            principal(CONFIG_READ),
+        )
+    assert exc_info.value.status_code == 403
+    assert exc_info.value.detail == (
+        "Missing required scope: config:write"
     )

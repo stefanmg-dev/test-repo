@@ -318,7 +318,15 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -357,7 +365,15 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ]
       }
     },
     "/api/v1/config/document-types/{document_type}": {
@@ -367,6 +383,14 @@
         ],
         "summary": "Get Document Type",
         "operationId": "get_document_type_api_v1_config_document_types__document_type__get",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -407,6 +431,14 @@
         ],
         "summary": "Delete Document Type",
         "operationId": "delete_document_type_api_v1_config_document_types__document_type__delete",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -442,6 +474,14 @@
         ],
         "summary": "Rename Document Type",
         "operationId": "rename_document_type_api_v1_config_document_types__document_type__rename_put",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -494,6 +534,14 @@
         ],
         "summary": "Add Field",
         "operationId": "add_field_api_v1_config_document_types__document_type__fields_post",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -546,6 +594,14 @@
         ],
         "summary": "Update Field",
         "operationId": "update_field_api_v1_config_document_types__document_type__fields__field_name__put",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -605,6 +661,14 @@
         ],
         "summary": "Delete Field",
         "operationId": "delete_field_api_v1_config_document_types__document_type__fields__field_name__delete",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -656,6 +720,14 @@
         ],
         "summary": "Add Profile",
         "operationId": "add_profile_api_v1_config_document_types__document_type__profiles__profile_name__post",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -718,6 +790,14 @@
         ],
         "summary": "Delete Profile",
         "operationId": "delete_profile_api_v1_config_document_types__document_type__profiles__profile_name__delete",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -772,6 +852,14 @@
         ],
         "summary": "Add Common Field",
         "operationId": "add_common_field_api_v1_config_document_types__document_type__common_fields_post",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -824,6 +912,14 @@
         ],
         "summary": "Update Common Field",
         "operationId": "update_common_field_api_v1_config_document_types__document_type__common_fields__field_name__put",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -883,6 +979,14 @@
         ],
         "summary": "Delete Common Field",
         "operationId": "delete_common_field_api_v1_config_document_types__document_type__common_fields__field_name__delete",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -934,6 +1038,14 @@
         ],
         "summary": "Add Profile Field",
         "operationId": "add_profile_field_api_v1_config_document_types__document_type__profiles__profile_name__fields_post",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -995,6 +1107,14 @@
         ],
         "summary": "Update Profile Field",
         "operationId": "update_profile_field_api_v1_config_document_types__document_type__profiles__profile_name__fields__field_name__put",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -1063,6 +1183,14 @@
         ],
         "summary": "Delete Profile Field",
         "operationId": "delete_profile_field_api_v1_config_document_types__document_type__profiles__profile_name__fields__field_name__delete",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -1123,6 +1251,14 @@
         ],
         "summary": "Add Collection",
         "operationId": "add_collection_api_v1_config_document_types__document_type__collections__collection_name__post",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -1182,6 +1318,14 @@
         ],
         "summary": "Update Collection",
         "operationId": "update_collection_api_v1_config_document_types__document_type__collections__collection_name__put",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -1241,6 +1385,14 @@
         ],
         "summary": "Delete Collection",
         "operationId": "delete_collection_api_v1_config_document_types__document_type__collections__collection_name__delete",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -1292,6 +1444,14 @@
         ],
         "summary": "Add Collection Field",
         "operationId": "add_collection_field_api_v1_config_document_types__document_type__collections__collection_name__fields_post",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -1353,6 +1513,14 @@
         ],
         "summary": "Update Collection Field",
         "operationId": "update_collection_field_api_v1_config_document_types__document_type__collections__collection_name__fields__field_name__put",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -1421,6 +1589,14 @@
         ],
         "summary": "Delete Collection Field",
         "operationId": "delete_collection_field_api_v1_config_document_types__document_type__collections__collection_name__fields__field_name__delete",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -1481,6 +1657,14 @@
         ],
         "summary": "Add Profile Collection",
         "operationId": "add_profile_collection_api_v1_config_document_types__document_type__profiles__profile_name__collections__collection_name__post",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -1549,6 +1733,14 @@
         ],
         "summary": "Update Profile Collection",
         "operationId": "update_profile_collection_api_v1_config_document_types__document_type__profiles__profile_name__collections__collection_name__put",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -1617,6 +1809,14 @@
         ],
         "summary": "Delete Profile Collection",
         "operationId": "delete_profile_collection_api_v1_config_document_types__document_type__profiles__profile_name__collections__collection_name__delete",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -1677,6 +1877,14 @@
         ],
         "summary": "Add Profile Collection Field",
         "operationId": "add_profile_collection_field_api_v1_config_document_types__document_type__profiles__profile_name__collections__collection_name__fields_post",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -1747,6 +1955,14 @@
         ],
         "summary": "Update Profile Collection Field",
         "operationId": "update_profile_collection_field_api_v1_config_document_types__document_type__profiles__profile_name__collections__collection_name__fields__field_name__put",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
@@ -1824,6 +2040,14 @@
         ],
         "summary": "Delete Profile Collection Field",
         "operationId": "delete_profile_collection_field_api_v1_config_document_types__document_type__profiles__profile_name__collections__collection_name__fields__field_name__delete",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_type",
