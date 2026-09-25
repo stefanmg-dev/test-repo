@@ -219,7 +219,7 @@ async function loadDocumentTypes() {
     elements.extractButton.disabled = true;
 
     try {
-        const response = await fetch(
+        const response = await window.documentAuth.authenticatedFetch(
             CONFIG_URL,
             {
                 headers: {
@@ -844,7 +844,7 @@ async function submitDocument(event) {
     setProcessing(true);
 
     try {
-        const response = await fetch(
+        const response = await window.documentAuth.authenticatedFetch(
             EXTRACT_URL,
             {
                 method: "POST",
@@ -908,6 +908,7 @@ elements.form.addEventListener(
 
 
 async function initializeApplication() {
+    await window.documentAuth.initialize();
     await checkApiHealth();
     await loadDocumentTypes();
 }

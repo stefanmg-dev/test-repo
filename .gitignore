@@ -51,3 +51,6 @@ memory.json
 
 # Safe production environment template
 !.env.production.example
+
+# Frontend dependencies
+node_modules/

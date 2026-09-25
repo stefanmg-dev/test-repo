@@ -1,0 +1,14 @@
+{
+  "name": "document-processing-ui",
+  "private": true,
+  "scripts": {
+    "build:auth": "esbuild ui/auth.js --bundle --minify --format=iife --global-name=DocumentAuthBundle --outfile=ui/auth.bundle.js",
+    "build": "npm run build:auth"
+  },
+  "dependencies": {
+    "@azure/msal-browser": "5.19.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.10"
+  }
+}

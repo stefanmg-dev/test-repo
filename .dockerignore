@@ -32,3 +32,5 @@ models
 out.txt
 memory.json
 postman
+
+node_modules

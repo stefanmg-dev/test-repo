@@ -42,7 +42,7 @@ const el = {
 };
 
 async function apiRequest(path, options = {}) {
-    const response = await fetch(`${API_BASE}${path}`, {
+    const response = await window.documentAuth.authenticatedFetch(`${API_BASE}${path}`, {
         ...options,
         headers: {
             Accept: "application/json",
@@ -836,6 +836,7 @@ el.fieldScope.addEventListener("change", () => {
 });
 
 async function initializeApplication() {
+    await window.documentAuth.initialize();
     await checkApiHealth();
     await loadConfiguration(false);
 }
