@@ -13,6 +13,7 @@ from startup_validation import validate_database_startup
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
+from routes_api_keys import router as api_keys_router
 from routes_config_collections_v1 import (
     router as config_collections_v1_router,
 )
@@ -71,6 +72,7 @@ app.middleware("http")(request_logging_middleware)
 
 
 app.include_router(extract_router)
+app.include_router(api_keys_router)
 app.include_router(processing_runs_router)
 app.include_router(config_v1_router)
 app.include_router(config_collections_v1_router)
