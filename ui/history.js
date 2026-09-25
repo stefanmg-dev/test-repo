@@ -131,7 +131,7 @@ async function loadHistory() {
     elements.summary.textContent = "Зареждане...";
     updatePagination();
     try {
-        const response = await fetch(`${HISTORY_URL}?${buildQuery()}`, { headers: { Accept: "application/json" } });
+        const response = await window.documentAuth.authenticatedFetch(`${HISTORY_URL}?${buildQuery()}`, { headers: { Accept: "application/json" } });
         const body = await readJson(response);
         if (!response.ok) throw new Error(body?.detail || `HTTP ${response.status}`);
         state.total = body.total;
@@ -165,7 +165,7 @@ function appendDetail(label, value) {
 
 async function loadDetail(runId) {
     try {
-        const response = await fetch(`${HISTORY_URL}/${encodeURIComponent(runId)}`, { headers: { Accept: "application/json" } });
+        const response = await window.documentAuth.authenticatedFetch(`${HISTORY_URL}/${encodeURIComponent(runId)}`, { headers: { Accept: "application/json" } });
         const body = await readJson(response);
         if (!response.ok) throw new Error(body?.detail || `HTTP ${response.status}`);
         elements.dialogTitle.textContent = body.filename;
@@ -207,4 +207,4 @@ elements.next.addEventListener("click", () => {
 });
 elements.closeDialog.addEventListener("click", () => elements.dialog.close());
 
-loadHistory();
+window.documentAuth.initialize().then(loadHistory);

@@ -173,3 +173,20 @@ def test_javascript_files_are_not_truncated():
     assert testing_javascript.endswith(
         "initializeApplication();"
     )
+
+def test_authentication_bundle_is_loaded_before_page_scripts():
+    for page, script in (
+        ("index.html", "/ui/ui.js"),
+        ("test.html", "/ui/test.js"),
+        ("history.html", "/ui/history.js"),
+    ):
+        content = client.get(f"/ui/{page}").text
+        assert "/ui/auth.bundle.js" in content
+        assert content.index("/ui/auth.bundle.js") < content.index(script)
+
+
+def test_authentication_bundle_is_available():
+    response = client.get("/ui/auth.bundle.js")
+    assert response.status_code == 200
+    assert len(response.text) > 1000
+    assert "documentAuth" in response.text
