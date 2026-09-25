@@ -33,6 +33,10 @@ from processing_run_dependencies import (
 )
 from request_context import set_processing_run_id
 from security_dependencies import OptionalApiKeyPrincipal
+from security_scopes import (
+    DOCUMENTS_EXTRACT,
+    enforce_scope_if_authenticated,
+)
 from result_validator import validate_result
 from supplier_profile_pipeline import (
     resolve_supplier_profile_fields,
@@ -143,6 +147,10 @@ async def extract_document(
     ),
     file: UploadFile = File(...),
 ):
+    enforce_scope_if_authenticated(
+        principal,
+        DOCUMENTS_EXTRACT,
+    )
     config = load_config()
     document_config = (
         get_extraction_document_config(

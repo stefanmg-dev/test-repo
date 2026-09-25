@@ -13,6 +13,10 @@ from processing_run_models import (
 )
 from processing_run_service import ProcessingRunNotFoundError
 from security_dependencies import OptionalApiKeyPrincipal
+from security_scopes import (
+    PROCESSING_RUNS_READ,
+    enforce_scope_if_authenticated,
+)
 
 
 router = APIRouter(
@@ -36,6 +40,10 @@ def get_processing_run(
     processing_run_service: ProcessingRunServiceDependency,
     principal: OptionalApiKeyPrincipal,
 ):
+    enforce_scope_if_authenticated(
+        principal,
+        PROCESSING_RUNS_READ,
+    )
     try:
         return processing_run_service.get_run(
             run_id,
@@ -86,6 +94,10 @@ def list_processing_runs(
     ] = None,
     requires_review: bool | None = None,
 ):
+    enforce_scope_if_authenticated(
+        principal,
+        PROCESSING_RUNS_READ,
+    )
     items, total = processing_run_service.list_runs(
         offset=offset,
         limit=limit,
