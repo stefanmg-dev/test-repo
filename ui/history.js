@@ -295,6 +295,134 @@ async function submitReview(runId, status, correctedValues, comment) {
     return body;
 }
 
+function reviewFieldLabel(field) {
+    const label = field?.label;
+    if (label && typeof label === "object") {
+        return label.bg || label.en || field.name;
+    }
+    return field?.name || "Поле";
+}
+
+function reviewFieldDefinitions(processingRun) {
+    const configured =
+        processingRun.configuration_snapshot?.resolved_fields;
+
+    if (Array.isArray(configured) && configured.length) {
+        return configured;
+    }
+
+    return Object.keys(processingRun.final_values || {}).map(
+        (name) => ({ name }),
+    );
+}
+
+function serializeReviewValue(value) {
+    if (typeof value === "string") return value;
+    return JSON.stringify(value);
+}
+
+function parseReviewValue(input, originalValue) {
+    if (typeof originalValue === "string") {
+        return input.value;
+    }
+
+    try {
+        return JSON.parse(input.value);
+    } catch {
+        throw new Error(
+            `Полето "${input.dataset.fieldName}" `
+            + "не съдържа валидна JSON стойност.",
+        );
+    }
+}
+
+function buildFieldReviewEditor(processingRun) {
+    const editor = document.createElement("div");
+    editor.className = "review-field-editor";
+
+    const inputs = new Map();
+    const originalValues = processingRun.final_values || {};
+    const validationErrors =
+        processingRun.validation?.fields?.errors || {};
+
+    for (const field of reviewFieldDefinitions(processingRun)) {
+        const fieldName = field.name;
+        if (!fieldName) continue;
+
+        const originalValue = originalValues[fieldName];
+
+        const row = document.createElement("div");
+        row.className = "review-field-row";
+
+        const heading = document.createElement("div");
+        heading.className = "review-field-heading";
+
+        const label = document.createElement("label");
+        label.htmlFor = `reviewField-${fieldName}`;
+        label.textContent = reviewFieldLabel(field);
+
+        const technicalName = document.createElement("code");
+        technicalName.textContent = fieldName;
+
+        heading.append(label, technicalName);
+
+        const original = document.createElement("pre");
+        original.className = "review-field-original";
+        original.textContent = serializeReviewValue(originalValue);
+
+        const input = document.createElement("textarea");
+        input.id = `reviewField-${fieldName}`;
+        input.className = "form-control review-field-input";
+        input.dataset.fieldName = fieldName;
+        input.rows = 2;
+        input.value = serializeReviewValue(originalValue);
+
+        input.addEventListener("input", () => {
+            row.classList.toggle(
+                "review-field-changed",
+                input.value !== serializeReviewValue(originalValue),
+            );
+        });
+
+        const errors = validationErrors[fieldName];
+        if (Array.isArray(errors) && errors.length) {
+            const errorList = document.createElement("ul");
+            errorList.className = "review-field-errors";
+
+            for (const error of errors) {
+                const item = document.createElement("li");
+                item.textContent = String(error);
+                errorList.appendChild(item);
+            }
+
+            row.append(heading, original, input, errorList);
+        } else {
+            row.append(heading, original, input);
+        }
+
+        inputs.set(fieldName, {
+            input,
+            originalValue,
+        });
+        editor.appendChild(row);
+    }
+
+    return { editor, inputs };
+}
+
+function collectCorrectedValues(inputs) {
+    const correctedValues = {};
+
+    for (const [fieldName, entry] of inputs) {
+        correctedValues[fieldName] = parseReviewValue(
+            entry.input,
+            entry.originalValue,
+        );
+    }
+
+    return correctedValues;
+}
+
 function appendReviewActions(runId, processingRun) {
     if (processingRun.review_status !== "pending") return;
 
@@ -314,22 +442,17 @@ function appendReviewActions(runId, processingRun) {
         return;
     }
 
+    const fieldEditor = buildFieldReviewEditor(processingRun);
+
+    const commentLabel = document.createElement("label");
+    commentLabel.htmlFor = "reviewComment";
+    commentLabel.textContent = "Review коментар";
+
     const comment = document.createElement("textarea");
     comment.id = "reviewComment";
     comment.className = "form-control";
     comment.maxLength = 2000;
     comment.rows = 3;
-
-    const correctedValues = document.createElement("textarea");
-    correctedValues.id = "reviewCorrectedValues";
-    correctedValues.className =
-        "form-control review-json-editor";
-    correctedValues.rows = 10;
-    correctedValues.value = JSON.stringify(
-        processingRun.final_values || {},
-        null,
-        2,
-    );
 
     const buttons = document.createElement("div");
     buttons.className = "review-action-buttons";
@@ -347,28 +470,15 @@ function appendReviewActions(runId, processingRun) {
         button.textContent = label;
 
         button.addEventListener("click", async () => {
-            let parsedValues = null;
+            let correctedValues = null;
 
             if (status === "corrected") {
                 try {
-                    parsedValues = JSON.parse(
-                        correctedValues.value,
+                    correctedValues = collectCorrectedValues(
+                        fieldEditor.inputs,
                     );
-                } catch {
-                    showMessage(
-                        "Коригираните стойности не са валиден JSON.",
-                    );
-                    return;
-                }
-
-                if (
-                    parsedValues === null
-                    || Array.isArray(parsedValues)
-                    || typeof parsedValues !== "object"
-                ) {
-                    showMessage(
-                        "Корекциите трябва да са JSON object.",
-                    );
+                } catch (error) {
+                    showMessage(error.message);
                     return;
                 }
             }
@@ -381,7 +491,7 @@ function appendReviewActions(runId, processingRun) {
                 await submitReview(
                     runId,
                     status,
-                    parsedValues,
+                    correctedValues,
                     comment.value.trim(),
                 );
                 elements.dialog.close();
@@ -404,9 +514,16 @@ function appendReviewActions(runId, processingRun) {
         buttons.appendChild(button);
     }
 
-    section.append(heading, comment, correctedValues, buttons);
+    section.append(
+        heading,
+        fieldEditor.editor,
+        commentLabel,
+        comment,
+        buttons,
+    );
     elements.dialogBody.appendChild(section);
 }
+
 
 async function loadDetail(runId) {
     try {

@@ -68,6 +68,7 @@ def test_processing_history_browser_smoke(live_server_url):
     run_id = "11111111-1111-1111-1111-111111111111"
     list_requests = []
     console_errors = []
+    review_requests = []
 
     list_body = {
         "items": [
@@ -109,8 +110,22 @@ def test_processing_history_browser_smoke(live_server_url):
             "requires_review": False,
             "warnings": [],
         },
+        "review_status": "pending",
         "final_values": {
-            "invoice_number": "TEST-123"
+            "invoice_number": "TEST-123",
+            "page_count": 1,
+        },
+        "configuration_snapshot": {
+            "resolved_fields": [
+                {
+                    "name": "invoice_number",
+                    "label": {"bg": "Номер на фактура"},
+                },
+                {
+                    "name": "page_count",
+                    "label": {"bg": "Брой страници"},
+                },
+            ],
         },
         "collections": {},
         "validation": {
@@ -161,6 +176,41 @@ def test_processing_history_browser_smoke(live_server_url):
                 body=json.dumps(review_summary_body),
             ),
         )
+        def handle_review(route):
+            review_requests.append(
+                json.loads(route.request.post_data)
+            )
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({
+                    "processing_run_id": run_id,
+                    "status": "corrected",
+                    "original_values": detail_body[
+                        "final_values"
+                    ],
+                    "corrected_values": {
+                        "invoice_number": "TEST-456",
+                        "page_count": 2,
+                    },
+                    "effective_values": {
+                        "invoice_number": "TEST-456",
+                        "page_count": 2,
+                    },
+                    "comment": "Browser review",
+                    "reviewed_at": (
+                        "2026-09-22T18:05:00Z"
+                    ),
+                    "reviewed_by_type": "user",
+                    "reviewed_by_subject": "browser-user",
+                }),
+            )
+
+        page.route(
+            f"**/api/v1/processing-runs/{run_id}/review",
+            handle_review,
+        )
+
         page.route(
             f"**/api/v1/processing-runs/{run_id}",
             lambda route: route.fulfill(
@@ -213,16 +263,57 @@ def test_processing_history_browser_smoke(live_server_url):
             for url in list_requests
         )
 
+        page.evaluate("""
+            window.documentAuth.isEnabled = () => true;
+            window.documentAuth.isAuthenticated = () => true;
+        """)
+
         page.get_by_role("button", name="Отвори").click()
         dialog = page.get_by_role("dialog")
         expect(dialog).to_be_visible()
         expect(
-            dialog.get_by_text("TEST-123")
+            dialog.get_by_text("TEST-123", exact=True)
         ).to_be_visible()
         expect(
             dialog.get_by_text("document_input_ms")
         ).to_be_visible()
-        page.get_by_role("button", name="Затвори").click()
+        invoice_input = page.locator(
+            "#reviewField-invoice_number"
+        )
+        page_count_input = page.locator(
+            "#reviewField-page_count"
+        )
+
+        expect(invoice_input).to_have_value("TEST-123")
+        expect(page_count_input).to_have_value("1")
+
+        invoice_input.fill("TEST-456")
+        page_count_input.fill("2")
+        page.locator("#reviewComment").fill("Browser review")
+
+        changed_row = invoice_input.locator(
+            "xpath=ancestor::*[contains("
+            "@class, 'review-field-row')]"
+        )
+        assert "review-field-changed" in (
+            changed_row.get_attribute("class") or ""
+        )
+
+        page.get_by_role("button", name="Correct").click()
+
+        page.wait_for_timeout(100)
+
+        assert review_requests == [
+            {
+                "status": "corrected",
+                "comment": "Browser review",
+                "corrected_values": {
+                    "invoice_number": "TEST-456",
+                    "page_count": 2,
+                },
+            }
+        ]
+
         expect(dialog).to_be_hidden()
 
         assert page.get_by_role(

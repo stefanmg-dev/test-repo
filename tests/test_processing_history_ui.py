@@ -88,9 +88,12 @@ def test_pending_review_has_authenticated_actions():
 def test_review_actions_preserve_safe_rendering():
     content = HISTORY_JS.read_text(encoding="utf-8")
 
-    assert "JSON.parse(" in content
-    assert "correctedValues.value" in content
+    assert "function buildFieldReviewEditor" in content
+    assert "function collectCorrectedValues" in content
+    assert "JSON.parse(input.value)" in content
     assert "processingRun.final_values" in content
+    assert "configuration_snapshot?.resolved_fields" in content
+    assert "validation?.fields?.errors" in content
     assert "innerHTML" not in content
     assert "insertAdjacentHTML" not in content
 
@@ -122,3 +125,14 @@ def test_processing_history_displays_global_review_summary():
     assert "async function refreshHistoryPage" in javascript
     assert "Promise.all" in javascript
     assert "`${HISTORY_URL}/review-summary`" in javascript
+
+
+
+def test_field_level_review_editor_preserves_value_types():
+    content = HISTORY_JS.read_text(encoding="utf-8")
+
+    assert "typeof originalValue === \"string\"" in content
+    assert "JSON.stringify(value)" in content
+    assert "JSON.parse(input.value)" in content
+    assert '"review-field-changed"' in content
+    assert "collectCorrectedValues" in content
