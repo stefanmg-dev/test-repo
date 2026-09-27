@@ -104,6 +104,76 @@ class ProcessingRunRepository:
             self._session.scalars(statement).all()
         )
 
+    def review_summary(
+        self,
+        *,
+        tenant_id: str | None = None,
+    ) -> dict:
+        review_duration_ms = (
+            func.extract(
+                "epoch",
+                ProcessingRun.reviewed_at
+                - ProcessingRun.completed_at,
+            )
+            * 1000
+        )
+
+        statement = select(
+            func.count(ProcessingRun.id).label(
+                "total_requiring_review"
+            ),
+            func.count(ProcessingRun.id)
+            .filter(
+                ProcessingRun.review_status == "pending"
+            )
+            .label("pending"),
+            func.count(ProcessingRun.id)
+            .filter(
+                ProcessingRun.review_status == "approved"
+            )
+            .label("approved"),
+            func.count(ProcessingRun.id)
+            .filter(
+                ProcessingRun.review_status == "corrected"
+            )
+            .label("corrected"),
+            func.count(ProcessingRun.id)
+            .filter(
+                ProcessingRun.review_status == "rejected"
+            )
+            .label("rejected"),
+            func.avg(review_duration_ms)
+            .filter(
+                ProcessingRun.reviewed_at.is_not(None),
+                ProcessingRun.completed_at.is_not(None),
+            )
+            .label("average_review_duration_ms"),
+        ).where(
+            ProcessingRun.requires_review.is_(True)
+        )
+
+        if tenant_id is not None:
+            statement = statement.where(
+                ProcessingRun.tenant_id == tenant_id
+            )
+
+        row = self._session.execute(statement).one()
+
+        return {
+            "total_requiring_review": int(
+                row.total_requiring_review or 0
+            ),
+            "pending": int(row.pending or 0),
+            "approved": int(row.approved or 0),
+            "corrected": int(row.corrected or 0),
+            "rejected": int(row.rejected or 0),
+            "average_review_duration_ms": (
+                round(row.average_review_duration_ms)
+                if row.average_review_duration_ms is not None
+                else None
+            ),
+        }
+
     def count(
         self,
         *,

@@ -42,6 +42,17 @@ class QueryService:
         self.run = run or build_run()
         self.list_calls = []
 
+    def review_summary(self, tenant_id=None):
+        self.review_summary_tenant_id = tenant_id
+        return {
+            "total_requiring_review": 10,
+            "pending": 4,
+            "approved": 2,
+            "corrected": 3,
+            "rejected": 1,
+            "average_review_duration_ms": 1500,
+        }
+
     def get_run(self, run_id, *, tenant_id=None):
         if run_id != self.run.id:
             raise ProcessingRunNotFoundError(
@@ -166,3 +177,24 @@ def test_list_processing_runs_validates_profile():
     )
 
     assert response.status_code == 422
+
+
+
+def test_get_processing_run_review_summary():
+    service = QueryService()
+    install(service)
+
+    response = TestClient(app).get(
+        "/api/v1/processing-runs/review-summary"
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "total_requiring_review": 10,
+        "pending": 4,
+        "approved": 2,
+        "corrected": 3,
+        "rejected": 1,
+        "average_review_duration_ms": 1500,
+    }
+    assert service.review_summary_tenant_id == "default"

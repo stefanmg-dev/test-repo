@@ -13,6 +13,7 @@ from processing_run_models import (
     ProcessingRunListResponseModel,
     ProcessingRunReviewModel,
     ProcessingRunReviewRequestModel,
+    ProcessingRunReviewSummaryModel,
 )
 from processing_run_service import (
     ProcessingRunNotFoundError,
@@ -36,6 +37,27 @@ router = APIRouter(
     prefix="/api/v1/processing-runs",
     tags=["processing-runs"],
 )
+
+
+@router.get(
+    "/review-summary",
+    response_model=ProcessingRunReviewSummaryModel,
+)
+def get_processing_run_review_summary(
+    processing_run_service: ProcessingRunServiceDependency,
+    principal: OptionalApiKeyPrincipal,
+):
+    enforce_scope_if_authenticated(
+        principal,
+        PROCESSING_RUNS_READ,
+    )
+    return processing_run_service.review_summary(
+        tenant_id=(
+            principal.tenant_id
+            if principal is not None
+            else "default"
+        ),
+    )
 
 
 @router.get(

@@ -122,6 +122,15 @@ class ProcessingRunService:
             tenant_id=tenant_id,
         )
 
+    def review_summary(
+        self,
+        *,
+        tenant_id: str | None = None,
+    ) -> dict:
+        return self._repository.review_summary(
+            tenant_id=tenant_id,
+        )
+
     def list_runs(
         self,
         *,

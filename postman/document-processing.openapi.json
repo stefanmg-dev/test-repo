@@ -301,6 +301,35 @@
         }
       }
     },
+    "/api/v1/processing-runs/review-summary": {
+      "get": {
+        "tags": [
+          "processing-runs"
+        ],
+        "summary": "Get Processing Run Review Summary",
+        "operationId": "get_processing_run_review_summary_api_v1_processing_runs_review_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessingRunReviewSummaryModel"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/v1/processing-runs/{run_id}": {
       "get": {
         "tags": [
@@ -4261,6 +4290,57 @@
           "status"
         ],
         "title": "ProcessingRunReviewRequestModel"
+      },
+      "ProcessingRunReviewSummaryModel": {
+        "properties": {
+          "total_requiring_review": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total Requiring Review"
+          },
+          "pending": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Pending"
+          },
+          "approved": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Approved"
+          },
+          "corrected": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Corrected"
+          },
+          "rejected": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Rejected"
+          },
+          "average_review_duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Review Duration Ms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "total_requiring_review",
+          "pending",
+          "approved",
+          "corrected",
+          "rejected"
+        ],
+        "title": "ProcessingRunReviewSummaryModel"
       },
       "QualityWarningModel": {
         "properties": {

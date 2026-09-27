@@ -79,3 +79,17 @@ class ProcessingRunReviewModel(BaseModel):
     reviewed_at: datetime | None
     reviewed_by_type: str | None
     reviewed_by_subject: str | None
+
+
+class ProcessingRunReviewSummaryModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    total_requiring_review: int = Field(ge=0)
+    pending: int = Field(ge=0)
+    approved: int = Field(ge=0)
+    corrected: int = Field(ge=0)
+    rejected: int = Field(ge=0)
+    average_review_duration_ms: int | None = Field(
+        default=None,
+        ge=0,
+    )
