@@ -91,7 +91,7 @@ function renderRows(items) {
     if (!items.length) {
         const row = document.createElement("tr");
         const cell = createCell("Няма намерени обработки.");
-        cell.colSpan = 7;
+        cell.colSpan = 8;
         cell.className = "history-empty";
         row.appendChild(cell);
         elements.rows.appendChild(row);
@@ -99,6 +99,9 @@ function renderRows(items) {
     }
     for (const item of items) {
         const row = document.createElement("tr");
+        if (item.review_status === "pending") {
+            row.classList.add("history-row-review-pending");
+        }
         row.appendChild(createCell(formatDate(item.created_at)));
         row.appendChild(createCell(item.filename));
         row.appendChild(createCell(item.document_type));
@@ -106,7 +109,18 @@ function renderRows(items) {
         const statusCell = document.createElement("td");
         statusCell.appendChild(statusBadge(item.processing_status));
         row.appendChild(statusCell);
-        row.appendChild(createCell(item.duration_ms == null ? "—" : `${item.duration_ms} ms`));
+
+        const reviewCell = document.createElement("td");
+        reviewCell.appendChild(
+            statusBadge(item.review_status || "not-required")
+        );
+        row.appendChild(reviewCell);
+
+        row.appendChild(createCell(
+            item.duration_ms == null
+                ? "—"
+                : `${item.duration_ms} ms`
+        ));
         const actionCell = document.createElement("td");
         const button = document.createElement("button");
         button.type = "button";
@@ -138,7 +152,13 @@ async function loadHistory() {
         if (!response.ok) throw new Error(body?.detail || `HTTP ${response.status}`);
         state.total = body.total;
         renderRows(body.items);
-        elements.summary.textContent = `Намерени обработки: ${body.total}`;
+        const pendingOnPage = body.items.filter(
+            (item) => item.review_status === "pending"
+        ).length;
+        elements.summary.textContent = (
+            `Намерени обработки: ${body.total}`
+            + ` | Pending на страницата: ${pendingOnPage}`
+        );
         setApiStatus(true);
     } catch (error) {
         state.total = 0;

@@ -93,3 +93,14 @@ def test_review_actions_preserve_safe_rendering():
     assert "processingRun.final_values" in content
     assert "innerHTML" not in content
     assert "insertAdjacentHTML" not in content
+
+
+def test_processing_history_table_shows_review_status():
+    html = HISTORY_HTML.read_text(encoding="utf-8")
+    javascript = HISTORY_JS.read_text(encoding="utf-8")
+
+    assert '<th scope="col">Review</th>' in html
+    assert 'item.review_status || "not-required"' in javascript
+    assert '"history-row-review-pending"' in javascript
+    assert "Pending на страницата" in javascript
+    assert "cell.colSpan = 8" in javascript
