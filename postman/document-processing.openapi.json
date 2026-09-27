@@ -301,6 +301,35 @@
         }
       }
     },
+    "/api/v1/processing-runs/extraction-quality": {
+      "get": {
+        "tags": [
+          "processing-runs"
+        ],
+        "summary": "Get Extraction Quality Analysis",
+        "operationId": "get_extraction_quality_analysis_api_v1_processing_runs_extraction_quality_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractionQualityAnalysisModel"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/v1/processing-runs/review-summary": {
       "get": {
         "tags": [
@@ -3372,6 +3401,157 @@
         "additionalProperties": false,
         "type": "object",
         "title": "DocumentTypeModel"
+      },
+      "ExtractionQualityAnalysisModel": {
+        "properties": {
+          "corrected_runs": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Corrected Runs"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/ExtractionQualityGroupModel"
+            },
+            "type": "array",
+            "title": "Groups"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "corrected_runs",
+          "groups"
+        ],
+        "title": "ExtractionQualityAnalysisModel"
+      },
+      "ExtractionQualityFieldCorrectionModel": {
+        "properties": {
+          "field_name": {
+            "type": "string",
+            "title": "Field Name"
+          },
+          "corrections": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Corrections"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "field_name",
+          "corrections"
+        ],
+        "title": "ExtractionQualityFieldCorrectionModel"
+      },
+      "ExtractionQualityFieldCountsModel": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total"
+          },
+          "unchanged": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Unchanged"
+          },
+          "changed": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Changed"
+          },
+          "added": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Added"
+          },
+          "removed": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Removed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "total",
+          "unchanged",
+          "changed",
+          "added",
+          "removed"
+        ],
+        "title": "ExtractionQualityFieldCountsModel"
+      },
+      "ExtractionQualityGroupModel": {
+        "properties": {
+          "document_type": {
+            "type": "string",
+            "title": "Document Type"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile"
+          },
+          "configuration_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Configuration Hash"
+          },
+          "corrected_runs": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Corrected Runs"
+          },
+          "field_counts": {
+            "$ref": "#/components/schemas/ExtractionQualityFieldCountsModel"
+          },
+          "corrections": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Corrections"
+          },
+          "correction_rate": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Correction Rate"
+          },
+          "field_corrections": {
+            "items": {
+              "$ref": "#/components/schemas/ExtractionQualityFieldCorrectionModel"
+            },
+            "type": "array",
+            "title": "Field Corrections"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "document_type",
+          "profile",
+          "configuration_hash",
+          "corrected_runs",
+          "field_counts",
+          "corrections",
+          "correction_rate",
+          "field_corrections"
+        ],
+        "title": "ExtractionQualityGroupModel"
       },
       "ExtractionResponseModel": {
         "properties": {

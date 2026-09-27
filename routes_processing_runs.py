@@ -9,6 +9,7 @@ from processing_run_dependencies import (
     ProcessingRunReviewServiceDependency,
 )
 from processing_run_models import (
+    ExtractionQualityAnalysisModel,
     ProcessingRunDetailModel,
     ProcessingRunListResponseModel,
     ProcessingRunReviewModel,
@@ -37,6 +38,27 @@ router = APIRouter(
     prefix="/api/v1/processing-runs",
     tags=["processing-runs"],
 )
+
+
+@router.get(
+    "/extraction-quality",
+    response_model=ExtractionQualityAnalysisModel,
+)
+def get_extraction_quality_analysis(
+    processing_run_service: ProcessingRunServiceDependency,
+    principal: OptionalApiKeyPrincipal,
+):
+    enforce_scope_if_authenticated(
+        principal,
+        PROCESSING_RUNS_READ,
+    )
+    return processing_run_service.extraction_quality_analysis(
+        tenant_id=(
+            principal.tenant_id
+            if principal is not None
+            else "default"
+        ),
+    )
 
 
 @router.get(

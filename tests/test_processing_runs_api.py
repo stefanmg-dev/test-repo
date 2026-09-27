@@ -198,3 +198,52 @@ def test_get_processing_run_review_summary():
         "average_review_duration_ms": 1500,
     }
     assert service.review_summary_tenant_id == "default"
+
+
+def test_get_extraction_quality_analysis():
+    service = QueryService()
+    service.extraction_quality_analysis = lambda tenant_id=None: {
+        "corrected_runs": 1,
+        "groups": [
+            {
+                "document_type": "invoice",
+                "profile": "telecom_a1",
+                "configuration_hash": "hash-a",
+                "corrected_runs": 1,
+                "field_counts": {
+                    "total": 2,
+                    "unchanged": 1,
+                    "changed": 1,
+                    "added": 0,
+                    "removed": 0,
+                },
+                "corrections": 1,
+                "correction_rate": 0.5,
+                "field_corrections": [
+                    {
+                        "field_name": "invoice_number",
+                        "corrections": 1,
+                    }
+                ],
+            }
+        ],
+    }
+    install(service)
+
+    response = TestClient(app).get(
+        "/api/v1/processing-runs/extraction-quality"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["corrected_runs"] == 1
+    assert response.json()["groups"][0][
+        "configuration_hash"
+    ] == "hash-a"
+    assert response.json()["groups"][0][
+        "field_corrections"
+    ] == [
+        {
+            "field_name": "invoice_number",
+            "corrections": 1,
+        }
+    ]

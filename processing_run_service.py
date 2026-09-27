@@ -5,6 +5,9 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from database_models import ProcessingRun
+from extraction_quality_analysis import (
+    aggregate_quality_analysis,
+)
 from processing_run_repository import ProcessingRunRepository
 
 
@@ -121,6 +124,27 @@ class ProcessingRunService:
             run_id,
             tenant_id=tenant_id,
         )
+
+    def extraction_quality_analysis(
+        self,
+        tenant_id: str | None = None,
+    ) -> dict:
+        runs = self._repository.list_corrected_reviews(
+            tenant_id=tenant_id,
+        )
+
+        records = [
+            {
+                "document_type": run.document_type,
+                "profile": run.profile,
+                "configuration_hash": run.configuration_hash,
+                "original_values": run.final_values,
+                "corrected_values": run.corrected_values,
+            }
+            for run in runs
+        ]
+
+        return aggregate_quality_analysis(records)
 
     def review_summary(
         self,

@@ -93,3 +93,42 @@ class ProcessingRunReviewSummaryModel(BaseModel):
         default=None,
         ge=0,
     )
+
+
+class ExtractionQualityFieldCorrectionModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    field_name: str
+    corrections: int = Field(ge=0)
+
+
+class ExtractionQualityFieldCountsModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    total: int = Field(ge=0)
+    unchanged: int = Field(ge=0)
+    changed: int = Field(ge=0)
+    added: int = Field(ge=0)
+    removed: int = Field(ge=0)
+
+
+class ExtractionQualityGroupModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    document_type: str
+    profile: str | None
+    configuration_hash: str | None
+    corrected_runs: int = Field(ge=0)
+    field_counts: ExtractionQualityFieldCountsModel
+    corrections: int = Field(ge=0)
+    correction_rate: float = Field(ge=0, le=1)
+    field_corrections: list[
+        ExtractionQualityFieldCorrectionModel
+    ]
+
+
+class ExtractionQualityAnalysisModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    corrected_runs: int = Field(ge=0)
+    groups: list[ExtractionQualityGroupModel]
