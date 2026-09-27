@@ -121,6 +121,7 @@ class ProcessingRunService:
         processing_status: str | None = None,
         profile: str | None = None,
         requires_review: bool | None = None,
+        review_status: str | None = None,
         tenant_id: str | None = None,
     ) -> tuple[list[ProcessingRun], int]:
         filters = {
@@ -128,6 +129,7 @@ class ProcessingRunService:
             "processing_status": processing_status,
             "profile": profile,
             "requires_review": requires_review,
+            "review_status": review_status,
             "tenant_id": tenant_id,
         }
         return (

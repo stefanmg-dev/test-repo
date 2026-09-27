@@ -57,7 +57,7 @@ class QueryService:
         document_type=None,
         processing_status=None,
         profile=None,
-        requires_review=None,
+        requires_review=None, review_status=None,
         tenant_id=None,
     ):
         self.list_calls.append(

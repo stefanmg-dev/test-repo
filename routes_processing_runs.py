@@ -105,6 +105,16 @@ def list_processing_runs(
         ),
     ] = None,
     requires_review: bool | None = None,
+    review_status: Annotated[
+        Literal[
+            "pending",
+            "approved",
+            "corrected",
+            "rejected",
+        ]
+        | None,
+        Query(),
+    ] = None,
 ):
     enforce_scope_if_authenticated(
         principal,
@@ -117,6 +127,7 @@ def list_processing_runs(
         processing_status=processing_status,
         profile=profile,
         requires_review=requires_review,
+        review_status=review_status,
         tenant_id=(
             principal.tenant_id
             if principal is not None

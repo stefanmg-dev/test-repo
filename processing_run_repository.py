@@ -38,6 +38,7 @@ class ProcessingRunRepository:
         processing_status: str | None = None,
         profile: str | None = None,
         requires_review: bool | None = None,
+        review_status: str | None = None,
         tenant_id: str | None = None,
     ) -> list[ProcessingRun]:
         statement = select(ProcessingRun)
@@ -47,6 +48,7 @@ class ProcessingRunRepository:
             processing_status=processing_status,
             profile=profile,
             requires_review=requires_review,
+            review_status=review_status,
             tenant_id=tenant_id,
         )
         statement = (
@@ -69,6 +71,7 @@ class ProcessingRunRepository:
         processing_status: str | None = None,
         profile: str | None = None,
         requires_review: bool | None = None,
+        review_status: str | None = None,
         tenant_id: str | None = None,
     ) -> int:
         statement = select(
@@ -80,6 +83,7 @@ class ProcessingRunRepository:
             processing_status=processing_status,
             profile=profile,
             requires_review=requires_review,
+            review_status=review_status,
             tenant_id=tenant_id,
         )
         return int(
@@ -94,6 +98,7 @@ class ProcessingRunRepository:
         processing_status: str | None,
         profile: str | None,
         requires_review: bool | None,
+        review_status: str | None,
         tenant_id: str | None,
     ):
         if tenant_id is not None:
@@ -117,5 +122,9 @@ class ProcessingRunRepository:
             statement = statement.where(
                 ProcessingRun.requires_review
                 == requires_review
+            )
+        if review_status is not None:
+            statement = statement.where(
+                ProcessingRun.review_status == review_status
             )
         return statement

@@ -18,6 +18,7 @@ class ProcessingRunListItemModel(BaseModel):
     input_format: str
     processing_status: str
     requires_review: bool
+    review_status: str | None = None
     started_at: datetime
     completed_at: datetime | None = None
     duration_ms: int | None = Field(default=None, ge=0)
@@ -28,6 +29,11 @@ class ProcessingRunDetailModel(ProcessingRunListItemModel):
     step_timings: dict[str, int] | None = None
     quality: dict[str, Any] | None = None
     final_values: dict[str, Any] | None = None
+    corrected_values: dict[str, Any] | None = None
+    review_comment: str | None = None
+    reviewed_at: datetime | None = None
+    reviewed_by_type: str | None = None
+    reviewed_by_subject: str | None = None
     collections: dict[str, Any] | None = None
     validation: dict[str, Any] | None = None
     error: dict[str, Any] | None = None
