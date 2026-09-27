@@ -16,6 +16,8 @@ def audit_security_event(
     required_scope: str | None = None,
     api_key_id: Any | None = None,
     authentication_method: str | None = None,
+    processing_run_id: Any | None = None,
+    review_decision: str | None = None,
 ) -> None:
     extra = {
         "event": event,
@@ -33,5 +35,9 @@ def audit_security_event(
         extra["api_key_id"] = str(api_key_id)
     if authentication_method is not None:
         extra["authentication_method"] = authentication_method
+    if processing_run_id is not None:
+        extra["processing_run_id"] = str(processing_run_id)
+    if review_decision is not None:
+        extra["review_decision"] = review_decision
 
     logger.info(message, extra=extra)

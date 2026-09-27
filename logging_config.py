@@ -25,11 +25,13 @@ SAFE_EXTRA_FIELDS = frozenset(
         "http_status",
         "input_format",
         "processing_status",
+        "processing_run_id",
         "principal_subject",
         "principal_type",
         "profile",
         "required_scope",
         "result",
+        "review_decision",
         "tenant_id",
     }
 )

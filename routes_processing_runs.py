@@ -23,6 +23,7 @@ from security_dependencies import (
     OptionalApiKeyPrincipal,
     require_scope,
 )
+from security_audit import audit_security_event
 from security_principal import SecurityPrincipal
 from security_scopes import (
     PROCESSING_RUNS_READ,
@@ -209,6 +210,14 @@ def update_processing_run_review(
             tenant_id=principal.tenant_id,
             corrected_values=request.corrected_values,
             comment=request.comment,
+        )
+        audit_security_event(
+            f"security.processing_review_{request.status}",
+            message="Processing review decision recorded",
+            result="success",
+            principal=principal,
+            processing_run_id=run_id,
+            review_decision=request.status,
         )
         return review_response(processing_run)
     except ProcessingRunNotFoundError as exc:

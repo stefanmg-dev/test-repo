@@ -69,3 +69,48 @@ def test_security_audit_never_accepts_secret_fields():
     assert "raw-secret" not in serialized
     assert "sensitive-token" not in serialized
     assert "sensitive-hash" not in serialized
+
+
+def test_processing_review_audit_contains_no_document_values():
+    stream = StringIO()
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(JsonLogFormatter())
+    logger = logging.getLogger("document_processing.security")
+    previous_handlers = logger.handlers
+    previous_propagate = logger.propagate
+    previous_level = logger.level
+    logger.handlers = [handler]
+    logger.propagate = False
+    logger.setLevel(logging.INFO)
+
+    principal = SecurityPrincipal(
+        principal_type="user",
+        subject="reviewer-1",
+        tenant_id="tenant-1",
+        scopes=frozenset({"processing-runs:review"}),
+    )
+
+    try:
+        audit_security_event(
+            "security.processing_review_corrected",
+            message="Processing review decision recorded",
+            result="success",
+            principal=principal,
+            processing_run_id="run-1",
+            review_decision="corrected",
+        )
+    finally:
+        logger.handlers = previous_handlers
+        logger.propagate = previous_propagate
+        logger.setLevel(previous_level)
+
+    payload = json.loads(stream.getvalue())
+
+    assert payload["event"] == (
+        "security.processing_review_corrected"
+    )
+    assert payload["processing_run_id"] == "run-1"
+    assert payload["review_decision"] == "corrected"
+    assert payload["principal_subject"] == "reviewer-1"
+    assert "final_values" not in payload
+    assert "corrected_values" not in payload
