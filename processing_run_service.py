@@ -154,3 +154,83 @@ class ProcessingRunService:
                 f"Processing run '{run_id}' was not found"
             )
         return processing_run
+
+
+class ProcessingRunReviewError(ValueError):
+    pass
+
+
+class ProcessingRunReviewService:
+    ALLOWED_STATUSES = frozenset({
+        "approved",
+        "corrected",
+        "rejected",
+    })
+
+    def __init__(self, session: Session):
+        self._session = session
+        self._repository = ProcessingRunRepository(session)
+
+    def review_run(
+        self,
+        run_id: UUID,
+        *,
+        status: str,
+        reviewed_by_type: str,
+        reviewed_by_subject: str,
+        tenant_id: str | None = None,
+        corrected_values: dict[str, Any] | None = None,
+        comment: str | None = None,
+        reviewed_at: datetime | None = None,
+    ) -> ProcessingRun:
+        processing_run = self._repository.get(
+            run_id,
+            tenant_id=tenant_id,
+        )
+        if processing_run is None:
+            raise ProcessingRunNotFoundError(
+                f"Processing run '{run_id}' was not found"
+            )
+        if not processing_run.requires_review:
+            raise ProcessingRunReviewError(
+                "Processing run does not require review"
+            )
+        if processing_run.review_status != "pending":
+            raise ProcessingRunReviewError(
+                "Processing run review is already completed"
+            )
+        if status not in self.ALLOWED_STATUSES:
+            raise ProcessingRunReviewError(
+                f"Unsupported review status: {status}"
+            )
+        if status == "corrected" and corrected_values is None:
+            raise ProcessingRunReviewError(
+                "corrected_values are required for corrected review"
+            )
+        if status != "corrected" and corrected_values is not None:
+            raise ProcessingRunReviewError(
+                "corrected_values are allowed only for corrected review"
+            )
+
+        processing_run.review_status = status
+        processing_run.reviewed_at = (
+            reviewed_at or datetime.now(timezone.utc)
+        )
+        processing_run.reviewed_by_type = reviewed_by_type
+        processing_run.reviewed_by_subject = reviewed_by_subject
+        processing_run.review_comment = comment
+        processing_run.corrected_values = corrected_values
+
+        self._session.commit()
+        self._session.refresh(processing_run)
+        return processing_run
+
+    @staticmethod
+    def effective_values(
+        processing_run: ProcessingRun,
+    ) -> dict[str, Any] | None:
+        if processing_run.review_status == "rejected":
+            return None
+        if processing_run.review_status == "corrected":
+            return processing_run.corrected_values
+        return processing_run.final_values
