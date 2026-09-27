@@ -14,6 +14,7 @@ if not os.getenv("DATABASE_URL"):
 
 import routes_extract
 from api import app
+from configuration_identity import configuration_sha256
 from database import SessionLocal
 from database_models import ProcessingRun
 from processing_run_dependencies import (
@@ -150,6 +151,21 @@ def test_extract_document_persists_and_history_returns_run(
         assert persisted.collections == {}
         assert persisted.quality["status"] == "accepted"
         assert persisted.error is None
+        assert len(persisted.configuration_hash) == 64
+        assert persisted.configuration_schema_version == "1"
+        assert persisted.configuration_snapshot == {
+            "schema_version": "1",
+            "document_type": "invoice",
+            "selected_profile": None,
+            "resolved_fields": TEST_CONFIG["invoice"]["fields"],
+            "resolved_collections": {},
+            "resolved_summary_validations": [],
+        }
+        assert persisted.configuration_hash == (
+            configuration_sha256(
+                persisted.configuration_snapshot
+            )
+        )
         assert set(persisted.step_timings) == {
             "document_input_ms",
             "profile_resolution_ms",
@@ -201,6 +217,15 @@ def test_extract_document_persists_and_history_returns_run(
         assert history_body["duration_ms"] >= 0
         assert history_body["completed_at"] is not None
         assert history_body["error"] is None
+        assert history_body["configuration_hash"] == (
+            persisted.configuration_hash
+        )
+        assert history_body[
+            "configuration_schema_version"
+        ] == "1"
+        assert history_body["configuration_snapshot"] == (
+            persisted.configuration_snapshot
+        )
     finally:
         session.rollback()
         if created_run_id is not None:

@@ -149,6 +149,17 @@ def test_successful_extraction_completes_processing_run(
     assert completed["final_values"] == {
         "invoice_number": "TEST-123"
     }
+    assert len(completed["configuration_hash"]) == 64
+    assert completed["configuration_schema_version"] == "1"
+    assert completed["configuration_snapshot"][
+        "document_type"
+    ] == "invoice"
+    assert completed["configuration_snapshot"][
+        "selected_profile"
+    ] is None
+    assert completed["configuration_snapshot"][
+        "resolved_fields"
+    ] == TEST_CONFIG["invoice"]["fields"]
     assert completed["validation"] == {
         "fields": {"valid": True, "errors": {}},
         "collections": {"valid": True, "errors": {}},

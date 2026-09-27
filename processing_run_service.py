@@ -57,6 +57,9 @@ class ProcessingRunService:
         final_values: dict[str, Any],
         collections: dict[str, Any],
         validation: dict[str, Any],
+        configuration_hash: str | None = None,
+        configuration_snapshot: dict[str, Any] | None = None,
+        configuration_schema_version: str | None = None,
         completed_at: datetime | None = None,
     ) -> ProcessingRun:
         processing_run = self._get_required(run_id)
@@ -72,6 +75,13 @@ class ProcessingRunService:
         processing_run.final_values = final_values
         processing_run.collections = collections
         processing_run.validation = validation
+        processing_run.configuration_hash = configuration_hash
+        processing_run.configuration_snapshot = (
+            configuration_snapshot
+        )
+        processing_run.configuration_schema_version = (
+            configuration_schema_version
+        )
         processing_run.error = None
         processing_run.completed_at = (
             completed_at or datetime.now(timezone.utc)

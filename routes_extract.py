@@ -12,6 +12,16 @@ from fastapi import (
 )
 
 from config_store import load_config
+from configuration_identity import (
+    CONFIGURATION_SCHEMA_VERSION,
+    build_configuration_snapshot,
+    configuration_sha256,
+)
+from document_config_resolver import (
+    resolve_document_collections,
+    resolve_document_fields,
+    resolve_document_summary_validations,
+)
 from document_status import is_document_type_ready
 from extraction_models import (
     ApiErrorResponseModel,
@@ -261,6 +271,36 @@ async def extract_document(
             step_timings["document_engine_ms"] = (
                 elapsed_milliseconds(step_started_at)
             )
+        fields_for_snapshot = resolved_fields
+        if fields_for_snapshot is None:
+            fields_for_snapshot = resolve_document_fields(
+                document_config=document_config,
+                profile_name=selected_profile,
+            )
+
+        resolved_collections = resolve_document_collections(
+            document_config=document_config,
+            profile_name=selected_profile,
+        )
+        resolved_summary_validations = (
+            resolve_document_summary_validations(
+                document_config=document_config,
+                profile_name=selected_profile,
+            )
+        )
+        configuration_snapshot = build_configuration_snapshot(
+            document_type=document_type,
+            selected_profile=selected_profile,
+            resolved_fields=fields_for_snapshot,
+            resolved_collections=resolved_collections,
+            resolved_summary_validations=(
+                resolved_summary_validations
+            ),
+        )
+        configuration_hash = configuration_sha256(
+            configuration_snapshot
+        )
+
         final_values = engine_result["fields"]
         collection_validation = engine_result.get(
             "collection_validation",
@@ -316,6 +356,11 @@ async def extract_document(
                 "fields": validation,
                 "collections": collection_validation,
             },
+            configuration_hash=configuration_hash,
+            configuration_snapshot=configuration_snapshot,
+            configuration_schema_version=(
+                CONFIGURATION_SCHEMA_VERSION
+            ),
         )
         logger.info(
             "Document processing completed",

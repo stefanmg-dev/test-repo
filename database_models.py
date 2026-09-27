@@ -118,6 +118,23 @@ class ProcessingRun(Base):
         JSONB,
         nullable=True,
     )
+    configuration_hash: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+    )
+    configuration_snapshot: Mapped[
+        dict[str, Any] | None
+    ] = mapped_column(
+        JSONB,
+        nullable=True,
+    )
+    configuration_schema_version: Mapped[
+        str | None
+    ] = mapped_column(
+        String(20),
+        nullable=True,
+    )
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
