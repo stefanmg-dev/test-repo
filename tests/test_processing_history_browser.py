@@ -89,6 +89,15 @@ def test_processing_history_browser_smoke(live_server_url):
         "offset": 0,
         "limit": 20,
     }
+    review_summary_body = {
+        "total_requiring_review": 10,
+        "pending": 4,
+        "approved": 2,
+        "corrected": 3,
+        "rejected": 1,
+        "average_review_duration_ms": 1500,
+    }
+
     detail_body = {
         **list_body["items"][0],
         "step_timings": {
@@ -145,6 +154,14 @@ def test_processing_history_browser_smoke(live_server_url):
             handle_history,
         )
         page.route(
+            "**/api/v1/processing-runs/review-summary",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(review_summary_body),
+            ),
+        )
+        page.route(
             f"**/api/v1/processing-runs/{run_id}",
             lambda route: route.fulfill(
                 status=200,
@@ -170,6 +187,14 @@ def test_processing_history_browser_smoke(live_server_url):
         assert page.get_by_text(
             "Намерени обработки: 1"
         ).is_visible()
+        assert page.locator("#reviewTotal").inner_text() == "10"
+        assert page.locator("#reviewPending").inner_text() == "4"
+        assert page.locator("#reviewApproved").inner_text() == "2"
+        assert page.locator("#reviewCorrected").inner_text() == "3"
+        assert page.locator("#reviewRejected").inner_text() == "1"
+        assert page.locator(
+            "#reviewAverageDuration"
+        ).inner_text() == "1.5 s"
 
         page.get_by_label("Тип документ").fill("invoice")
         page.get_by_label("Статус", exact=True).select_option("accepted")

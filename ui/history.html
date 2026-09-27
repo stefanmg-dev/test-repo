@@ -52,6 +52,48 @@
 
             <section id="historyMessageArea" class="message-area" aria-live="polite"></section>
 
+            <section
+                class="review-summary-panel"
+                aria-labelledby="reviewSummaryTitle"
+            >
+                <div class="panel-header">
+                    <div>
+                        <h2 id="reviewSummaryTitle">Review summary</h2>
+                        <p
+                            id="reviewSummaryStatus"
+                            role="status"
+                            aria-live="polite"
+                        >Зареждане...</p>
+                    </div>
+                </div>
+                <div class="review-summary-grid">
+                    <article class="review-summary-card">
+                        <span>Общо за проверка</span>
+                        <strong id="reviewTotal">—</strong>
+                    </article>
+                    <article class="review-summary-card">
+                        <span>Pending</span>
+                        <strong id="reviewPending">—</strong>
+                    </article>
+                    <article class="review-summary-card">
+                        <span>Approved</span>
+                        <strong id="reviewApproved">—</strong>
+                    </article>
+                    <article class="review-summary-card">
+                        <span>Corrected</span>
+                        <strong id="reviewCorrected">—</strong>
+                    </article>
+                    <article class="review-summary-card">
+                        <span>Rejected</span>
+                        <strong id="reviewRejected">—</strong>
+                    </article>
+                    <article class="review-summary-card">
+                        <span>Средно време</span>
+                        <strong id="reviewAverageDuration">—</strong>
+                    </article>
+                </div>
+            </section>
+
             <form id="historyFilters" class="history-filters">
                 <div class="form-group">
                     <label for="filterDocumentType">Тип документ</label>

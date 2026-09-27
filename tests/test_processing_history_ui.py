@@ -104,3 +104,21 @@ def test_processing_history_table_shows_review_status():
     assert '"history-row-review-pending"' in javascript
     assert "Pending на страницата" in javascript
     assert "cell.colSpan = 8" in javascript
+
+
+def test_processing_history_displays_global_review_summary():
+    html = HISTORY_HTML.read_text(encoding="utf-8")
+    javascript = HISTORY_JS.read_text(encoding="utf-8")
+
+    assert 'id="reviewSummaryStatus"' in html
+    assert 'id="reviewTotal"' in html
+    assert 'id="reviewPending"' in html
+    assert 'id="reviewApproved"' in html
+    assert 'id="reviewCorrected"' in html
+    assert 'id="reviewRejected"' in html
+    assert 'id="reviewAverageDuration"' in html
+
+    assert "async function loadReviewSummary" in javascript
+    assert "async function refreshHistoryPage" in javascript
+    assert "Promise.all" in javascript
+    assert "`${HISTORY_URL}/review-summary`" in javascript

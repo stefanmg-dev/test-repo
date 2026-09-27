@@ -18,6 +18,13 @@ const elements = {
     refresh: byId("refreshHistoryButton"),
     rows: byId("historyRows"),
     summary: byId("historySummary"),
+    reviewSummaryStatus: byId("reviewSummaryStatus"),
+    reviewTotal: byId("reviewTotal"),
+    reviewPending: byId("reviewPending"),
+    reviewApproved: byId("reviewApproved"),
+    reviewCorrected: byId("reviewCorrected"),
+    reviewRejected: byId("reviewRejected"),
+    reviewAverageDuration: byId("reviewAverageDuration"),
     pageInfo: byId("historyPageInfo"),
     previous: byId("previousPageButton"),
     next: byId("nextPageButton"),
@@ -139,6 +146,73 @@ function updatePagination() {
     elements.pageInfo.textContent = `Страница ${page} от ${pages}`;
     elements.previous.disabled = state.loading || state.offset === 0;
     elements.next.disabled = state.loading || state.offset + PAGE_SIZE >= state.total;
+}
+
+function formatDuration(milliseconds) {
+    if (milliseconds == null) return "—";
+    if (milliseconds < 1000) return `${milliseconds} ms`;
+
+    const seconds = milliseconds / 1000;
+    return `${seconds.toFixed(seconds < 10 ? 1 : 0)} s`;
+}
+
+function resetReviewSummary() {
+    elements.reviewTotal.textContent = "—";
+    elements.reviewPending.textContent = "—";
+    elements.reviewApproved.textContent = "—";
+    elements.reviewCorrected.textContent = "—";
+    elements.reviewRejected.textContent = "—";
+    elements.reviewAverageDuration.textContent = "—";
+}
+
+async function loadReviewSummary() {
+    elements.reviewSummaryStatus.textContent = "Зареждане...";
+
+    try {
+        const response =
+            await window.documentAuth.authenticatedFetch(
+                `${HISTORY_URL}/review-summary`,
+                {
+                    headers: {
+                        Accept: "application/json",
+                    },
+                },
+            );
+
+        const body = await readJson(response);
+
+        if (!response.ok) {
+            throw new Error(
+                body?.detail || `HTTP ${response.status}`
+            );
+        }
+
+        elements.reviewTotal.textContent =
+            String(body.total_requiring_review);
+        elements.reviewPending.textContent =
+            String(body.pending);
+        elements.reviewApproved.textContent =
+            String(body.approved);
+        elements.reviewCorrected.textContent =
+            String(body.corrected);
+        elements.reviewRejected.textContent =
+            String(body.rejected);
+        elements.reviewAverageDuration.textContent =
+            formatDuration(body.average_review_duration_ms);
+        elements.reviewSummaryStatus.textContent =
+            "Глобални стойности за tenant-а.";
+    } catch (error) {
+        resetReviewSummary();
+        elements.reviewSummaryStatus.textContent =
+            `Metrics не са достъпни: ${error.message}`;
+    }
+}
+
+async function refreshHistoryPage() {
+    await Promise.all([
+        loadHistory(),
+        loadReviewSummary(),
+    ]);
 }
 
 async function loadHistory() {
@@ -315,7 +389,7 @@ function appendReviewActions(runId, processingRun) {
                     "Review решението е записано.",
                     "success",
                 );
-                await loadHistory();
+                await refreshHistoryPage();
             } catch (error) {
                 showMessage(
                     `Review решението не беше записано: ${error.message}`,
@@ -374,7 +448,10 @@ elements.clearFilters.addEventListener("click", () => {
     state.offset = 0;
     loadHistory();
 });
-elements.refresh.addEventListener("click", loadHistory);
+elements.refresh.addEventListener(
+    "click",
+    refreshHistoryPage,
+);
 elements.previous.addEventListener("click", () => {
     state.offset = Math.max(0, state.offset - PAGE_SIZE);
     loadHistory();
@@ -385,4 +462,6 @@ elements.next.addEventListener("click", () => {
 });
 elements.closeDialog.addEventListener("click", () => elements.dialog.close());
 
-window.documentAuth.initialize().then(loadHistory);
+window.documentAuth.initialize().then(
+    refreshHistoryPage,
+);
