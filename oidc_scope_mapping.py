@@ -4,10 +4,12 @@ from collections.abc import Iterable
 OIDC_SCOPE_MAPPING = {
     "documents.extract": "documents:extract",
     "processing-runs.read": "processing-runs:read",
+    "processing-runs.review": "processing-runs:review",
     "config.read": "config:read",
     "config.write": "config:write",
     "documents:extract": "documents:extract",
     "processing-runs:read": "processing-runs:read",
+    "processing-runs:review": "processing-runs:review",
     "config:read": "config:read",
     "config:write": "config:write",
 }

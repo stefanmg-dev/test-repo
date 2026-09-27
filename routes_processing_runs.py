@@ -1,20 +1,32 @@
 from typing import Annotated, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from extraction_models import ApiErrorResponseModel
 from processing_run_dependencies import (
     ProcessingRunServiceDependency,
+    ProcessingRunReviewServiceDependency,
 )
 from processing_run_models import (
     ProcessingRunDetailModel,
     ProcessingRunListResponseModel,
+    ProcessingRunReviewModel,
+    ProcessingRunReviewRequestModel,
 )
-from processing_run_service import ProcessingRunNotFoundError
-from security_dependencies import OptionalApiKeyPrincipal
+from processing_run_service import (
+    ProcessingRunNotFoundError,
+    ProcessingRunReviewError,
+    ProcessingRunReviewService,
+)
+from security_dependencies import (
+    OptionalApiKeyPrincipal,
+    require_scope,
+)
+from security_principal import SecurityPrincipal
 from security_scopes import (
     PROCESSING_RUNS_READ,
+    PROCESSING_RUNS_REVIEW,
     enforce_scope_if_authenticated,
 )
 
@@ -117,3 +129,84 @@ def list_processing_runs(
         "offset": offset,
         "limit": limit,
     }
+
+
+def review_response(processing_run):
+    return {
+        "processing_run_id": processing_run.id,
+        "status": processing_run.review_status,
+        "original_values": processing_run.final_values,
+        "corrected_values": processing_run.corrected_values,
+        "effective_values": (
+            ProcessingRunReviewService.effective_values(
+                processing_run
+            )
+        ),
+        "comment": processing_run.review_comment,
+        "reviewed_at": processing_run.reviewed_at,
+        "reviewed_by_type": processing_run.reviewed_by_type,
+        "reviewed_by_subject": (
+            processing_run.reviewed_by_subject
+        ),
+    }
+
+
+@router.get(
+    "/{run_id}/review",
+    response_model=ProcessingRunReviewModel,
+)
+def get_processing_run_review(
+    run_id: UUID,
+    service: ProcessingRunReviewServiceDependency,
+    principal: Annotated[
+        SecurityPrincipal,
+        Depends(require_scope(PROCESSING_RUNS_REVIEW)),
+    ],
+):
+    try:
+        processing_run = service.get_review_run(
+            run_id,
+            tenant_id=principal.tenant_id,
+        )
+        return review_response(processing_run)
+    except ProcessingRunNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        ) from exc
+
+
+@router.put(
+    "/{run_id}/review",
+    response_model=ProcessingRunReviewModel,
+)
+def update_processing_run_review(
+    run_id: UUID,
+    request: ProcessingRunReviewRequestModel,
+    service: ProcessingRunReviewServiceDependency,
+    principal: Annotated[
+        SecurityPrincipal,
+        Depends(require_scope(PROCESSING_RUNS_REVIEW)),
+    ],
+):
+    try:
+        processing_run = service.review_run(
+            run_id,
+            status=request.status,
+            reviewed_by_type=principal.principal_type,
+            reviewed_by_subject=principal.subject,
+            tenant_id=principal.tenant_id,
+            corrected_values=request.corrected_values,
+            comment=request.comment,
+        )
+        return review_response(processing_run)
+    except ProcessingRunNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        ) from exc
+    except ProcessingRunReviewError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc

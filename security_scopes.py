@@ -11,6 +11,7 @@ from security_principal import SecurityPrincipal
 
 DOCUMENTS_EXTRACT = "documents:extract"
 PROCESSING_RUNS_READ = "processing-runs:read"
+PROCESSING_RUNS_REVIEW = "processing-runs:review"
 CONFIG_READ = "config:read"
 CONFIG_WRITE = "config:write"
 ADMIN = "admin"

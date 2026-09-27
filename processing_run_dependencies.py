@@ -23,3 +23,18 @@ ProcessingRunServiceDependency = Annotated[
     ProcessingRunService,
     Depends(get_processing_run_service),
 ]
+
+
+from processing_run_service import ProcessingRunReviewService
+
+
+def get_processing_run_review_service(
+    session: DatabaseSession,
+) -> ProcessingRunReviewService:
+    return ProcessingRunReviewService(session)
+
+
+ProcessingRunReviewServiceDependency = Annotated[
+    ProcessingRunReviewService,
+    Depends(get_processing_run_review_service),
+]

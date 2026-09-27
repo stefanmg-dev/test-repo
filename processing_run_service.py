@@ -171,6 +171,22 @@ class ProcessingRunReviewService:
         self._session = session
         self._repository = ProcessingRunRepository(session)
 
+    def get_review_run(
+        self,
+        run_id: UUID,
+        *,
+        tenant_id: str | None = None,
+    ) -> ProcessingRun:
+        processing_run = self._repository.get(
+            run_id,
+            tenant_id=tenant_id,
+        )
+        if processing_run is None:
+            raise ProcessingRunNotFoundError(
+                f"Processing run '{run_id}' was not found"
+            )
+        return processing_run
+
     def review_run(
         self,
         run_id: UUID,
