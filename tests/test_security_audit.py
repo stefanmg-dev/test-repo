@@ -114,3 +114,43 @@ def test_processing_review_audit_contains_no_document_values():
     assert payload["principal_subject"] == "reviewer-1"
     assert "final_values" not in payload
     assert "corrected_values" not in payload
+
+
+def test_retention_audit_contains_only_operational_metadata():
+    stream = StringIO()
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(JsonLogFormatter())
+    logger = logging.getLogger("document_processing.security")
+    previous_handlers = logger.handlers
+    previous_propagate = logger.propagate
+    previous_level = logger.level
+    logger.handlers = [handler]
+    logger.propagate = False
+    logger.setLevel(logging.INFO)
+    principal = SecurityPrincipal(
+        principal_type="service",
+        subject="retention-admin",
+        tenant_id="tenant-1",
+        scopes=frozenset({"admin"}),
+    )
+    try:
+        audit_security_event(
+            "security.processing_retention_executed",
+            message="Processing run retention executed",
+            result="success",
+            principal=principal,
+            retention_cutoff="2025-09-27T00:00:00+00:00",
+            retention_limit=100,
+            deleted_count=2,
+        )
+    finally:
+        logger.handlers = previous_handlers
+        logger.propagate = previous_propagate
+        logger.setLevel(previous_level)
+
+    payload = json.loads(stream.getvalue())
+    assert payload["retention_limit"] == 100
+    assert payload["deleted_count"] == 2
+    assert payload["tenant_id"] == "tenant-1"
+    assert "final_values" not in payload
+    assert "corrected_values" not in payload

@@ -169,3 +169,33 @@ def test_retention_preview_uses_configured_cutoff():
     assert "processing_runs.processing_status" in sql
     assert "processing_runs.review_status" in sql
     assert "processing_runs.tenant_id" in sql
+
+
+def test_execute_retention_commits_bounded_delete():
+    session = build_session()
+    service = ProcessingRunService(session)
+    now = datetime(2026, 9, 27, tzinfo=timezone.utc)
+    expected_cutoff = now - timedelta(days=365)
+    session.scalars.return_value.all.return_value = [
+        uuid4(),
+        uuid4(),
+    ]
+
+    result = service.execute_retention(
+        limit=100,
+        tenant_id="tenant-1",
+        now=now,
+    )
+
+    assert result == {
+        "retention_days": 365,
+        "cutoff": expected_cutoff,
+        "limit": 100,
+        "deleted_count": 2,
+    }
+    sql = str(session.scalars.call_args.args[0])
+    assert "DELETE FROM processing_runs" in sql
+    assert "processing_runs.tenant_id" in sql
+    assert "processing_runs.completed_at" in sql
+    assert "processing_runs.review_status" in sql
+    session.commit.assert_called_once_with()

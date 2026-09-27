@@ -32,6 +32,9 @@ SAFE_EXTRA_FIELDS = frozenset(
         "required_scope",
         "result",
         "review_decision",
+        "retention_cutoff",
+        "retention_limit",
+        "deleted_count",
         "tenant_id",
     }
 )

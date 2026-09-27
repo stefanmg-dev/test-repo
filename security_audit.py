@@ -18,6 +18,9 @@ def audit_security_event(
     authentication_method: str | None = None,
     processing_run_id: Any | None = None,
     review_decision: str | None = None,
+    retention_cutoff: Any | None = None,
+    retention_limit: int | None = None,
+    deleted_count: int | None = None,
 ) -> None:
     extra = {
         "event": event,
@@ -39,5 +42,11 @@ def audit_security_event(
         extra["processing_run_id"] = str(processing_run_id)
     if review_decision is not None:
         extra["review_decision"] = review_decision
+    if retention_cutoff is not None:
+        extra["retention_cutoff"] = str(retention_cutoff)
+    if retention_limit is not None:
+        extra["retention_limit"] = retention_limit
+    if deleted_count is not None:
+        extra["deleted_count"] = deleted_count
 
     logger.info(message, extra=extra)

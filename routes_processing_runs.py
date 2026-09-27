@@ -15,6 +15,8 @@ from processing_run_models import (
     ProcessingRunDetailModel,
     ProcessingRunListResponseModel,
     ProcessingRunRetentionPreviewModel,
+    ProcessingRunRetentionExecuteModel,
+    ProcessingRunRetentionExecuteRequestModel,
     ProcessingRunReviewModel,
     ProcessingRunReviewRequestModel,
     ProcessingRunReviewSummaryModel,
@@ -141,6 +143,34 @@ def get_processing_run_retention_preview(
     return processing_run_service.retention_preview(
         tenant_id=principal.tenant_id,
     )
+
+
+@router.post(
+    "/retention-execute",
+    response_model=ProcessingRunRetentionExecuteModel,
+)
+def execute_processing_run_retention(
+    request: ProcessingRunRetentionExecuteRequestModel,
+    processing_run_service: ProcessingRunServiceDependency,
+    principal: Annotated[
+        SecurityPrincipal,
+        Depends(require_scope(ADMIN)),
+    ],
+):
+    result = processing_run_service.execute_retention(
+        limit=request.limit,
+        tenant_id=principal.tenant_id,
+    )
+    audit_security_event(
+        "security.processing_retention_executed",
+        message="Processing run retention executed",
+        result="success",
+        principal=principal,
+        retention_cutoff=result["cutoff"],
+        retention_limit=result["limit"],
+        deleted_count=result["deleted_count"],
+    )
+    return result
 
 
 @router.get(

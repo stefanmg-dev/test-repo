@@ -227,3 +227,74 @@ def test_retention_preview_filters_candidates_in_postgresql():
             ).delete(synchronize_session=False)
             session.commit()
         session.close()
+
+
+def test_retention_execution_is_bounded_and_tenant_scoped():
+    session = SessionLocal()
+    tenant_id = f"retention-execute-{uuid4()}"
+    other_tenant_id = f"retention-other-{uuid4()}"
+    now = datetime(2026, 9, 27, tzinfo=timezone.utc)
+    cutoff = now - timedelta(days=365)
+    created_ids = []
+
+    def add_run(tenant, filename, completed_at, review_status=None):
+        run = ProcessingRun(
+            tenant_id=tenant,
+            document_type="invoice",
+            filename=filename,
+            input_format="pdf",
+            processing_status="review" if review_status else "accepted",
+            requires_review=review_status is not None,
+            review_status=review_status,
+            started_at=completed_at,
+            completed_at=completed_at,
+        )
+        session.add(run)
+        session.flush()
+        created_ids.append(run.id)
+        return run
+
+    try:
+        oldest = add_run(
+            tenant_id,
+            "oldest.pdf",
+            cutoff - timedelta(days=20),
+        )
+        newer = add_run(
+            tenant_id,
+            "newer.pdf",
+            cutoff - timedelta(days=10),
+        )
+        pending = add_run(
+            tenant_id,
+            "pending.pdf",
+            cutoff - timedelta(days=30),
+            "pending",
+        )
+        other = add_run(
+            other_tenant_id,
+            "other.pdf",
+            cutoff - timedelta(days=40),
+        )
+        session.commit()
+
+        result = ProcessingRunService(session).execute_retention(
+            limit=1,
+            tenant_id=tenant_id,
+            now=now,
+        )
+        session.expire_all()
+
+        assert result["deleted_count"] == 1
+        assert session.get(ProcessingRun, oldest.id) is None
+        assert session.get(ProcessingRun, newer.id) is not None
+        assert session.get(ProcessingRun, pending.id) is not None
+        assert session.get(ProcessingRun, other.id) is not None
+    finally:
+        session.rollback()
+        if created_ids:
+            session.query(ProcessingRun).filter(
+                ProcessingRun.id.in_(created_ids)
+            ).delete(synchronize_session=False)
+            session.commit()
+        session.close()

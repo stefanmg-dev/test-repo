@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from database_models import ProcessingRun
@@ -256,6 +256,43 @@ class ProcessingRunRepository:
                 row.newest_candidate_completed_at
             ),
         }
+
+    def execute_retention(
+        self,
+        *,
+        cutoff: datetime,
+        limit: int,
+        tenant_id: str | None = None,
+    ) -> int:
+        candidates = (
+            select(ProcessingRun.id)
+            .where(
+                ProcessingRun.completed_at.is_not(None),
+                ProcessingRun.completed_at < cutoff,
+                ProcessingRun.processing_status != "processing",
+                or_(
+                    ProcessingRun.review_status.is_(None),
+                    ProcessingRun.review_status != "pending",
+                ),
+            )
+            .order_by(
+                ProcessingRun.completed_at.asc(),
+                ProcessingRun.id.asc(),
+            )
+            .limit(limit)
+        )
+        if tenant_id is not None:
+            candidates = candidates.where(
+                ProcessingRun.tenant_id == tenant_id
+            )
+
+        statement = (
+            delete(ProcessingRun)
+            .where(ProcessingRun.id.in_(candidates))
+            .returning(ProcessingRun.id)
+        )
+        deleted_ids = self._session.scalars(statement).all()
+        return len(deleted_ids)
 
     def count(
         self,

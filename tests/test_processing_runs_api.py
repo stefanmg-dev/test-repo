@@ -48,6 +48,7 @@ class QueryService:
         self.run = run or build_run()
         self.list_calls = []
         self.retention_preview_tenant_id = None
+        self.retention_execute_call = None
 
     def retention_preview(self, *, tenant_id=None):
         self.retention_preview_tenant_id = tenant_id
@@ -57,6 +58,18 @@ class QueryService:
             "candidate_count": 2,
             "oldest_candidate_completed_at": NOW,
             "newest_candidate_completed_at": NOW,
+        }
+
+    def execute_retention(self, *, limit, tenant_id=None):
+        self.retention_execute_call = {
+            "limit": limit,
+            "tenant_id": tenant_id,
+        }
+        return {
+            "retention_days": 365,
+            "cutoff": NOW,
+            "limit": limit,
+            "deleted_count": 2,
         }
 
     def review_summary(self, tenant_id=None):
@@ -357,3 +370,55 @@ def test_retention_preview_is_tenant_scoped_for_admin():
         ),
     }
     assert service.retention_preview_tenant_id == "tenant-1"
+
+
+def test_retention_execution_requires_confirmation():
+    service = QueryService()
+    install(service)
+    app.dependency_overrides[
+        get_optional_principal
+    ] = lambda: retention_principal("admin")
+
+    response = TestClient(app).post(
+        "/api/v1/processing-runs/retention-execute",
+        json={"confirmation": "delete", "limit": 100},
+    )
+
+    assert response.status_code == 422
+    assert service.retention_execute_call is None
+
+
+def test_retention_execution_requires_admin_scope():
+    service = QueryService()
+    install(service)
+    app.dependency_overrides[
+        get_optional_principal
+    ] = lambda: retention_principal("processing-runs:read")
+
+    response = TestClient(app).post(
+        "/api/v1/processing-runs/retention-execute",
+        json={"confirmation": "DELETE", "limit": 100},
+    )
+
+    assert response.status_code == 403
+    assert service.retention_execute_call is None
+
+
+def test_retention_execution_is_tenant_scoped_for_admin():
+    service = QueryService()
+    install(service)
+    app.dependency_overrides[
+        get_optional_principal
+    ] = lambda: retention_principal("admin")
+
+    response = TestClient(app).post(
+        "/api/v1/processing-runs/retention-execute",
+        json={"confirmation": "DELETE", "limit": 25},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["deleted_count"] == 2
+    assert service.retention_execute_call == {
+        "limit": 25,
+        "tenant_id": "tenant-1",
+    }

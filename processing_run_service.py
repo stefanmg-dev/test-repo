@@ -191,6 +191,31 @@ class ProcessingRunService:
             ],
         }
 
+    def execute_retention(
+        self,
+        *,
+        limit: int,
+        tenant_id: str | None = None,
+        now: datetime | None = None,
+    ) -> dict:
+        retention_days = (
+            get_settings().processing_run_retention_days
+        )
+        reference_time = now or datetime.now(timezone.utc)
+        cutoff = reference_time - timedelta(days=retention_days)
+        deleted_count = self._repository.execute_retention(
+            cutoff=cutoff,
+            limit=limit,
+            tenant_id=tenant_id,
+        )
+        self._session.commit()
+        return {
+            "retention_days": retention_days,
+            "cutoff": cutoff,
+            "limit": limit,
+            "deleted_count": deleted_count,
+        }
+
     def list_runs(
         self,
         *,

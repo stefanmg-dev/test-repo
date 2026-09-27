@@ -61,6 +61,20 @@ class ProcessingRunRetentionPreviewModel(BaseModel):
     newest_candidate_completed_at: datetime | None = None
 
 
+class ProcessingRunRetentionExecuteRequestModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    confirmation: Literal["DELETE"]
+    limit: int = Field(default=100, ge=1, le=1000)
+
+
+class ProcessingRunRetentionExecuteModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    retention_days: int = Field(ge=30, le=3650)
+    cutoff: datetime
+    limit: int = Field(ge=1, le=1000)
+    deleted_count: int = Field(ge=0)
+
+
 class ProcessingRunReviewRequestModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

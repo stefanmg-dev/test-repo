@@ -413,6 +413,55 @@
         ]
       }
     },
+    "/api/v1/processing-runs/retention-execute": {
+      "post": {
+        "tags": [
+          "processing-runs"
+        ],
+        "summary": "Execute Processing Run Retention",
+        "operationId": "execute_processing_run_retention_api_v1_processing_runs_retention_execute_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcessingRunRetentionExecuteRequestModel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessingRunRetentionExecuteModel"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/v1/processing-runs/{run_id}": {
       "get": {
         "tags": [
@@ -4366,6 +4415,63 @@
           "limit"
         ],
         "title": "ProcessingRunListResponseModel"
+      },
+      "ProcessingRunRetentionExecuteModel": {
+        "properties": {
+          "retention_days": {
+            "type": "integer",
+            "maximum": 3650.0,
+            "minimum": 30.0,
+            "title": "Retention Days"
+          },
+          "cutoff": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Cutoff"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Limit"
+          },
+          "deleted_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Deleted Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "retention_days",
+          "cutoff",
+          "limit",
+          "deleted_count"
+        ],
+        "title": "ProcessingRunRetentionExecuteModel"
+      },
+      "ProcessingRunRetentionExecuteRequestModel": {
+        "properties": {
+          "confirmation": {
+            "type": "string",
+            "const": "DELETE",
+            "title": "Confirmation"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 100
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "confirmation"
+        ],
+        "title": "ProcessingRunRetentionExecuteRequestModel"
       },
       "ProcessingRunRetentionPreviewModel": {
         "properties": {
