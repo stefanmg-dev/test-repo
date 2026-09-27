@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from database_models import ProcessingRun
@@ -14,6 +14,46 @@ class ProcessingRunRepository:
         self._session.add(processing_run)
         self._session.flush()
         return processing_run
+
+    def complete_review_atomic(
+        self,
+        run_id: UUID,
+        *,
+        tenant_id: str | None,
+        status: str,
+        reviewed_at,
+        reviewed_by_type: str,
+        reviewed_by_subject: str,
+        comment: str | None,
+        corrected_values,
+    ) -> bool:
+        statement = (
+            update(ProcessingRun)
+            .where(
+                ProcessingRun.id == run_id,
+                ProcessingRun.review_status == "pending",
+            )
+            .values(
+                review_status=status,
+                reviewed_at=reviewed_at,
+                reviewed_by_type=reviewed_by_type,
+                reviewed_by_subject=reviewed_by_subject,
+                review_comment=comment,
+                corrected_values=corrected_values,
+            )
+            .returning(ProcessingRun.id)
+        )
+
+        if tenant_id is not None:
+            statement = statement.where(
+                ProcessingRun.tenant_id == tenant_id
+            )
+
+        updated_id = self._session.execute(
+            statement
+        ).scalar_one_or_none()
+
+        return updated_id is not None
 
     def get(
         self,

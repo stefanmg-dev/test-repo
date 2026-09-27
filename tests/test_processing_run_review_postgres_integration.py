@@ -132,3 +132,96 @@ def test_processing_run_review_lifecycle_in_postgresql():
                 session.commit()
 
         session.close()
+
+
+def test_only_one_stale_reviewer_can_complete_review():
+    creator_session = SessionLocal()
+    first_session = SessionLocal()
+    second_session = SessionLocal()
+    run_id = None
+
+    try:
+        processing_service = ProcessingRunService(
+            creator_session
+        )
+
+        run = processing_service.start_run(
+            document_type="invoice",
+            filename="concurrent-review.pdf",
+            input_format="pdf",
+            tenant_id="tenant-concurrent",
+        )
+        run_id = run.id
+
+        processing_service.complete_run(
+            run.id,
+            processing_status="review",
+            profile=None,
+            requires_review=True,
+            duration_ms=1,
+            step_timings={},
+            quality={
+                "status": "review",
+                "requires_review": True,
+            },
+            final_values={"value": "original"},
+            collections={},
+            validation={},
+        )
+
+        first = ProcessingRunReviewService(first_session)
+        second = ProcessingRunReviewService(second_session)
+
+        assert first.get_review_run(
+            run.id,
+            tenant_id="tenant-concurrent",
+        ).review_status == "pending"
+
+        assert second.get_review_run(
+            run.id,
+            tenant_id="tenant-concurrent",
+        ).review_status == "pending"
+
+        first.review_run(
+            run.id,
+            status="approved",
+            reviewed_by_type="user",
+            reviewed_by_subject="reviewer-1",
+            tenant_id="tenant-concurrent",
+        )
+
+        with pytest.raises(
+            ProcessingRunReviewError,
+            match="already completed",
+        ):
+            second.review_run(
+                run.id,
+                status="rejected",
+                reviewed_by_type="user",
+                reviewed_by_subject="reviewer-2",
+                tenant_id="tenant-concurrent",
+            )
+
+        creator_session.expire_all()
+        persisted = creator_session.get(ProcessingRun, run.id)
+
+        assert persisted.review_status == "approved"
+        assert persisted.reviewed_by_subject == "reviewer-1"
+
+    finally:
+        first_session.rollback()
+        second_session.rollback()
+        creator_session.rollback()
+
+        if run_id is not None:
+            persisted = creator_session.get(
+                ProcessingRun,
+                run_id,
+            )
+            if persisted is not None:
+                creator_session.delete(persisted)
+                creator_session.commit()
+
+        first_session.close()
+        second_session.close()
+        creator_session.close()

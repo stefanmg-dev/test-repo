@@ -230,10 +230,29 @@ class ProcessingRunReviewService:
                 "corrected_values are allowed only for corrected review"
             )
 
-        processing_run.review_status = status
-        processing_run.reviewed_at = (
+        decision_time = (
             reviewed_at or datetime.now(timezone.utc)
         )
+
+        updated = self._repository.complete_review_atomic(
+            run_id,
+            tenant_id=tenant_id,
+            status=status,
+            reviewed_at=decision_time,
+            reviewed_by_type=reviewed_by_type,
+            reviewed_by_subject=reviewed_by_subject,
+            comment=comment,
+            corrected_values=corrected_values,
+        )
+
+        if not updated:
+            self._session.rollback()
+            raise ProcessingRunReviewError(
+                "Processing run review is already completed"
+            )
+
+        processing_run.review_status = status
+        processing_run.reviewed_at = decision_time
         processing_run.reviewed_by_type = reviewed_by_type
         processing_run.reviewed_by_subject = reviewed_by_subject
         processing_run.review_comment = comment
