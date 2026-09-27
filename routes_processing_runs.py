@@ -14,6 +14,7 @@ from processing_run_models import (
     ExtractionQualityAnalysisModel,
     ProcessingRunDetailModel,
     ProcessingRunListResponseModel,
+    ProcessingRunRetentionPreviewModel,
     ProcessingRunReviewModel,
     ProcessingRunReviewRequestModel,
     ProcessingRunReviewSummaryModel,
@@ -30,6 +31,7 @@ from security_dependencies import (
 from security_audit import audit_security_event
 from security_principal import SecurityPrincipal
 from security_scopes import (
+    ADMIN,
     PROCESSING_RUNS_READ,
     PROCESSING_RUNS_REVIEW,
     enforce_scope_if_authenticated,
@@ -122,6 +124,22 @@ def get_processing_run_review_summary(
             if principal is not None
             else "default"
         ),
+    )
+
+
+@router.get(
+    "/retention-preview",
+    response_model=ProcessingRunRetentionPreviewModel,
+)
+def get_processing_run_retention_preview(
+    processing_run_service: ProcessingRunServiceDependency,
+    principal: Annotated[
+        SecurityPrincipal,
+        Depends(require_scope(ADMIN)),
+    ],
+):
+    return processing_run_service.retention_preview(
+        tenant_id=principal.tenant_id,
     )
 
 

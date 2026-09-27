@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock
 from uuid import uuid4
 
@@ -138,3 +138,34 @@ def test_requires_existing_processing_run():
         )
 
     session.commit.assert_not_called()
+
+
+def test_retention_preview_uses_configured_cutoff():
+    session = build_session()
+    service = ProcessingRunService(session)
+    now = datetime(2026, 9, 27, tzinfo=timezone.utc)
+    expected_cutoff = now - timedelta(days=365)
+    row = Mock(
+        candidate_count=2,
+        oldest_candidate_completed_at=(
+            expected_cutoff - timedelta(days=10)
+        ),
+        newest_candidate_completed_at=(
+            expected_cutoff - timedelta(seconds=1)
+        ),
+    )
+    session.execute.return_value.one.return_value = row
+
+    result = service.retention_preview(
+        tenant_id="tenant-1",
+        now=now,
+    )
+
+    assert result["retention_days"] == 365
+    assert result["cutoff"] == expected_cutoff
+    assert result["candidate_count"] == 2
+    sql = str(session.execute.call_args.args[0])
+    assert "processing_runs.completed_at" in sql
+    assert "processing_runs.processing_status" in sql
+    assert "processing_runs.review_status" in sql
+    assert "processing_runs.tenant_id" in sql

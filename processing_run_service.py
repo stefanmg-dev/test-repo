@@ -1,8 +1,9 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
 
 from sqlalchemy.orm import Session
+from app_settings import get_settings
 
 from database_models import ProcessingRun
 from extraction_quality_analysis import (
@@ -162,6 +163,33 @@ class ProcessingRunService:
         return self._repository.review_summary(
             tenant_id=tenant_id,
         )
+
+    def retention_preview(
+        self,
+        *,
+        tenant_id: str | None = None,
+        now: datetime | None = None,
+    ) -> dict:
+        retention_days = (
+            get_settings().processing_run_retention_days
+        )
+        reference_time = now or datetime.now(timezone.utc)
+        cutoff = reference_time - timedelta(days=retention_days)
+        preview = self._repository.retention_preview(
+            cutoff=cutoff,
+            tenant_id=tenant_id,
+        )
+        return {
+            "retention_days": retention_days,
+            "cutoff": cutoff,
+            "candidate_count": preview["candidate_count"],
+            "oldest_candidate_completed_at": preview[
+                "oldest_candidate_completed_at"
+            ],
+            "newest_candidate_completed_at": preview[
+                "newest_candidate_completed_at"
+            ],
+        }
 
     def list_runs(
         self,

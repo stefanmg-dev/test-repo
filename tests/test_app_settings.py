@@ -118,3 +118,26 @@ def test_legacy_anonymous_access_can_be_disabled(monkeypatch):
     settings = AppSettings(_env_file=None)
 
     assert settings.legacy_anonymous_access_enabled is False
+
+
+def test_processing_run_retention_days_default(monkeypatch):
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql+psycopg://user:secret@localhost/db",
+    )
+    monkeypatch.delenv(
+        "PROCESSING_RUN_RETENTION_DAYS",
+        raising=False,
+    )
+    settings = AppSettings(_env_file=None)
+    assert settings.processing_run_retention_days == 365
+
+
+def test_processing_run_retention_days_are_validated(monkeypatch):
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql+psycopg://user:secret@localhost/db",
+    )
+    monkeypatch.setenv("PROCESSING_RUN_RETENTION_DAYS", "29")
+    with pytest.raises(ValidationError):
+        AppSettings(_env_file=None)

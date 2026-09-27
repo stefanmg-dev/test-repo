@@ -384,6 +384,35 @@
         ]
       }
     },
+    "/api/v1/processing-runs/retention-preview": {
+      "get": {
+        "tags": [
+          "processing-runs"
+        ],
+        "summary": "Get Processing Run Retention Preview",
+        "operationId": "get_processing_run_retention_preview_api_v1_processing_runs_retention_preview_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessingRunRetentionPreviewModel"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/v1/processing-runs/{run_id}": {
       "get": {
         "tags": [
@@ -4337,6 +4366,58 @@
           "limit"
         ],
         "title": "ProcessingRunListResponseModel"
+      },
+      "ProcessingRunRetentionPreviewModel": {
+        "properties": {
+          "retention_days": {
+            "type": "integer",
+            "maximum": 3650.0,
+            "minimum": 30.0,
+            "title": "Retention Days"
+          },
+          "cutoff": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Cutoff"
+          },
+          "candidate_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Candidate Count"
+          },
+          "oldest_candidate_completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oldest Candidate Completed At"
+          },
+          "newest_candidate_completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Newest Candidate Completed At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "retention_days",
+          "cutoff",
+          "candidate_count"
+        ],
+        "title": "ProcessingRunRetentionPreviewModel"
       },
       "ProcessingRunReviewModel": {
         "properties": {

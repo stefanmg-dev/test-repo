@@ -1,7 +1,8 @@
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
+from uuid import uuid4
 
 
 if not os.getenv("DATABASE_URL"):
@@ -11,6 +12,7 @@ if not os.getenv("DATABASE_URL"):
     )
 
 from database import SessionLocal
+from database_models import ProcessingRun
 from processing_run_service import ProcessingRunService
 
 
@@ -118,4 +120,110 @@ def test_processing_run_lifecycle_in_postgresql():
             if persisted is not None:
                 session.delete(persisted)
                 session.commit()
+        session.close()
+
+
+def test_retention_preview_filters_candidates_in_postgresql():
+    session = SessionLocal()
+    tenant_id = f"retention-{uuid4()}"
+    other_tenant_id = f"retention-other-{uuid4()}"
+    now = datetime(2026, 9, 27, tzinfo=timezone.utc)
+    cutoff = now - timedelta(days=365)
+    created_ids = []
+
+    def add_run(
+        *,
+        tenant,
+        filename,
+        processing_status,
+        completed_at,
+        requires_review=False,
+        review_status=None,
+    ):
+        run = ProcessingRun(
+            tenant_id=tenant,
+            document_type="invoice",
+            filename=filename,
+            input_format="pdf",
+            processing_status=processing_status,
+            requires_review=requires_review,
+            review_status=review_status,
+            started_at=completed_at or now,
+            completed_at=completed_at,
+        )
+        session.add(run)
+        session.flush()
+        created_ids.append(run.id)
+        return run
+
+    try:
+        oldest = add_run(
+            tenant=tenant_id,
+            filename="oldest-candidate.pdf",
+            processing_status="accepted",
+            completed_at=cutoff - timedelta(days=20),
+        )
+        newest = add_run(
+            tenant=tenant_id,
+            filename="newest-candidate.pdf",
+            processing_status="review",
+            completed_at=cutoff - timedelta(seconds=1),
+            requires_review=True,
+            review_status="approved",
+        )
+        add_run(
+            tenant=tenant_id,
+            filename="pending-review.pdf",
+            processing_status="review",
+            completed_at=cutoff - timedelta(days=10),
+            requires_review=True,
+            review_status="pending",
+        )
+        add_run(
+            tenant=tenant_id,
+            filename="still-processing.pdf",
+            processing_status="processing",
+            completed_at=cutoff - timedelta(days=10),
+        )
+        add_run(
+            tenant=tenant_id,
+            filename="at-cutoff.pdf",
+            processing_status="accepted",
+            completed_at=cutoff,
+        )
+        add_run(
+            tenant=tenant_id,
+            filename="recent.pdf",
+            processing_status="accepted",
+            completed_at=cutoff + timedelta(seconds=1),
+        )
+        add_run(
+            tenant=other_tenant_id,
+            filename="other-tenant.pdf",
+            processing_status="accepted",
+            completed_at=cutoff - timedelta(days=30),
+        )
+        session.commit()
+
+        preview = ProcessingRunService(session).retention_preview(
+            tenant_id=tenant_id,
+            now=now,
+        )
+
+        assert preview["retention_days"] == 365
+        assert preview["cutoff"] == cutoff
+        assert preview["candidate_count"] == 2
+        assert preview["oldest_candidate_completed_at"] == (
+            oldest.completed_at
+        )
+        assert preview["newest_candidate_completed_at"] == (
+            newest.completed_at
+        )
+    finally:
+        session.rollback()
+        if created_ids:
+            session.query(ProcessingRun).filter(
+                ProcessingRun.id.in_(created_ids)
+            ).delete(synchronize_session=False)
+            session.commit()
         session.close()

@@ -52,6 +52,15 @@ class ProcessingRunListResponseModel(BaseModel):
     limit: int = Field(ge=1, le=100)
 
 
+class ProcessingRunRetentionPreviewModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    retention_days: int = Field(ge=30, le=3650)
+    cutoff: datetime
+    candidate_count: int = Field(ge=0)
+    oldest_candidate_completed_at: datetime | None = None
+    newest_candidate_completed_at: datetime | None = None
+
+
 class ProcessingRunReviewRequestModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

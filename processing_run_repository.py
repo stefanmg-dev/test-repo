@@ -1,6 +1,7 @@
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.orm import Session
 
 from database_models import ProcessingRun
@@ -215,6 +216,44 @@ class ProcessingRunRepository:
                 round(row.average_review_duration_ms)
                 if row.average_review_duration_ms is not None
                 else None
+            ),
+        }
+
+    def retention_preview(
+        self,
+        *,
+        cutoff: datetime,
+        tenant_id: str | None = None,
+    ) -> dict:
+        statement = select(
+            func.count(ProcessingRun.id).label("candidate_count"),
+            func.min(ProcessingRun.completed_at).label(
+                "oldest_candidate_completed_at"
+            ),
+            func.max(ProcessingRun.completed_at).label(
+                "newest_candidate_completed_at"
+            ),
+        ).where(
+            ProcessingRun.completed_at.is_not(None),
+            ProcessingRun.completed_at < cutoff,
+            ProcessingRun.processing_status != "processing",
+            or_(
+                ProcessingRun.review_status.is_(None),
+                ProcessingRun.review_status != "pending",
+            ),
+        )
+        if tenant_id is not None:
+            statement = statement.where(
+                ProcessingRun.tenant_id == tenant_id
+            )
+        row = self._session.execute(statement).one()
+        return {
+            "candidate_count": int(row.candidate_count or 0),
+            "oldest_candidate_completed_at": (
+                row.oldest_candidate_completed_at
+            ),
+            "newest_candidate_completed_at": (
+                row.newest_candidate_completed_at
             ),
         }
 

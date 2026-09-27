@@ -190,6 +190,13 @@ class AppSettings(BaseSettings):
         validation_alias="RATE_LIMIT_READ_PER_MINUTE",
     )
 
+    processing_run_retention_days: int = Field(
+        default=365,
+        ge=30,
+        le=3650,
+        validation_alias="PROCESSING_RUN_RETENTION_DAYS",
+    )
+
     @model_validator(mode="after")
     def validate_oidc_configuration(self):
         if self.oidc_enabled:

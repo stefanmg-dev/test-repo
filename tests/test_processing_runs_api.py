@@ -9,6 +9,8 @@ from processing_run_dependencies import (
     get_processing_run_service,
 )
 from processing_run_service import ProcessingRunNotFoundError
+from security_dependencies import get_optional_principal
+from security_principal import SecurityPrincipal
 
 
 NOW = datetime(2026, 9, 22, tzinfo=timezone.utc)
@@ -45,6 +47,17 @@ class QueryService:
     def __init__(self, run=None):
         self.run = run or build_run()
         self.list_calls = []
+        self.retention_preview_tenant_id = None
+
+    def retention_preview(self, *, tenant_id=None):
+        self.retention_preview_tenant_id = tenant_id
+        return {
+            "retention_days": 365,
+            "cutoff": NOW,
+            "candidate_count": 2,
+            "oldest_candidate_completed_at": NOW,
+            "newest_candidate_completed_at": NOW,
+        }
 
     def review_summary(self, tenant_id=None):
         self.review_summary_tenant_id = tenant_id
@@ -279,3 +292,68 @@ def test_export_processing_runs_as_csv():
     assert "processing_run_id,document_type" in response.text
     assert str(service.run.id) in response.text
     assert "raw_text" not in response.text
+
+
+def retention_principal(*scopes):
+    return SecurityPrincipal(
+        principal_type="user",
+        subject="admin-1",
+        tenant_id="tenant-1",
+        scopes=frozenset(scopes),
+    )
+
+
+def test_retention_preview_requires_authentication():
+    service = QueryService()
+    install(service)
+    app.dependency_overrides[
+        get_optional_principal
+    ] = lambda: None
+
+    response = TestClient(app).get(
+        "/api/v1/processing-runs/retention-preview"
+    )
+
+    assert response.status_code == 401
+    assert service.retention_preview_tenant_id is None
+
+
+def test_retention_preview_requires_admin_scope():
+    service = QueryService()
+    install(service)
+    app.dependency_overrides[
+        get_optional_principal
+    ] = lambda: retention_principal("processing-runs:read")
+
+    response = TestClient(app).get(
+        "/api/v1/processing-runs/retention-preview"
+    )
+
+    assert response.status_code == 403
+    assert service.retention_preview_tenant_id is None
+
+
+def test_retention_preview_is_tenant_scoped_for_admin():
+    service = QueryService()
+    install(service)
+    app.dependency_overrides[
+        get_optional_principal
+    ] = lambda: retention_principal("admin")
+
+    response = TestClient(app).get(
+        "/api/v1/processing-runs/retention-preview"
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "retention_days": 365,
+        "cutoff": NOW.isoformat().replace("+00:00", "Z"),
+        "candidate_count": 2,
+        "oldest_candidate_completed_at": (
+            NOW.isoformat().replace("+00:00", "Z")
+        ),
+        "newest_candidate_completed_at": (
+            NOW.isoformat().replace("+00:00", "Z")
+        ),
+    }
+    assert service.retention_preview_tenant_id == "tenant-1"
