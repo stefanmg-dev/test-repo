@@ -99,3 +99,20 @@ LEGACY_ANONYMOUS_ACCESS_ENABLED=true
 Confirm interactive sign-in, silent token acquisition, extraction, history reads, configuration reads, and configuration writes. Inspect the access token and confirm `iss`, `aud`, `tid`, `sub`, `exp`, `iat`, and `scp` match the configured API contract.
 
 Only after the authenticated smoke test succeeds, set `LEGACY_ANONYMOUS_ACCESS_ENABLED=false`. Redeploy and verify protected routes return HTTP 401 without credentials while `/health`, `/ready`, `/api/v1/auth/config`, and static UI assets remain public.
+
+## Processing run retention
+
+Set `PROCESSING_RUN_RETENTION_DAYS` to the minimum completed-run age eligible for retention. The default is 365 days; accepted values are 30 through 3650.
+
+Retention is tenant-aware and requires an authenticated principal with the internal `admin` scope. Browser delegated scopes do not include `admin`.
+
+Use the endpoints in this order:
+
+1. Call `GET /api/v1/processing-runs/retention-preview` and review the cutoff, candidate count, and candidate date range.
+2. Call `POST /api/v1/processing-runs/retention-execute` only after validating the preview.
+3. Send the exact confirmation value `DELETE` and a batch limit from 1 through 1000.
+4. Repeat preview before any additional batch.
+
+Execution permanently deletes at most the requested number of the oldest eligible processing runs. Runs still processing and runs with pending review are excluded. Execution is atomic and emits security audit metadata containing the tenant identity, cutoff, limit, and deleted count, without document values.
+
+Do not schedule retention automatically until operational monitoring, backup, and restore procedures have been validated.

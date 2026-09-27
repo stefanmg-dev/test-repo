@@ -453,6 +453,88 @@
               }
             }
           ]
+        },
+        {
+          "name": "Retention Preview",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json(); pm.test(\"Retention preview contract is present\", function () { pm.expect(body).to.include.keys(\"retention_days\", \"cutoff\", \"candidate_count\", \"oldest_candidate_completed_at\", \"newest_candidate_completed_at\"); });",
+                  "pm.test(\"Preview does not delete rows\", function () { pm.expect(body).not.to.have.property(\"deleted_count\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{admin_api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/processing-runs/retention-preview",
+            "description": "Admin-only tenant-aware dry run. Review this response before execution."
+          },
+          "response": []
+        },
+        {
+          "name": "Retention Execute",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json(); pm.test(\"Retention execution contract is present\", function () { pm.expect(body).to.include.keys(\"retention_days\", \"cutoff\", \"limit\", \"deleted_count\"); });",
+                  "pm.test(\"Execution respects requested bound\", function () { pm.expect(body.deleted_count).to.be.at.most(Number(pm.environment.get(\"retention_limit\") || 100)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{admin_api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirmation\": \"DELETE\",\n  \"limit\": {{retention_limit}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/v1/processing-runs/retention-execute",
+            "description": "Irreversible admin-only bounded deletion. Always run Retention Preview first."
+          },
+          "response": []
         }
       ]
     },

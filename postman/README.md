@@ -18,3 +18,11 @@ Generic fallback and corrupted PDF 422 remain defined with empty path variables.
 
 - `GET /health` is a low-cost liveness check and does not query PostgreSQL.
 - `GET /ready` verifies PostgreSQL connectivity and the current Alembic revision.
+
+## Processing run retention
+
+The `02 Processing History` folder includes admin-only retention preview and execution requests.
+
+Set `admin_api_key` in the selected local Postman environment. Keep it empty in the committed environment file and never commit a real credential.
+
+Run `Retention Preview` first. Review the returned cutoff and candidate count. Run `Retention Execute` only when deletion is intended; it sends the exact confirmation value `DELETE` and uses `retention_limit`, which defaults to 100. Execution is irreversible and deletes no more than 1000 eligible rows per request.
