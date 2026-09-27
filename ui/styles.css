@@ -779,3 +779,35 @@ textarea.form-control {
     color: #cbd5e1;
     font-size: 0.82rem;
 }
+
+.review-actions {
+    display: grid;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+
+.review-actions h3 {
+    margin: 0;
+}
+
+.review-auth-notice {
+    margin: 0;
+    padding: 12px;
+    border-radius: 8px;
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.review-json-editor {
+    min-height: 220px;
+    font-family: monospace;
+    resize: vertical;
+}
+
+.review-action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}

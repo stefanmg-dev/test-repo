@@ -165,6 +165,155 @@ function appendDetail(label, value) {
     elements.dialogBody.appendChild(wrapper);
 }
 
+function canSubmitReview() {
+    return Boolean(
+        window.documentAuth?.isEnabled()
+        && window.documentAuth.isAuthenticated()
+    );
+}
+
+async function submitReview(runId, status, correctedValues, comment) {
+    const payload = {
+        status,
+        comment: comment || null,
+    };
+
+    if (status === "corrected") {
+        payload.corrected_values = correctedValues;
+    }
+
+    const response = await window.documentAuth.authenticatedFetch(
+        `${HISTORY_URL}/${encodeURIComponent(runId)}/review`,
+        {
+            method: "PUT",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+        },
+    );
+
+    const body = await readJson(response);
+    if (!response.ok) {
+        throw new Error(body?.detail || `HTTP ${response.status}`);
+    }
+    return body;
+}
+
+function appendReviewActions(runId, processingRun) {
+    if (processingRun.review_status !== "pending") return;
+
+    const section = document.createElement("section");
+    section.className = "review-actions";
+
+    const heading = document.createElement("h3");
+    heading.textContent = "Human review";
+
+    if (!canSubmitReview()) {
+        const notice = document.createElement("p");
+        notice.className = "review-auth-notice";
+        notice.textContent =
+            "Необходим е удостоверен профил за review решение.";
+        section.append(heading, notice);
+        elements.dialogBody.appendChild(section);
+        return;
+    }
+
+    const comment = document.createElement("textarea");
+    comment.id = "reviewComment";
+    comment.className = "form-control";
+    comment.maxLength = 2000;
+    comment.rows = 3;
+
+    const correctedValues = document.createElement("textarea");
+    correctedValues.id = "reviewCorrectedValues";
+    correctedValues.className =
+        "form-control review-json-editor";
+    correctedValues.rows = 10;
+    correctedValues.value = JSON.stringify(
+        processingRun.final_values || {},
+        null,
+        2,
+    );
+
+    const buttons = document.createElement("div");
+    buttons.className = "review-action-buttons";
+
+    const definitions = [
+        ["approved", "Approve", "button-primary"],
+        ["corrected", "Correct", "button-secondary"],
+        ["rejected", "Reject", "button-danger-outline"],
+    ];
+
+    for (const [status, label, buttonClass] of definitions) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `button ${buttonClass}`;
+        button.textContent = label;
+
+        button.addEventListener("click", async () => {
+            let parsedValues = null;
+
+            if (status === "corrected") {
+                try {
+                    parsedValues = JSON.parse(
+                        correctedValues.value,
+                    );
+                } catch {
+                    showMessage(
+                        "Коригираните стойности не са валиден JSON.",
+                    );
+                    return;
+                }
+
+                if (
+                    parsedValues === null
+                    || Array.isArray(parsedValues)
+                    || typeof parsedValues !== "object"
+                ) {
+                    showMessage(
+                        "Корекциите трябва да са JSON object.",
+                    );
+                    return;
+                }
+            }
+
+            for (const actionButton of buttons.children) {
+                actionButton.disabled = true;
+            }
+
+            try {
+                await submitReview(
+                    runId,
+                    status,
+                    parsedValues,
+                    comment.value.trim(),
+                );
+                elements.dialog.close();
+                showMessage(
+                    "Review решението е записано.",
+                    "success",
+                );
+                await loadHistory();
+            } catch (error) {
+                showMessage(
+                    `Review решението не беше записано: ${error.message}`,
+                );
+            } finally {
+                for (const actionButton of buttons.children) {
+                    actionButton.disabled = false;
+                }
+            }
+        });
+
+        buttons.appendChild(button);
+    }
+
+    section.append(heading, comment, correctedValues, buttons);
+    elements.dialogBody.appendChild(section);
+}
+
 async function loadDetail(runId) {
     try {
         const response = await window.documentAuth.authenticatedFetch(`${HISTORY_URL}/${encodeURIComponent(runId)}`, { headers: { Accept: "application/json" } });
@@ -187,6 +336,7 @@ async function loadDetail(runId) {
         appendDetail("Колекции", body.collections);
         appendDetail("Валидация", body.validation);
         appendDetail("Грешка", body.error);
+        appendReviewActions(runId, body);
         elements.dialog.showModal();
     } catch (error) {
         showMessage(`Неуспешно зареждане на детайлите: ${error.message}`);

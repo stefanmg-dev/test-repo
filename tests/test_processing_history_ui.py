@@ -70,3 +70,26 @@ def test_processing_history_displays_review_metadata_safely():
     ) in content
     assert 'appendDetail("Review коментар", body.review_comment)' in content
     assert "innerHTML" not in content
+
+
+def test_pending_review_has_authenticated_actions():
+    content = HISTORY_JS.read_text(encoding="utf-8")
+
+    assert "function appendReviewActions" in content
+    assert 'processingRun.review_status !== "pending"' in content
+    assert "window.documentAuth?.isEnabled()" in content
+    assert "window.documentAuth.isAuthenticated()" in content
+    assert '["approved", "Approve"' in content
+    assert '["corrected", "Correct"' in content
+    assert '["rejected", "Reject"' in content
+    assert 'method: "PUT"' in content
+
+
+def test_review_actions_preserve_safe_rendering():
+    content = HISTORY_JS.read_text(encoding="utf-8")
+
+    assert "JSON.parse(" in content
+    assert "correctedValues.value" in content
+    assert "processingRun.final_values" in content
+    assert "innerHTML" not in content
+    assert "insertAdjacentHTML" not in content
