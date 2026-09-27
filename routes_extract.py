@@ -30,6 +30,7 @@ from extraction_models import (
     RequestValidationErrorResponseModel,
 )
 from extraction_orchestrator import extract_document_data
+from invoice_mapper import map_extraction_to_universal_invoice
 from llm_engine import extract_values
 from ocr_engine import (
     InvalidDocumentInputError,
@@ -72,6 +73,40 @@ def determine_processing_status(
     if quality.get("requires_review") is True:
         return "review"
     return "accepted"
+
+
+def validate_universal_invoice_shadow(
+    *,
+    document_type: str,
+    final_values: dict,
+    collections: dict,
+) -> bool | None:
+    if document_type != "invoice":
+        return None
+
+    try:
+        map_extraction_to_universal_invoice(
+            document_type=document_type,
+            final_values=final_values,
+            collections=collections,
+        )
+    except Exception as exc:
+        logger.warning(
+            "Universal invoice shadow validation failed",
+            extra={
+                "event": "invoice.shadow_validation_failed",
+                "error_type": type(exc).__name__,
+            },
+        )
+        return False
+
+    logger.info(
+        "Universal invoice shadow validation succeeded",
+        extra={
+            "event": "invoice.shadow_validation_succeeded",
+        },
+    )
+    return True
 
 
 def get_extraction_document_config(
@@ -302,6 +337,11 @@ async def extract_document(
         )
 
         final_values = engine_result["fields"]
+        validate_universal_invoice_shadow(
+            document_type=document_type,
+            final_values=final_values,
+            collections=engine_result["collections"],
+        )
         collection_validation = engine_result.get(
             "collection_validation",
             {
