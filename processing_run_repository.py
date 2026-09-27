@@ -104,6 +104,26 @@ class ProcessingRunRepository:
             self._session.scalars(statement).all()
         )
 
+    def list_export_runs(
+        self,
+        tenant_id=None,
+    ):
+        statement = select(ProcessingRun)
+
+        if tenant_id is not None:
+            statement = statement.where(
+                ProcessingRun.tenant_id == tenant_id
+            )
+
+        statement = statement.order_by(
+            ProcessingRun.created_at.asc(),
+            ProcessingRun.id.asc(),
+        )
+
+        return list(
+            self._session.scalars(statement).all()
+        )
+
     def list_corrected_reviews(
         self,
         tenant_id: str | None = None,

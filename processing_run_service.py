@@ -125,6 +125,14 @@ class ProcessingRunService:
             tenant_id=tenant_id,
         )
 
+    def export_runs(
+        self,
+        tenant_id=None,
+    ):
+        return self._repository.list_export_runs(
+            tenant_id=tenant_id,
+        )
+
     def extraction_quality_analysis(
         self,
         tenant_id: str | None = None,

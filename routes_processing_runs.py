@@ -2,8 +2,10 @@ from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 
 from extraction_models import ApiErrorResponseModel
+from processing_run_export import stream_processing_runs_csv
 from processing_run_dependencies import (
     ProcessingRunServiceDependency,
     ProcessingRunReviewServiceDependency,
@@ -38,6 +40,47 @@ router = APIRouter(
     prefix="/api/v1/processing-runs",
     tags=["processing-runs"],
 )
+
+
+@router.get(
+    "/export",
+    response_class=StreamingResponse,
+    responses={
+        200: {
+            "description": "Processing runs CSV export",
+            "content": {"text/csv": {}},
+        }
+    },
+)
+def export_processing_runs(
+    processing_run_service: ProcessingRunServiceDependency,
+    principal: OptionalApiKeyPrincipal,
+):
+    enforce_scope_if_authenticated(
+        principal,
+        PROCESSING_RUNS_READ,
+    )
+
+    tenant_id = (
+        principal.tenant_id
+        if principal is not None
+        else "default"
+    )
+
+    processing_runs = processing_run_service.export_runs(
+        tenant_id=tenant_id,
+    )
+
+    return StreamingResponse(
+        stream_processing_runs_csv(processing_runs),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": (
+                'attachment; filename="processing-runs.csv"'
+            ),
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
 
 
 @router.get(

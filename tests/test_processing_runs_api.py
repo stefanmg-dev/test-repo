@@ -23,6 +23,10 @@ def build_run():
         input_format="pdf",
         processing_status="accepted",
         requires_review=False,
+        review_status=None,
+        reviewed_at=None,
+        corrected_values=None,
+        configuration_hash=None,
         started_at=NOW,
         completed_at=NOW,
         duration_ms=123,
@@ -247,3 +251,31 @@ def test_get_extraction_quality_analysis():
             "corrections": 1,
         }
     ]
+
+
+def test_export_processing_runs_as_csv():
+    service = QueryService()
+    service.export_tenant_id = None
+
+    def export_runs(tenant_id=None):
+        service.export_tenant_id = tenant_id
+        return [service.run]
+
+    service.export_runs = export_runs
+    install(service)
+
+    response = TestClient(app).get(
+        "/api/v1/processing-runs/export"
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith(
+        "text/csv"
+    )
+    assert response.headers["content-disposition"] == (
+        'attachment; filename="processing-runs.csv"'
+    )
+    assert service.export_tenant_id == "default"
+    assert "processing_run_id,document_type" in response.text
+    assert str(service.run.id) in response.text
+    assert "raw_text" not in response.text

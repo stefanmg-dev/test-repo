@@ -301,6 +301,31 @@
         }
       }
     },
+    "/api/v1/processing-runs/export": {
+      "get": {
+        "tags": [
+          "processing-runs"
+        ],
+        "summary": "Export Processing Runs",
+        "operationId": "export_processing_runs_api_v1_processing_runs_export_get",
+        "responses": {
+          "200": {
+            "description": "Processing runs CSV export",
+            "content": {
+              "text/csv": {}
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/v1/processing-runs/extraction-quality": {
       "get": {
         "tags": [
