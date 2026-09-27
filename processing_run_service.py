@@ -63,6 +63,9 @@ class ProcessingRunService:
         processing_run.processing_status = processing_status
         processing_run.profile = profile
         processing_run.requires_review = requires_review
+        processing_run.review_status = (
+            "pending" if requires_review else None
+        )
         processing_run.duration_ms = duration_ms
         processing_run.step_timings = step_timings
         processing_run.quality = quality

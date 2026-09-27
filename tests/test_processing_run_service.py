@@ -75,6 +75,7 @@ def test_completes_processing_run():
 
     assert result is processing_run
     assert result.processing_status == "accepted"
+    assert result.review_status is None
     assert result.profile == "telecom_a1"
     assert result.duration_ms == 1250
     assert result.step_timings == {"document_input_ms": 10}

@@ -93,6 +93,31 @@ class ProcessingRun(Base):
         server_default="false",
         index=True,
     )
+    review_status: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+        index=True,
+    )
+    reviewed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    reviewed_by_type: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+    )
+    reviewed_by_subject: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+    review_comment: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    corrected_values: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB,
+        nullable=True,
+    )
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
