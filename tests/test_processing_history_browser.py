@@ -172,7 +172,7 @@ def test_processing_history_browser_smoke(live_server_url):
         ).is_visible()
 
         page.get_by_label("Тип документ").fill("invoice")
-        page.get_by_label("Статус").select_option("accepted")
+        page.get_by_label("Статус", exact=True).select_option("accepted")
         page.get_by_label("Профил").fill("telecom_a1")
         page.get_by_label("Изисква проверка").select_option(
             "false"

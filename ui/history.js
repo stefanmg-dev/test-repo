@@ -13,6 +13,7 @@ const elements = {
     status: byId("filterStatus"),
     profile: byId("filterProfile"),
     review: byId("filterReview"),
+    reviewStatus: byId("filterReviewStatus"),
     clearFilters: byId("clearHistoryFiltersButton"),
     refresh: byId("refreshHistoryButton"),
     rows: byId("historyRows"),
@@ -58,6 +59,7 @@ function buildQuery() {
         processing_status: elements.status.value,
         profile: elements.profile.value.trim(),
         requires_review: elements.review.value,
+        review_status: elements.reviewStatus.value,
     };
     for (const [key, value] of Object.entries(values)) {
         if (value !== "") params.set(key, value);
@@ -176,6 +178,12 @@ async function loadDetail(runId) {
         appendDetail("Step timings", body.step_timings);
         appendDetail("Качество", body.quality);
         appendDetail("Извлечени стойности", body.final_values);
+        appendDetail("Review статус", body.review_status);
+        appendDetail("Коригирани стойности", body.corrected_values);
+        appendDetail("Review коментар", body.review_comment);
+        appendDetail("Проверено на", formatDate(body.reviewed_at));
+        appendDetail("Reviewer тип", body.reviewed_by_type);
+        appendDetail("Reviewer", body.reviewed_by_subject);
         appendDetail("Колекции", body.collections);
         appendDetail("Валидация", body.validation);
         appendDetail("Грешка", body.error);

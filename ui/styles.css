@@ -724,7 +724,7 @@ textarea.form-control {
 
 .history-filters {
     display: grid;
-    grid-template-columns: repeat(4, minmax(150px, 1fr)) auto;
+    grid-template-columns: repeat(5, minmax(140px, 1fr)) auto;
     gap: 14px;
     margin-bottom: 22px;
     padding: 18px;

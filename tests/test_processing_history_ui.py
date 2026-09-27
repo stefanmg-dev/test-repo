@@ -44,3 +44,29 @@ def test_configuration_page_links_to_history():
         encoding="utf-8"
     )
     assert 'href="/ui/history.html"' in content
+
+
+def test_processing_history_supports_review_status_filter():
+    html = HISTORY_HTML.read_text(encoding="utf-8")
+    javascript = HISTORY_JS.read_text(encoding="utf-8")
+
+    assert 'label for="filterReviewStatus"' in html
+    assert 'option value="pending"' in html
+    assert 'option value="approved"' in html
+    assert 'option value="corrected"' in html
+    assert 'option value="rejected"' in html
+
+    assert 'reviewStatus: byId("filterReviewStatus")' in javascript
+    assert "review_status: elements.reviewStatus.value" in javascript
+
+
+def test_processing_history_displays_review_metadata_safely():
+    content = HISTORY_JS.read_text(encoding="utf-8")
+
+    assert 'appendDetail("Review статус", body.review_status)' in content
+    assert (
+        'appendDetail("Коригирани стойности", '
+        "body.corrected_values)"
+    ) in content
+    assert 'appendDetail("Review коментар", body.review_comment)' in content
+    assert "innerHTML" not in content
