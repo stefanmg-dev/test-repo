@@ -33,6 +33,12 @@ class ProcessingRunDetailModel(ProcessingRunListItemModel):
     configuration_hash: str | None = None
     configuration_snapshot: dict[str, Any] | None = None
     configuration_schema_version: str | None = None
+    invoice_schema_version: str | None = None
+    invoice_shadow_validation_status: Literal[
+        "succeeded",
+        "failed",
+        "not_applicable",
+    ] | None = None
     review_comment: str | None = None
     reviewed_at: datetime | None = None
     reviewed_by_type: str | None = None

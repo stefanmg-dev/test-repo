@@ -4180,6 +4180,33 @@
             ],
             "title": "Configuration Schema Version"
           },
+          "invoice_schema_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Schema Version"
+          },
+          "invoice_shadow_validation_status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "succeeded",
+                  "failed",
+                  "not_applicable"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Shadow Validation Status"
+          },
           "review_comment": {
             "anyOf": [
               {

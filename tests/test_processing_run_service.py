@@ -70,6 +70,8 @@ def test_completes_processing_run():
         final_values={"invoice_number": "123"},
         collections={"items": []},
         validation={"valid": True, "errors": {}},
+        invoice_schema_version="1",
+        invoice_shadow_validation_status="succeeded",
         completed_at=completed_at,
     )
 
@@ -79,6 +81,8 @@ def test_completes_processing_run():
     assert result.profile == "telecom_a1"
     assert result.duration_ms == 1250
     assert result.step_timings == {"document_input_ms": 10}
+    assert result.invoice_schema_version == "1"
+    assert result.invoice_shadow_validation_status == "succeeded"
     assert result.completed_at == completed_at
     assert result.error is None
     session.commit.assert_called_once_with()

@@ -29,6 +29,10 @@ def build_run():
         reviewed_at=None,
         corrected_values=None,
         configuration_hash=None,
+        configuration_snapshot=None,
+        configuration_schema_version=None,
+        invoice_schema_version="1",
+        invoice_shadow_validation_status="succeeded",
         started_at=NOW,
         completed_at=NOW,
         duration_ms=123,
@@ -134,6 +138,10 @@ def test_get_processing_run():
     assert response.json()["step_timings"] == {
         "document_input_ms": 10
     }
+    assert response.json()["invoice_schema_version"] == "1"
+    assert response.json()[
+        "invoice_shadow_validation_status"
+    ] == "succeeded"
 
 
 def test_get_processing_run_returns_404():

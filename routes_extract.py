@@ -31,6 +31,7 @@ from extraction_models import (
 )
 from extraction_orchestrator import extract_document_data
 from invoice_mapper import map_extraction_to_universal_invoice
+from invoice_models import INVOICE_SCHEMA_VERSION
 from llm_engine import extract_values
 from ocr_engine import (
     InvalidDocumentInputError,
@@ -337,10 +338,24 @@ async def extract_document(
         )
 
         final_values = engine_result["fields"]
-        validate_universal_invoice_shadow(
+        shadow_validation_result = validate_universal_invoice_shadow(
             document_type=document_type,
             final_values=final_values,
             collections=engine_result["collections"],
+        )
+        invoice_shadow_validation_status = (
+            "not_applicable"
+            if shadow_validation_result is None
+            else (
+                "succeeded"
+                if shadow_validation_result
+                else "failed"
+            )
+        )
+        invoice_schema_version = (
+            INVOICE_SCHEMA_VERSION
+            if document_type == "invoice"
+            else None
         )
         collection_validation = engine_result.get(
             "collection_validation",
@@ -400,6 +415,10 @@ async def extract_document(
             configuration_snapshot=configuration_snapshot,
             configuration_schema_version=(
                 CONFIGURATION_SCHEMA_VERSION
+            ),
+            invoice_schema_version=invoice_schema_version,
+            invoice_shadow_validation_status=(
+                invoice_shadow_validation_status
             ),
         )
         logger.info(

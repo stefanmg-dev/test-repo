@@ -153,6 +153,10 @@ def test_extract_document_persists_and_history_returns_run(
         assert persisted.error is None
         assert len(persisted.configuration_hash) == 64
         assert persisted.configuration_schema_version == "1"
+        assert persisted.invoice_schema_version == "1"
+        assert persisted.invoice_shadow_validation_status == (
+            "succeeded"
+        )
         assert persisted.configuration_snapshot == {
             "schema_version": "1",
             "document_type": "invoice",
@@ -223,6 +227,10 @@ def test_extract_document_persists_and_history_returns_run(
         assert history_body[
             "configuration_schema_version"
         ] == "1"
+        assert history_body["invoice_schema_version"] == "1"
+        assert history_body[
+            "invoice_shadow_validation_status"
+        ] == "succeeded"
         assert history_body["configuration_snapshot"] == (
             persisted.configuration_snapshot
         )

@@ -135,6 +135,16 @@ class ProcessingRun(Base):
         String(20),
         nullable=True,
     )
+    invoice_schema_version: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+    )
+    invoice_shadow_validation_status: Mapped[
+        str | None
+    ] = mapped_column(
+        String(20),
+        nullable=True,
+    )
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

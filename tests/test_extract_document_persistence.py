@@ -151,6 +151,10 @@ def test_successful_extraction_completes_processing_run(
     }
     assert len(completed["configuration_hash"]) == 64
     assert completed["configuration_schema_version"] == "1"
+    assert completed["invoice_schema_version"] == "1"
+    assert completed[
+        "invoice_shadow_validation_status"
+    ] == "succeeded"
     assert completed["configuration_snapshot"][
         "document_type"
     ] == "invoice"
