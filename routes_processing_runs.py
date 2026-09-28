@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 
 from extraction_models import ApiErrorResponseModel
+from invoice_models import UniversalInvoiceModel
 from processing_run_export import stream_processing_runs_csv
 from processing_run_dependencies import (
     ProcessingRunServiceDependency,
@@ -25,6 +26,7 @@ from processing_run_models import (
 from processing_run_service import (
     ProcessingRunNotFoundError,
     ProcessingRunReviewError,
+    UniversalInvoiceUnavailableError,
     ProcessingRunReviewService,
 )
 from security_dependencies import (
@@ -193,6 +195,51 @@ def execute_processing_run_retention(
         deleted_count=result["deleted_count"],
     )
     return result
+
+
+@router.get(
+    "/{run_id}/universal-invoice",
+    response_model=UniversalInvoiceModel,
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Processing run was not found",
+            "model": ApiErrorResponseModel,
+        },
+        status.HTTP_409_CONFLICT: {
+            "description": "Universal invoice is unavailable",
+            "model": ApiErrorResponseModel,
+        },
+    },
+)
+def get_processing_run_universal_invoice(
+    run_id: UUID,
+    processing_run_service: ProcessingRunServiceDependency,
+    principal: OptionalApiKeyPrincipal,
+):
+    enforce_scope_if_authenticated(
+        principal,
+        PROCESSING_RUNS_READ,
+    )
+    tenant_id = (
+        principal.tenant_id
+        if principal is not None
+        else "default"
+    )
+    try:
+        return processing_run_service.get_universal_invoice(
+            run_id,
+            tenant_id=tenant_id,
+        )
+    except ProcessingRunNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except UniversalInvoiceUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
 
 
 @router.get(

@@ -8,7 +8,10 @@ from api import app
 from processing_run_dependencies import (
     get_processing_run_service,
 )
-from processing_run_service import ProcessingRunNotFoundError
+from processing_run_service import (
+    ProcessingRunNotFoundError,
+    UniversalInvoiceUnavailableError,
+)
 from security_dependencies import get_optional_principal
 from security_principal import SecurityPrincipal
 
@@ -119,6 +122,24 @@ class QueryService:
                 f"Processing run '{run_id}' was not found"
             )
         return self.run
+
+    def get_universal_invoice(self, run_id, *, tenant_id=None):
+        if run_id != self.run.id:
+            raise ProcessingRunNotFoundError(
+                f"Processing run '{run_id}' was not found"
+            )
+        if self.run.document_type != "invoice":
+            raise UniversalInvoiceUnavailableError(
+                "Universal invoice is available only for invoice runs"
+            )
+        return {
+            "schema_version": "1",
+            "invoice_number": self.run.final_values["invoice_number"],
+            "services": [],
+            "metering_points": [],
+            "meters": [],
+            "consumption_items": [],
+        }
 
     def list_runs(
         self,
@@ -522,3 +543,43 @@ def test_list_processing_runs_validates_invoice_schema_version():
     )
 
     assert response.status_code == 422
+
+def test_get_processing_run_universal_invoice():
+    service = QueryService()
+    install(service)
+
+    response = TestClient(app).get(
+        f"/api/v1/processing-runs/{service.run.id}/universal-invoice"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["schema_version"] == "1"
+    assert response.json()["invoice_number"] == "123"
+    assert response.json()["services"] == []
+
+
+def test_get_processing_run_universal_invoice_returns_404():
+    service = QueryService()
+    install(service)
+
+    response = TestClient(app).get(
+        f"/api/v1/processing-runs/{uuid4()}/universal-invoice"
+    )
+
+    assert response.status_code == 404
+
+
+def test_get_processing_run_universal_invoice_rejects_non_invoice():
+    run = build_run()
+    run.document_type = "receipt"
+    service = QueryService(run)
+    install(service)
+
+    response = TestClient(app).get(
+        f"/api/v1/processing-runs/{run.id}/universal-invoice"
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == (
+        "Universal invoice is available only for invoice runs"
+    )

@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from app_settings import get_settings
 
 from database_models import ProcessingRun
+from invoice_mapper import map_extraction_to_universal_invoice
+
 from extraction_quality_analysis import (
     aggregate_quality_analysis,
 )
@@ -13,6 +15,10 @@ from processing_run_repository import ProcessingRunRepository
 
 
 class ProcessingRunNotFoundError(LookupError):
+    pass
+
+
+class UniversalInvoiceUnavailableError(ValueError):
     pass
 
 
@@ -137,6 +143,38 @@ class ProcessingRunService:
             run_id,
             tenant_id=tenant_id,
         )
+
+    def get_universal_invoice(
+        self,
+        run_id: UUID,
+        *,
+        tenant_id: str | None = None,
+    ):
+        processing_run = self._get_required(
+            run_id,
+            tenant_id=tenant_id,
+        )
+        if processing_run.document_type != "invoice":
+            raise UniversalInvoiceUnavailableError(
+                "Universal invoice is available only for invoice runs"
+            )
+
+        try:
+            universal_invoice = map_extraction_to_universal_invoice(
+                document_type=processing_run.document_type,
+                final_values=processing_run.final_values or {},
+                collections=processing_run.collections or {},
+            )
+        except Exception as exc:
+            raise UniversalInvoiceUnavailableError(
+                "Universal invoice mapping is unavailable for this run"
+            ) from exc
+
+        if universal_invoice is None:
+            raise UniversalInvoiceUnavailableError(
+                "Universal invoice mapping is unavailable for this run"
+            )
+        return universal_invoice
 
     def export_runs(
         self,

@@ -8,6 +8,7 @@ from database_models import ProcessingRun
 from processing_run_service import (
     ProcessingRunNotFoundError,
     ProcessingRunService,
+    UniversalInvoiceUnavailableError,
 )
 
 
@@ -207,3 +208,41 @@ def test_execute_retention_commits_bounded_delete():
     assert "processing_runs.completed_at" in sql
     assert "processing_runs.review_status" in sql
     session.commit.assert_called_once_with()
+
+def test_universal_invoice_rejects_non_invoice_run():
+    session = build_session()
+    run = ProcessingRun(
+        id=uuid4(),
+        document_type="receipt",
+        filename="receipt.pdf",
+        input_format="pdf",
+        processing_status="accepted",
+        requires_review=False,
+    )
+    session.get.return_value = run
+
+    with pytest.raises(
+        UniversalInvoiceUnavailableError,
+        match="only for invoice runs",
+    ):
+        ProcessingRunService(session).get_universal_invoice(run.id)
+
+
+def test_universal_invoice_maps_persisted_values():
+    session = build_session()
+    run = ProcessingRun(
+        id=uuid4(),
+        document_type="invoice",
+        filename="invoice.pdf",
+        input_format="pdf",
+        processing_status="accepted",
+        requires_review=False,
+        final_values={"invoice_number": "INV-1"},
+        collections={},
+    )
+    session.get.return_value = run
+
+    invoice = ProcessingRunService(session).get_universal_invoice(run.id)
+
+    assert invoice.schema_version == "1"
+    assert invoice.invoice_number == "INV-1"

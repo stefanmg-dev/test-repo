@@ -67,3 +67,39 @@ def test_processing_runs_are_filtered_by_tenant():
             ).delete(synchronize_session=False)
             session.commit()
         session.close()
+
+def test_universal_invoice_is_tenant_scoped():
+    session = SessionLocal()
+    created_ids = []
+    try:
+        service = ProcessingRunService(session)
+        run = service.start_run(
+            document_type="invoice",
+            filename="universal-invoice.pdf",
+            input_format="pdf",
+            tenant_id="tenant-universal",
+        )
+        created_ids.append(run.id)
+        run.final_values = {"invoice_number": "INV-TENANT"}
+        run.collections = {}
+        session.commit()
+
+        invoice = service.get_universal_invoice(
+            run.id,
+            tenant_id="tenant-universal",
+        )
+        assert invoice.invoice_number == "INV-TENANT"
+
+        with pytest.raises(ProcessingRunNotFoundError):
+            service.get_universal_invoice(
+                run.id,
+                tenant_id="other-tenant",
+            )
+    finally:
+        session.rollback()
+        if created_ids:
+            session.query(ProcessingRun).filter(
+                ProcessingRun.id.in_(created_ids)
+            ).delete(synchronize_session=False)
+            session.commit()
+        session.close()
