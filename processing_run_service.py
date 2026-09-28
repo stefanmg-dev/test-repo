@@ -172,6 +172,15 @@ class ProcessingRunService:
             tenant_id=tenant_id,
         )
 
+    def invoice_shadow_summary(
+        self,
+        *,
+        tenant_id: str | None = None,
+    ) -> dict:
+        return self._repository.invoice_shadow_summary(
+            tenant_id=tenant_id,
+        )
+
     def retention_preview(
         self,
         *,

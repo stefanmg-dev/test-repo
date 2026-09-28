@@ -51,8 +51,27 @@ class QueryService:
     def __init__(self, run=None):
         self.run = run or build_run()
         self.list_calls = []
+        self.invoice_shadow_summary_tenant_id = None
         self.retention_preview_tenant_id = None
         self.retention_execute_call = None
+
+    def invoice_shadow_summary(self, *, tenant_id=None):
+        self.invoice_shadow_summary_tenant_id = tenant_id
+        return {
+            "total": 5,
+            "succeeded": 3,
+            "failed": 1,
+            "not_applicable": 1,
+            "success_rate": 0.75,
+            "schema_versions": [
+                {
+                    "schema_version": "1",
+                    "total": 4,
+                    "succeeded": 3,
+                    "failed": 1,
+                }
+            ],
+        }
 
     def retention_preview(self, *, tenant_id=None):
         self.retention_preview_tenant_id = tenant_id
@@ -430,3 +449,30 @@ def test_retention_execution_is_tenant_scoped_for_admin():
         "limit": 25,
         "tenant_id": "tenant-1",
     }
+
+
+def test_get_invoice_shadow_summary_is_tenant_scoped():
+    service = QueryService()
+    install(service)
+
+    response = TestClient(app).get(
+        "/api/v1/processing-runs/invoice-shadow-summary"
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "total": 5,
+        "succeeded": 3,
+        "failed": 1,
+        "not_applicable": 1,
+        "success_rate": 0.75,
+        "schema_versions": [
+            {
+                "schema_version": "1",
+                "total": 4,
+                "succeeded": 3,
+                "failed": 1,
+            }
+        ],
+    }
+    assert service.invoice_shadow_summary_tenant_id == "default"

@@ -219,6 +219,100 @@ class ProcessingRunRepository:
             ),
         }
 
+    def invoice_shadow_summary(
+        self,
+        *,
+        tenant_id: str | None = None,
+    ) -> dict:
+        statement = select(
+            func.count(ProcessingRun.id).label("total"),
+            func.count(ProcessingRun.id)
+            .filter(
+                ProcessingRun.invoice_shadow_validation_status
+                == "succeeded"
+            )
+            .label("succeeded"),
+            func.count(ProcessingRun.id)
+            .filter(
+                ProcessingRun.invoice_shadow_validation_status
+                == "failed"
+            )
+            .label("failed"),
+            func.count(ProcessingRun.id)
+            .filter(
+                ProcessingRun.invoice_shadow_validation_status
+                == "not_applicable"
+            )
+            .label("not_applicable"),
+        ).where(
+            ProcessingRun.invoice_shadow_validation_status.is_not(None)
+        )
+        if tenant_id is not None:
+            statement = statement.where(
+                ProcessingRun.tenant_id == tenant_id
+            )
+        row = self._session.execute(statement).one()
+
+        versions_statement = (
+            select(
+                ProcessingRun.invoice_schema_version.label(
+                    "schema_version"
+                ),
+                func.count(ProcessingRun.id).label("total"),
+                func.count(ProcessingRun.id)
+                .filter(
+                    ProcessingRun.invoice_shadow_validation_status
+                    == "succeeded"
+                )
+                .label("succeeded"),
+                func.count(ProcessingRun.id)
+                .filter(
+                    ProcessingRun.invoice_shadow_validation_status
+                    == "failed"
+                )
+                .label("failed"),
+            )
+            .where(
+                ProcessingRun.invoice_schema_version.is_not(None),
+                ProcessingRun.invoice_shadow_validation_status.in_(
+                    ("succeeded", "failed")
+                ),
+            )
+            .group_by(ProcessingRun.invoice_schema_version)
+            .order_by(ProcessingRun.invoice_schema_version.asc())
+        )
+        if tenant_id is not None:
+            versions_statement = versions_statement.where(
+                ProcessingRun.tenant_id == tenant_id
+            )
+        version_rows = self._session.execute(
+            versions_statement
+        ).all()
+
+        succeeded = int(row.succeeded or 0)
+        failed = int(row.failed or 0)
+        applicable = succeeded + failed
+        return {
+            "total": int(row.total or 0),
+            "succeeded": succeeded,
+            "failed": failed,
+            "not_applicable": int(row.not_applicable or 0),
+            "success_rate": (
+                succeeded / applicable
+                if applicable
+                else None
+            ),
+            "schema_versions": [
+                {
+                    "schema_version": version.schema_version,
+                    "total": int(version.total or 0),
+                    "succeeded": int(version.succeeded or 0),
+                    "failed": int(version.failed or 0),
+                }
+                for version in version_rows
+            ],
+        }
+
     def retention_preview(
         self,
         *,

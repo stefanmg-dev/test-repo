@@ -355,6 +355,35 @@
         ]
       }
     },
+    "/api/v1/processing-runs/invoice-shadow-summary": {
+      "get": {
+        "tags": [
+          "processing-runs"
+        ],
+        "summary": "Get Invoice Shadow Summary",
+        "operationId": "get_invoice_shadow_summary_api_v1_processing_runs_invoice_shadow_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceShadowSummaryModel"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/v1/processing-runs/review-summary": {
       "get": {
         "tags": [
@@ -3879,6 +3908,92 @@
           "input"
         ],
         "title": "InputQualityModel"
+      },
+      "InvoiceShadowSchemaVersionSummaryModel": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "title": "Schema Version"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total"
+          },
+          "succeeded": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Succeeded"
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Failed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "schema_version",
+          "total",
+          "succeeded",
+          "failed"
+        ],
+        "title": "InvoiceShadowSchemaVersionSummaryModel"
+      },
+      "InvoiceShadowSummaryModel": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total"
+          },
+          "succeeded": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Succeeded"
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Failed"
+          },
+          "not_applicable": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Not Applicable"
+          },
+          "success_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Rate"
+          },
+          "schema_versions": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceShadowSchemaVersionSummaryModel"
+            },
+            "type": "array",
+            "title": "Schema Versions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "total",
+          "succeeded",
+          "failed",
+          "not_applicable",
+          "schema_versions"
+        ],
+        "title": "InvoiceShadowSummaryModel"
       },
       "OperationResponse": {
         "properties": {

@@ -58,6 +58,24 @@ class ProcessingRunListResponseModel(BaseModel):
     limit: int = Field(ge=1, le=100)
 
 
+class InvoiceShadowSchemaVersionSummaryModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    schema_version: str
+    total: int = Field(ge=0)
+    succeeded: int = Field(ge=0)
+    failed: int = Field(ge=0)
+
+
+class InvoiceShadowSummaryModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    total: int = Field(ge=0)
+    succeeded: int = Field(ge=0)
+    failed: int = Field(ge=0)
+    not_applicable: int = Field(ge=0)
+    success_rate: float | None = Field(default=None, ge=0, le=1)
+    schema_versions: list[InvoiceShadowSchemaVersionSummaryModel]
+
+
 class ProcessingRunRetentionPreviewModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
     retention_days: int = Field(ge=30, le=3650)

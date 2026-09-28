@@ -298,3 +298,106 @@ def test_retention_execution_is_bounded_and_tenant_scoped():
             ).delete(synchronize_session=False)
             session.commit()
         session.close()
+
+
+def test_invoice_shadow_summary_is_tenant_scoped_in_postgresql():
+    session = SessionLocal()
+    tenant_id = f"shadow-summary-{uuid4()}"
+    other_tenant_id = f"shadow-summary-other-{uuid4()}"
+    created_ids = []
+
+    def add_run(
+        *,
+        tenant,
+        filename,
+        status,
+        schema_version=None,
+    ):
+        run = ProcessingRun(
+            tenant_id=tenant,
+            document_type=(
+                "receipt" if status == "not_applicable" else "invoice"
+            ),
+            filename=filename,
+            input_format="pdf",
+            processing_status="accepted",
+            requires_review=False,
+            invoice_schema_version=schema_version,
+            invoice_shadow_validation_status=status,
+        )
+        session.add(run)
+        session.flush()
+        created_ids.append(run.id)
+
+    try:
+        add_run(
+            tenant=tenant_id,
+            filename="success-1.pdf",
+            status="succeeded",
+            schema_version="1",
+        )
+        add_run(
+            tenant=tenant_id,
+            filename="success-2.pdf",
+            status="succeeded",
+            schema_version="1",
+        )
+        add_run(
+            tenant=tenant_id,
+            filename="failed.pdf",
+            status="failed",
+            schema_version="1",
+        )
+        add_run(
+            tenant=tenant_id,
+            filename="not-applicable.pdf",
+            status="not_applicable",
+        )
+        add_run(
+            tenant=other_tenant_id,
+            filename="other-tenant.pdf",
+            status="failed",
+            schema_version="2",
+        )
+        session.commit()
+
+        result = ProcessingRunService(session).invoice_shadow_summary(
+            tenant_id=tenant_id
+        )
+        empty = ProcessingRunService(session).invoice_shadow_summary(
+            tenant_id=f"empty-{uuid4()}"
+        )
+
+        assert result == {
+            "total": 4,
+            "succeeded": 2,
+            "failed": 1,
+            "not_applicable": 1,
+            "success_rate": 2 / 3,
+            "schema_versions": [
+                {
+                    "schema_version": "1",
+                    "total": 3,
+                    "succeeded": 2,
+                    "failed": 1,
+                }
+            ],
+        }
+        assert empty == {
+            "total": 0,
+            "succeeded": 0,
+            "failed": 0,
+            "not_applicable": 0,
+            "success_rate": None,
+            "schema_versions": [],
+        }
+        assert "final_values" not in result
+        assert "collections" not in result
+    finally:
+        session.rollback()
+        if created_ids:
+            session.query(ProcessingRun).filter(
+                ProcessingRun.id.in_(created_ids)
+            ).delete(synchronize_session=False)
+            session.commit()
+        session.close()
