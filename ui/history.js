@@ -1,6 +1,7 @@
 "use strict";
 
 const HISTORY_URL = "/api/v1/processing-runs";
+const INVOICE_SHADOW_SUMMARY_URL = `${HISTORY_URL}/invoice-shadow-summary`;
 const PAGE_SIZE = 20;
 
 const byId = (id) => document.getElementById(id);
@@ -14,6 +15,8 @@ const elements = {
     profile: byId("filterProfile"),
     review: byId("filterReview"),
     reviewStatus: byId("filterReviewStatus"),
+    invoiceShadowStatus: byId("filterInvoiceShadowStatus"),
+    invoiceSchemaVersion: byId("filterInvoiceSchemaVersion"),
     clearFilters: byId("clearHistoryFiltersButton"),
     refresh: byId("refreshHistoryButton"),
     rows: byId("historyRows"),
@@ -25,6 +28,13 @@ const elements = {
     reviewCorrected: byId("reviewCorrected"),
     reviewRejected: byId("reviewRejected"),
     reviewAverageDuration: byId("reviewAverageDuration"),
+    invoiceShadowSummaryStatus: byId("invoiceShadowSummaryStatus"),
+    invoiceShadowTotal: byId("invoiceShadowTotal"),
+    invoiceShadowSucceeded: byId("invoiceShadowSucceeded"),
+    invoiceShadowFailed: byId("invoiceShadowFailed"),
+    invoiceShadowNotApplicable: byId("invoiceShadowNotApplicable"),
+    invoiceShadowSuccessRate: byId("invoiceShadowSuccessRate"),
+    invoiceShadowSchemaVersions: byId("invoiceShadowSchemaVersions"),
     pageInfo: byId("historyPageInfo"),
     previous: byId("previousPageButton"),
     next: byId("nextPageButton"),
@@ -67,6 +77,10 @@ function buildQuery() {
         profile: elements.profile.value.trim(),
         requires_review: elements.review.value,
         review_status: elements.reviewStatus.value,
+        invoice_shadow_validation_status:
+            elements.invoiceShadowStatus.value,
+        invoice_schema_version:
+            elements.invoiceSchemaVersion.value.trim(),
     };
     for (const [key, value] of Object.entries(values)) {
         if (value !== "") params.set(key, value);
@@ -208,10 +222,57 @@ async function loadReviewSummary() {
     }
 }
 
+function resetInvoiceShadowSummary() {
+    elements.invoiceShadowTotal.textContent = "—";
+    elements.invoiceShadowSucceeded.textContent = "—";
+    elements.invoiceShadowFailed.textContent = "—";
+    elements.invoiceShadowNotApplicable.textContent = "—";
+    elements.invoiceShadowSuccessRate.textContent = "—";
+    elements.invoiceShadowSchemaVersions.textContent = "—";
+}
+
+async function loadInvoiceShadowSummary() {
+    elements.invoiceShadowSummaryStatus.textContent = "Зареждане...";
+
+    try {
+        const response = await window.documentAuth.authenticatedFetch(
+            INVOICE_SHADOW_SUMMARY_URL,
+            { headers: { Accept: "application/json" } },
+        );
+        const body = await readJson(response);
+        if (!response.ok) {
+            throw new Error(body?.detail || `HTTP ${response.status}`);
+        }
+
+        elements.invoiceShadowTotal.textContent = String(body.total);
+        elements.invoiceShadowSucceeded.textContent = String(body.succeeded);
+        elements.invoiceShadowFailed.textContent = String(body.failed);
+        elements.invoiceShadowNotApplicable.textContent =
+            String(body.not_applicable);
+        elements.invoiceShadowSuccessRate.textContent =
+            body.success_rate == null
+                ? "—"
+                : `${(body.success_rate * 100).toFixed(1)}%`;
+        elements.invoiceShadowSchemaVersions.textContent =
+            body.schema_versions.length
+                ? body.schema_versions
+                    .map((item) => `${item.schema_version}: ${item.total}`)
+                    .join(", ")
+                : "—";
+        elements.invoiceShadowSummaryStatus.textContent =
+            "Глобални стойности за tenant-а.";
+    } catch (error) {
+        resetInvoiceShadowSummary();
+        elements.invoiceShadowSummaryStatus.textContent =
+            `Metrics не са достъпни: ${error.message}`;
+    }
+}
+
 async function refreshHistoryPage() {
     await Promise.all([
         loadHistory(),
         loadReviewSummary(),
+        loadInvoiceShadowSummary(),
     ]);
 }
 
@@ -534,6 +595,11 @@ async function loadDetail(runId) {
         elements.dialogBody.replaceChildren();
         appendDetail("Статус", body.processing_status);
         appendDetail("Профил", body.profile);
+        appendDetail("Invoice schema version", body.invoice_schema_version);
+        appendDetail(
+            "Invoice shadow статус",
+            body.invoice_shadow_validation_status,
+        );
         appendDetail("Общо време", body.duration_ms == null ? null : `${body.duration_ms} ms`);
         appendDetail("Step timings", body.step_timings);
         appendDetail("Качество", body.quality);

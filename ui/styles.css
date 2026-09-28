@@ -724,7 +724,7 @@ textarea.form-control {
 
 .history-filters {
     display: grid;
-    grid-template-columns: repeat(5, minmax(140px, 1fr)) auto;
+    grid-template-columns: repeat(4, minmax(140px, 1fr));
     gap: 14px;
     margin-bottom: 22px;
     padding: 18px;
@@ -746,6 +746,8 @@ textarea.form-control {
 .history-status-review { background: #fef3c7; color: #92400e; }
 .history-status-invalid, .history-status-failed { background: #fee2e2; color: #991b1b; }
 .history-status-processing { background: #dbeafe; color: #1d4ed8; }
+.history-status-succeeded { background: #dcfce7; color: #166534; }
+.history-status-not_applicable { background: #f1f5f9; color: #64748b; }
 .history-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 14px; padding: 16px 20px; }
 .history-dialog { width: min(860px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; border: 0; border-radius: var(--radius); box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28); }
 .history-dialog::backdrop { background: rgba(15, 23, 42, 0.52); }
@@ -878,6 +880,10 @@ textarea.form-control {
 
 .review-summary-card strong {
     font-size: 1.45rem;
+}
+
+.shadow-summary-grid {
+    grid-template-columns: repeat(6, minmax(120px, 1fr));
 }
 
 @media (max-width: 1100px) {

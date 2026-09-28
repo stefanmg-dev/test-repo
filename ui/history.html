@@ -94,6 +94,48 @@
                 </div>
             </section>
 
+            <section
+                class="review-summary-panel"
+                aria-labelledby="invoiceShadowSummaryTitle"
+            >
+                <div class="panel-header">
+                    <div>
+                        <h2 id="invoiceShadowSummaryTitle">Universal Invoice shadow validation</h2>
+                        <p
+                            id="invoiceShadowSummaryStatus"
+                            role="status"
+                            aria-live="polite"
+                        >Зареждане...</p>
+                    </div>
+                </div>
+                <div class="review-summary-grid shadow-summary-grid">
+                    <article class="review-summary-card">
+                        <span>Общо</span>
+                        <strong id="invoiceShadowTotal">—</strong>
+                    </article>
+                    <article class="review-summary-card">
+                        <span>Succeeded</span>
+                        <strong id="invoiceShadowSucceeded">—</strong>
+                    </article>
+                    <article class="review-summary-card">
+                        <span>Failed</span>
+                        <strong id="invoiceShadowFailed">—</strong>
+                    </article>
+                    <article class="review-summary-card">
+                        <span>Not applicable</span>
+                        <strong id="invoiceShadowNotApplicable">—</strong>
+                    </article>
+                    <article class="review-summary-card">
+                        <span>Success rate</span>
+                        <strong id="invoiceShadowSuccessRate">—</strong>
+                    </article>
+                    <article class="review-summary-card">
+                        <span>Schema versions</span>
+                        <strong id="invoiceShadowSchemaVersions">—</strong>
+                    </article>
+                </div>
+            </section>
+
             <form id="historyFilters" class="history-filters">
                 <div class="form-group">
                     <label for="filterDocumentType">Тип документ</label>
@@ -131,6 +173,24 @@
                         <option value="corrected">corrected</option>
                         <option value="rejected">rejected</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label for="filterInvoiceShadowStatus">Invoice shadow статус</label>
+                    <select id="filterInvoiceShadowStatus" class="form-control">
+                        <option value="">Всички</option>
+                        <option value="succeeded">succeeded</option>
+                        <option value="failed">failed</option>
+                        <option value="not_applicable">not_applicable</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filterInvoiceSchemaVersion">Invoice schema version</label>
+                    <input
+                        id="filterInvoiceSchemaVersion"
+                        class="form-control"
+                        type="text"
+                        maxlength="20"
+                    >
                 </div>
                 <div class="history-filter-actions">
                     <button class="button button-primary" type="submit">Приложи</button>

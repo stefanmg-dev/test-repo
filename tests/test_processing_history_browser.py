@@ -90,6 +90,21 @@ def test_processing_history_browser_smoke(live_server_url):
         "offset": 0,
         "limit": 20,
     }
+    invoice_shadow_summary_body = {
+        "total": 5,
+        "succeeded": 3,
+        "failed": 1,
+        "not_applicable": 1,
+        "success_rate": 0.75,
+        "schema_versions": [
+            {
+                "schema_version": "1",
+                "total": 4,
+                "succeeded": 3,
+                "failed": 1,
+            }
+        ],
+    }
     review_summary_body = {
         "total_requiring_review": 10,
         "pending": 4,
@@ -111,6 +126,8 @@ def test_processing_history_browser_smoke(live_server_url):
             "warnings": [],
         },
         "review_status": "pending",
+        "invoice_schema_version": "1",
+        "invoice_shadow_validation_status": "succeeded",
         "final_values": {
             "invoice_number": "TEST-123",
             "page_count": 1,
@@ -167,6 +184,14 @@ def test_processing_history_browser_smoke(live_server_url):
         page.route(
             "**/api/v1/processing-runs?*",
             handle_history,
+        )
+        page.route(
+            "**/api/v1/processing-runs/invoice-shadow-summary",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(invoice_shadow_summary_body),
+            ),
         )
         page.route(
             "**/api/v1/processing-runs/review-summary",
@@ -245,6 +270,20 @@ def test_processing_history_browser_smoke(live_server_url):
         assert page.locator(
             "#reviewAverageDuration"
         ).inner_text() == "1.5 s"
+        assert page.locator("#invoiceShadowTotal").inner_text() == "5"
+        assert page.locator(
+            "#invoiceShadowSucceeded"
+        ).inner_text() == "3"
+        assert page.locator("#invoiceShadowFailed").inner_text() == "1"
+        assert page.locator(
+            "#invoiceShadowNotApplicable"
+        ).inner_text() == "1"
+        assert page.locator(
+            "#invoiceShadowSuccessRate"
+        ).inner_text() == "75.0%"
+        assert page.locator(
+            "#invoiceShadowSchemaVersions"
+        ).inner_text() == "1: 4"
 
         page.get_by_label("Тип документ").fill("invoice")
         page.get_by_label("Статус", exact=True).select_option("accepted")
@@ -252,6 +291,10 @@ def test_processing_history_browser_smoke(live_server_url):
         page.get_by_label("Изисква проверка").select_option(
             "false"
         )
+        page.get_by_label(
+            "Invoice shadow статус"
+        ).select_option("succeeded")
+        page.get_by_label("Invoice schema version").fill("1")
         page.get_by_role("button", name="Приложи").click()
         page.wait_for_load_state("networkidle")
 
@@ -260,6 +303,8 @@ def test_processing_history_browser_smoke(live_server_url):
             and "processing_status=accepted" in url
             and "profile=telecom_a1" in url
             and "requires_review=false" in url
+            and "invoice_shadow_validation_status=succeeded" in url
+            and "invoice_schema_version=1" in url
             for url in list_requests
         )
 
@@ -276,6 +321,15 @@ def test_processing_history_browser_smoke(live_server_url):
         ).to_be_visible()
         expect(
             dialog.get_by_text("document_input_ms")
+        ).to_be_visible()
+        expect(
+            dialog.get_by_text("Invoice schema version", exact=True)
+        ).to_be_visible()
+        expect(
+            dialog.get_by_text("Invoice shadow статус", exact=True)
+        ).to_be_visible()
+        expect(
+            dialog.get_by_text("succeeded", exact=True)
         ).to_be_visible()
         invoice_input = page.locator(
             "#reviewField-invoice_number"
