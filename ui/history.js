@@ -144,12 +144,27 @@ function renderRows(items) {
                 : `${item.duration_ms} ms`
         ));
         const actionCell = document.createElement("td");
+        actionCell.className = "history-row-actions";
         const button = document.createElement("button");
         button.type = "button";
         button.className = "button button-small button-secondary";
         button.textContent = "Отвори";
         button.addEventListener("click", () => loadDetail(item.id));
         actionCell.appendChild(button);
+
+        if (item.document_type === "invoice") {
+            const universalInvoiceButton = document.createElement("button");
+            universalInvoiceButton.type = "button";
+            universalInvoiceButton.className = (
+                "button button-small button-secondary"
+            );
+            universalInvoiceButton.textContent = "Universal Invoice";
+            universalInvoiceButton.addEventListener(
+                "click",
+                () => loadUniversalInvoice(item.id, item.filename),
+            );
+            actionCell.appendChild(universalInvoiceButton);
+        }
         row.appendChild(actionCell);
         elements.rows.appendChild(row);
     }
@@ -591,6 +606,29 @@ function appendReviewActions(runId, processingRun) {
         buttons,
     );
     elements.dialogBody.appendChild(section);
+}
+
+
+async function loadUniversalInvoice(runId, filename) {
+    try {
+        const response = await window.documentAuth.authenticatedFetch(
+            `${HISTORY_URL}/${encodeURIComponent(runId)}/universal-invoice`,
+            { headers: { Accept: "application/json" } },
+        );
+        const body = await readJson(response);
+        if (!response.ok) {
+            throw new Error(body?.detail || `HTTP ${response.status}`);
+        }
+
+        elements.dialogTitle.textContent = `${filename} · Universal Invoice`;
+        elements.dialogBody.replaceChildren();
+        appendDetail("Universal Invoice", body);
+        elements.dialog.showModal();
+    } catch (error) {
+        showMessage(
+            `Universal Invoice не е достъпен: ${error.message}`,
+        );
+    }
 }
 
 

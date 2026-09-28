@@ -69,6 +69,7 @@ def test_processing_history_browser_smoke(live_server_url):
     list_requests = []
     console_errors = []
     review_requests = []
+    universal_invoice_requests = []
 
     list_body = {
         "items": [
@@ -243,6 +244,26 @@ def test_processing_history_browser_smoke(live_server_url):
             handle_review,
         )
 
+        def handle_universal_invoice(route):
+            universal_invoice_requests.append(route.request.url)
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({
+                    "schema_version": "1",
+                    "invoice_number": "TEST-123",
+                    "services": [],
+                    "metering_points": [],
+                    "meters": [],
+                    "consumption_items": [],
+                }),
+            )
+
+        page.route(
+            f"**/api/v1/processing-runs/{run_id}/universal-invoice",
+            handle_universal_invoice,
+        )
+
         page.route(
             f"**/api/v1/processing-runs/{run_id}",
             lambda route: route.fulfill(
@@ -317,6 +338,19 @@ def test_processing_history_browser_smoke(live_server_url):
             and "invoice_schema_version=1" in url
             for url in list_requests
         )
+
+        page.get_by_role("button", name="Universal Invoice").click()
+        dialog = page.get_by_role("dialog")
+        expect(dialog).to_be_visible()
+        expect(
+            dialog.get_by_text("Universal Invoice", exact=True)
+        ).to_be_visible()
+        expect(
+            dialog.get_by_text("TEST-123", exact=False)
+        ).to_be_visible()
+        assert len(universal_invoice_requests) == 1
+        dialog.get_by_role("button", name="Затвори").click()
+        expect(dialog).to_be_hidden()
 
         page.evaluate("""
             window.documentAuth.isEnabled = () => true;
@@ -396,4 +430,98 @@ def test_processing_history_browser_smoke(live_server_url):
         ).is_disabled()
         assert console_errors == []
 
+        browser.close()
+
+def test_universal_invoice_preview_handles_unavailable(live_server_url):
+    run_id = "22222222-2222-2222-2222-222222222222"
+    list_body = {
+        "items": [
+            {
+                "id": run_id,
+                "document_type": "invoice",
+                "profile": None,
+                "filename": "unavailable.pdf",
+                "input_format": "pdf",
+                "processing_status": "accepted",
+                "requires_review": False,
+                "started_at": "2026-09-22T18:00:00Z",
+                "completed_at": "2026-09-22T18:00:01Z",
+                "duration_ms": 100,
+                "created_at": "2026-09-22T18:00:00Z",
+            }
+        ],
+        "total": 1,
+        "offset": 0,
+        "limit": 20,
+    }
+
+    with sync_playwright() as playwright:
+        executable = Path(playwright.chromium.executable_path)
+        if not executable.exists():
+            pytest.skip("Playwright Chromium is not installed")
+
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.route(
+            "**/api/v1/processing-runs?*",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(list_body),
+            ),
+        )
+        page.route(
+            "**/api/v1/processing-runs/review-summary",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({
+                    "total_requiring_review": 0,
+                    "pending": 0,
+                    "approved": 0,
+                    "corrected": 0,
+                    "rejected": 0,
+                    "average_review_duration_ms": None,
+                }),
+            ),
+        )
+        page.route(
+            "**/api/v1/processing-runs/invoice-shadow-summary",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({
+                    "total": 0,
+                    "succeeded": 0,
+                    "failed": 0,
+                    "not_applicable": 0,
+                    "success_rate": None,
+                    "schema_versions": [],
+                    "failure_reasons": [],
+                }),
+            ),
+        )
+        page.route(
+            f"**/api/v1/processing-runs/{run_id}/universal-invoice",
+            lambda route: route.fulfill(
+                status=409,
+                content_type="application/json",
+                body=json.dumps({
+                    "detail": (
+                        "Universal invoice mapping is unavailable for this run"
+                    )
+                }),
+            ),
+        )
+
+        page.goto(
+            f"{live_server_url}/ui/history.html",
+            wait_until="networkidle",
+        )
+        page.get_by_role("button", name="Universal Invoice").click()
+
+        expect(page.locator("#historyMessageArea")).to_contain_text(
+            "Universal Invoice не е достъпен"
+        )
+        expect(page.get_by_role("dialog")).to_be_hidden()
         browser.close()
