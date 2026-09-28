@@ -155,6 +155,7 @@ def test_successful_extraction_completes_processing_run(
     assert completed[
         "invoice_shadow_validation_status"
     ] == "succeeded"
+    assert completed["invoice_shadow_validation_reason"] is None
     assert completed["configuration_snapshot"][
         "document_type"
     ] == "invoice"

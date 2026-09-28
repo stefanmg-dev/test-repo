@@ -71,7 +71,8 @@ def test_completes_processing_run():
         collections={"items": []},
         validation={"valid": True, "errors": {}},
         invoice_schema_version="1",
-        invoice_shadow_validation_status="succeeded",
+        invoice_shadow_validation_status="failed",
+        invoice_shadow_validation_reason="validation_error",
         completed_at=completed_at,
     )
 
@@ -82,7 +83,10 @@ def test_completes_processing_run():
     assert result.duration_ms == 1250
     assert result.step_timings == {"document_input_ms": 10}
     assert result.invoice_schema_version == "1"
-    assert result.invoice_shadow_validation_status == "succeeded"
+    assert result.invoice_shadow_validation_status == "failed"
+    assert result.invoice_shadow_validation_reason == (
+        "validation_error"
+    )
     assert result.completed_at == completed_at
     assert result.error is None
     session.commit.assert_called_once_with()

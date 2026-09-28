@@ -3949,6 +3949,30 @@
         ],
         "title": "InputQualityModel"
       },
+      "InvoiceShadowFailureReasonSummaryModel": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "enum": [
+              "validation_error",
+              "mapper_error"
+            ],
+            "title": "Reason"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reason",
+          "count"
+        ],
+        "title": "InvoiceShadowFailureReasonSummaryModel"
+      },
       "InvoiceShadowSchemaVersionSummaryModel": {
         "properties": {
           "schema_version": {
@@ -4022,6 +4046,13 @@
             },
             "type": "array",
             "title": "Schema Versions"
+          },
+          "failure_reasons": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceShadowFailureReasonSummaryModel"
+            },
+            "type": "array",
+            "title": "Failure Reasons"
           }
         },
         "additionalProperties": false,
@@ -4031,7 +4062,8 @@
           "succeeded",
           "failed",
           "not_applicable",
-          "schema_versions"
+          "schema_versions",
+          "failure_reasons"
         ],
         "title": "InvoiceShadowSummaryModel"
       },
@@ -4361,6 +4393,21 @@
               }
             ],
             "title": "Invoice Shadow Validation Status"
+          },
+          "invoice_shadow_validation_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "validation_error",
+                  "mapper_error"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Shadow Validation Reason"
           },
           "review_comment": {
             "anyOf": [

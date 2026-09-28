@@ -32,7 +32,8 @@ def build_run():
         configuration_snapshot=None,
         configuration_schema_version=None,
         invoice_schema_version="1",
-        invoice_shadow_validation_status="succeeded",
+        invoice_shadow_validation_status="failed",
+        invoice_shadow_validation_reason="mapper_error",
         started_at=NOW,
         completed_at=NOW,
         duration_ms=123,
@@ -69,6 +70,12 @@ class QueryService:
                     "total": 4,
                     "succeeded": 3,
                     "failed": 1,
+                }
+            ],
+            "failure_reasons": [
+                {
+                    "reason": "validation_error",
+                    "count": 1,
                 }
             ],
         }
@@ -168,7 +175,10 @@ def test_get_processing_run():
     assert response.json()["invoice_schema_version"] == "1"
     assert response.json()[
         "invoice_shadow_validation_status"
-    ] == "succeeded"
+    ] == "failed"
+    assert response.json()[
+        "invoice_shadow_validation_reason"
+    ] == "mapper_error"
 
 
 def test_get_processing_run_returns_404():
@@ -484,6 +494,12 @@ def test_get_invoice_shadow_summary_is_tenant_scoped():
                 "total": 4,
                 "succeeded": 3,
                 "failed": 1,
+            }
+        ],
+        "failure_reasons": [
+            {
+                "reason": "validation_error",
+                "count": 1,
             }
         ],
     }

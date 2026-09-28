@@ -66,6 +66,7 @@ class ProcessingRunService:
         configuration_schema_version: str | None = None,
         invoice_schema_version: str | None = None,
         invoice_shadow_validation_status: str | None = None,
+        invoice_shadow_validation_reason: str | None = None,
         completed_at: datetime | None = None,
     ) -> ProcessingRun:
         processing_run = self._get_required(run_id)
@@ -93,6 +94,9 @@ class ProcessingRunService:
         )
         processing_run.invoice_shadow_validation_status = (
             invoice_shadow_validation_status
+        )
+        processing_run.invoice_shadow_validation_reason = (
+            invoice_shadow_validation_reason
         )
         processing_run.error = None
         processing_run.completed_at = (

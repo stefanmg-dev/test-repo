@@ -1,5 +1,6 @@
 import logging
 
+from pydantic import ValidationError
 from fastapi.testclient import TestClient
 
 import routes_extract
@@ -25,7 +26,7 @@ def test_invoice_shadow_validation_calls_mapper(monkeypatch):
         collections={"services": []},
     )
 
-    assert result is True
+    assert result == (True, None)
     assert calls == [
         {
             "document_type": "invoice",
@@ -58,7 +59,7 @@ def test_invoice_shadow_validation_failure_is_non_blocking(
             collections={},
         )
 
-    assert result is False
+    assert result == (False, "mapper_error")
     record = next(
         record
         for record in caplog.records
@@ -70,6 +71,33 @@ def test_invoice_shadow_validation_failure_is_non_blocking(
     assert "document values must not be logged" not in (
         record.getMessage()
     )
+
+
+def test_invoice_shadow_validation_classifies_validation_error(
+    monkeypatch,
+):
+    validation_error = ValidationError.from_exception_data(
+        "UniversalInvoiceModel",
+        [
+            {
+                "type": "string_type",
+                "loc": ("supplier_name",),
+                "input": 123,
+            }
+        ],
+    )
+
+    monkeypatch.setattr(
+        routes_extract,
+        "map_extraction_to_universal_invoice",
+        lambda **kwargs: (_ for _ in ()).throw(validation_error),
+    )
+
+    assert routes_extract.validate_universal_invoice_shadow(
+        document_type="invoice",
+        final_values={},
+        collections={},
+    ) == (False, "validation_error")
 
 
 def test_non_invoice_shadow_validation_skips_mapper(monkeypatch):
@@ -88,7 +116,7 @@ def test_non_invoice_shadow_validation_skips_mapper(monkeypatch):
         collections={},
     )
 
-    assert result is None
+    assert result == (None, None)
 
 
 def test_invoice_endpoint_survives_shadow_validation_failure(

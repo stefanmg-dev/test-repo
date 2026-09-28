@@ -2,6 +2,8 @@ import logging
 from pathlib import Path
 from time import perf_counter
 
+from pydantic import ValidationError
+
 from fastapi import (
     APIRouter,
     File,
@@ -81,9 +83,9 @@ def validate_universal_invoice_shadow(
     document_type: str,
     final_values: dict,
     collections: dict,
-) -> bool | None:
+) -> tuple[bool | None, str | None]:
     if document_type != "invoice":
-        return None
+        return None, None
 
     try:
         map_extraction_to_universal_invoice(
@@ -91,6 +93,15 @@ def validate_universal_invoice_shadow(
             final_values=final_values,
             collections=collections,
         )
+    except ValidationError as exc:
+        logger.warning(
+            "Universal invoice shadow validation failed",
+            extra={
+                "event": "invoice.shadow_validation_failed",
+                "error_type": type(exc).__name__,
+            },
+        )
+        return False, "validation_error"
     except Exception as exc:
         logger.warning(
             "Universal invoice shadow validation failed",
@@ -99,7 +110,7 @@ def validate_universal_invoice_shadow(
                 "error_type": type(exc).__name__,
             },
         )
-        return False
+        return False, "mapper_error"
 
     logger.info(
         "Universal invoice shadow validation succeeded",
@@ -107,7 +118,7 @@ def validate_universal_invoice_shadow(
             "event": "invoice.shadow_validation_succeeded",
         },
     )
-    return True
+    return True, None
 
 
 def get_extraction_document_config(
@@ -338,7 +349,10 @@ async def extract_document(
         )
 
         final_values = engine_result["fields"]
-        shadow_validation_result = validate_universal_invoice_shadow(
+        (
+            shadow_validation_result,
+            invoice_shadow_validation_reason,
+        ) = validate_universal_invoice_shadow(
             document_type=document_type,
             final_values=final_values,
             collections=engine_result["collections"],
@@ -419,6 +433,9 @@ async def extract_document(
             invoice_schema_version=invoice_schema_version,
             invoice_shadow_validation_status=(
                 invoice_shadow_validation_status
+            ),
+            invoice_shadow_validation_reason=(
+                invoice_shadow_validation_reason
             ),
         )
         logger.info(

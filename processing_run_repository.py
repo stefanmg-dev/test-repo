@@ -295,6 +295,35 @@ class ProcessingRunRepository:
             versions_statement
         ).all()
 
+        reasons_statement = (
+            select(
+                ProcessingRun.invoice_shadow_validation_reason.label(
+                    "reason"
+                ),
+                func.count(ProcessingRun.id).label("count"),
+            )
+            .where(
+                ProcessingRun.invoice_shadow_validation_status
+                == "failed",
+                ProcessingRun.invoice_shadow_validation_reason.is_not(
+                    None
+                ),
+            )
+            .group_by(
+                ProcessingRun.invoice_shadow_validation_reason
+            )
+            .order_by(
+                ProcessingRun.invoice_shadow_validation_reason.asc()
+            )
+        )
+        if tenant_id is not None:
+            reasons_statement = reasons_statement.where(
+                ProcessingRun.tenant_id == tenant_id
+            )
+        reason_rows = self._session.execute(
+            reasons_statement
+        ).all()
+
         succeeded = int(row.succeeded or 0)
         failed = int(row.failed or 0)
         applicable = succeeded + failed
@@ -316,6 +345,13 @@ class ProcessingRunRepository:
                     "failed": int(version.failed or 0),
                 }
                 for version in version_rows
+            ],
+            "failure_reasons": [
+                {
+                    "reason": reason.reason,
+                    "count": int(reason.count or 0),
+                }
+                for reason in reason_rows
             ],
         }
 

@@ -39,6 +39,10 @@ class ProcessingRunDetailModel(ProcessingRunListItemModel):
         "failed",
         "not_applicable",
     ] | None = None
+    invoice_shadow_validation_reason: Literal[
+        "validation_error",
+        "mapper_error",
+    ] | None = None
     review_comment: str | None = None
     reviewed_at: datetime | None = None
     reviewed_by_type: str | None = None
@@ -66,6 +70,15 @@ class InvoiceShadowSchemaVersionSummaryModel(BaseModel):
     failed: int = Field(ge=0)
 
 
+class InvoiceShadowFailureReasonSummaryModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: Literal[
+        "validation_error",
+        "mapper_error",
+    ]
+    count: int = Field(ge=0)
+
+
 class InvoiceShadowSummaryModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
     total: int = Field(ge=0)
@@ -74,6 +87,9 @@ class InvoiceShadowSummaryModel(BaseModel):
     not_applicable: int = Field(ge=0)
     success_rate: float | None = Field(default=None, ge=0, le=1)
     schema_versions: list[InvoiceShadowSchemaVersionSummaryModel]
+    failure_reasons: list[
+        InvoiceShadowFailureReasonSummaryModel
+    ]
 
 
 class ProcessingRunRetentionPreviewModel(BaseModel):

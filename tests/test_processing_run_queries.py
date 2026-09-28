@@ -126,9 +126,14 @@ def test_invoice_shadow_summary_is_aggregated_and_tenant_scoped():
         succeeded=3,
         failed=1,
     )
+    reason_row = Mock(
+        reason="validation_error",
+        count=1,
+    )
     session.execute.side_effect = [
         Mock(one=Mock(return_value=status_row)),
         Mock(all=Mock(return_value=[version_row])),
+        Mock(all=Mock(return_value=[reason_row])),
     ]
 
     result = ProcessingRunService(session).invoice_shadow_summary(
@@ -149,8 +154,14 @@ def test_invoice_shadow_summary_is_aggregated_and_tenant_scoped():
                 "failed": 1,
             }
         ],
+        "failure_reasons": [
+            {
+                "reason": "validation_error",
+                "count": 1,
+            }
+        ],
     }
-    assert session.execute.call_count == 2
+    assert session.execute.call_count == 3
     for call in session.execute.call_args_list:
         sql = str(call.args[0])
         assert "processing_runs.tenant_id" in sql
@@ -168,6 +179,7 @@ def test_invoice_shadow_summary_handles_no_results():
     session.execute.side_effect = [
         Mock(one=Mock(return_value=status_row)),
         Mock(all=Mock(return_value=[])),
+        Mock(all=Mock(return_value=[])),
     ]
 
     result = ProcessingRunService(session).invoice_shadow_summary(
@@ -177,3 +189,4 @@ def test_invoice_shadow_summary_handles_no_results():
     assert result["total"] == 0
     assert result["success_rate"] is None
     assert result["schema_versions"] == []
+    assert result["failure_reasons"] == []

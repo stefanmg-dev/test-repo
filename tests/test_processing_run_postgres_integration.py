@@ -312,6 +312,7 @@ def test_invoice_shadow_summary_is_tenant_scoped_in_postgresql():
         filename,
         status,
         schema_version=None,
+        reason=None,
     ):
         run = ProcessingRun(
             tenant_id=tenant,
@@ -324,6 +325,7 @@ def test_invoice_shadow_summary_is_tenant_scoped_in_postgresql():
             requires_review=False,
             invoice_schema_version=schema_version,
             invoice_shadow_validation_status=status,
+            invoice_shadow_validation_reason=reason,
         )
         session.add(run)
         session.flush()
@@ -347,6 +349,7 @@ def test_invoice_shadow_summary_is_tenant_scoped_in_postgresql():
             filename="failed.pdf",
             status="failed",
             schema_version="1",
+            reason="validation_error",
         )
         add_run(
             tenant=tenant_id,
@@ -358,6 +361,7 @@ def test_invoice_shadow_summary_is_tenant_scoped_in_postgresql():
             filename="other-tenant.pdf",
             status="failed",
             schema_version="2",
+            reason="mapper_error",
         )
         session.commit()
 
@@ -382,6 +386,12 @@ def test_invoice_shadow_summary_is_tenant_scoped_in_postgresql():
                     "failed": 1,
                 }
             ],
+            "failure_reasons": [
+                {
+                    "reason": "validation_error",
+                    "count": 1,
+                }
+            ],
         }
         assert empty == {
             "total": 0,
@@ -390,6 +400,7 @@ def test_invoice_shadow_summary_is_tenant_scoped_in_postgresql():
             "not_applicable": 0,
             "success_rate": None,
             "schema_versions": [],
+            "failure_reasons": [],
         }
         assert "final_values" not in result
         assert "collections" not in result
