@@ -1,14 +1,16 @@
 import csv
 import io
 import json
+
+import pytest
 from datetime import datetime, timezone
 from types import SimpleNamespace
 from uuid import uuid4
 
 from processing_run_export import (
     EXPORT_COLUMNS,
+    render_universal_invoice_feedback_jsonl,
     stream_processing_runs_csv,
-    stream_universal_invoice_feedback_jsonl,
 )
 
 
@@ -93,8 +95,8 @@ def test_neutralizes_spreadsheet_formula_prefixes():
     assert rows[0]["filename"] == "'=DANGEROUS()"
 
 def parse_feedback_jsonl(processing_runs):
-    content = "".join(
-        stream_universal_invoice_feedback_jsonl(processing_runs)
+    content = render_universal_invoice_feedback_jsonl(
+        processing_runs
     )
     return [json.loads(line) for line in content.splitlines()]
 
@@ -105,6 +107,7 @@ def test_exports_deterministic_universal_invoice_feedback_jsonl():
     assert rows == [
         {
             "configuration_hash": "abc123",
+            "feedback_schema_version": "1",
             "invoice_schema_version": "1",
             "original_universal_invoice": {
                 "abonat_number": None,
@@ -142,3 +145,13 @@ def test_exports_deterministic_universal_invoice_feedback_jsonl():
     assert "filename" not in serialized
     assert "raw_text" not in serialized
     assert "error" not in serialized
+
+def test_feedback_jsonl_is_atomic_when_mapping_fails():
+    valid = make_run()
+    invalid = make_run({
+        "id": uuid4(),
+        "corrected_values": {"invoice_number": ["invalid"]},
+    })
+
+    with pytest.raises(Exception):
+        render_universal_invoice_feedback_jsonl([valid, invalid])

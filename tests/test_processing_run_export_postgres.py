@@ -101,6 +101,7 @@ def test_universal_invoice_feedback_export_is_tenant_scoped():
             collections={},
             invoice_schema_version="1",
             configuration_hash="feedback-hash",
+            invoice_shadow_validation_status="succeeded",
         )
         session.add(run)
         session.flush()
@@ -119,10 +120,51 @@ def test_universal_invoice_feedback_export_is_tenant_scoped():
             .export_universal_invoice_feedback(tenant_id=tenant_id)
         )
 
-        assert [run.id for run in exported] == [
-            approved.id,
-            corrected.id,
-        ]
+        lines = exported.splitlines()
+
+        assert len(lines) == 2
+        assert str(approved.id) in lines[0]
+        assert str(corrected.id) in lines[1]
+        assert "rejected.pdf" not in exported
+        assert "other.pdf" not in exported
+    finally:
+        session.rollback()
+        if created_ids:
+            session.query(ProcessingRun).filter(
+                ProcessingRun.id.in_(created_ids)
+            ).delete(synchronize_session=False)
+            session.commit()
+        session.close()
+
+def test_feedback_export_excludes_unsuccessful_shadow_runs():
+    session = SessionLocal()
+    tenant_id = f"feedback-shadow-{uuid4()}"
+    created_ids = []
+    try:
+        run = ProcessingRun(
+            tenant_id=tenant_id,
+            document_type="invoice",
+            filename="failed-shadow.pdf",
+            input_format="pdf",
+            processing_status="review",
+            requires_review=True,
+            review_status="approved",
+            reviewed_at=datetime.now(timezone.utc),
+            reviewed_by_type="user",
+            final_values={"invoice_number": "INV-1"},
+            collections={},
+            invoice_schema_version="1",
+            invoice_shadow_validation_status="failed",
+        )
+        session.add(run)
+        session.commit()
+        created_ids.append(run.id)
+
+        content = ProcessingRunService(
+            session
+        ).export_universal_invoice_feedback(tenant_id=tenant_id)
+
+        assert content == ""
     finally:
         session.rollback()
         if created_ids:

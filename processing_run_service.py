@@ -7,6 +7,9 @@ from app_settings import get_settings
 
 from database_models import ProcessingRun
 from invoice_mapper import map_extraction_to_universal_invoice
+from processing_run_export import (
+    render_universal_invoice_feedback_jsonl,
+)
 
 from extraction_quality_analysis import (
     aggregate_quality_analysis,
@@ -19,6 +22,10 @@ class ProcessingRunNotFoundError(LookupError):
 
 
 class UniversalInvoiceUnavailableError(ValueError):
+    pass
+
+
+class UniversalInvoiceFeedbackExportError(ValueError):
     pass
 
 
@@ -188,10 +195,20 @@ class ProcessingRunService:
         self,
         *,
         tenant_id: str | None = None,
-    ):
-        return self._repository.list_universal_invoice_feedback_runs(
-            tenant_id=tenant_id,
+    ) -> str:
+        processing_runs = (
+            self._repository.list_universal_invoice_feedback_runs(
+                tenant_id=tenant_id,
+            )
         )
+        try:
+            return render_universal_invoice_feedback_jsonl(
+                processing_runs
+            )
+        except Exception as exc:
+            raise UniversalInvoiceFeedbackExportError(
+                "Universal invoice feedback export is unavailable"
+            ) from exc
 
     def extraction_quality_analysis(
         self,

@@ -11,6 +11,7 @@ from processing_run_dependencies import (
 from processing_run_service import (
     ProcessingRunNotFoundError,
     UniversalInvoiceUnavailableError,
+    UniversalInvoiceFeedbackExportError,
 )
 from security_dependencies import get_optional_principal
 from security_principal import SecurityPrincipal
@@ -597,7 +598,13 @@ def test_export_universal_invoice_feedback_as_jsonl():
 
     def export_feedback(*, tenant_id=None):
         service.feedback_export_tenant_id = tenant_id
-        return [service.run]
+        return (
+            '{"feedback_schema_version":"1",'
+            '"original_universal_invoice":{'
+            '"invoice_number":"123"},'
+            '"reviewed_universal_invoice":{'
+            '"invoice_number":"124"}}\n'
+        )
 
     service.export_universal_invoice_feedback = export_feedback
     install(service)
@@ -616,7 +623,30 @@ def test_export_universal_invoice_feedback_as_jsonl():
     )
     assert service.feedback_export_tenant_id == "default"
     payload = response.text
+    assert '"feedback_schema_version":"1"' in payload
     assert '"invoice_number":"123"' in payload
     assert '"invoice_number":"124"' in payload
     assert "invoice.pdf" not in payload
     assert "raw_text" not in payload
+
+def test_feedback_export_returns_atomic_409():
+    service = QueryService()
+
+    def fail_export(*, tenant_id=None):
+        raise UniversalInvoiceFeedbackExportError(
+            "Universal invoice feedback export is unavailable"
+        )
+
+    service.export_universal_invoice_feedback = fail_export
+    install(service)
+
+    response = TestClient(app).get(
+        "/api/v1/processing-runs/"
+        "universal-invoice-feedback-export"
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": "Universal invoice feedback export is unavailable"
+    }
+    assert "feedback_schema_version" not in response.text

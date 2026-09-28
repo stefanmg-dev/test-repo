@@ -2,13 +2,12 @@ from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 
 from extraction_models import ApiErrorResponseModel
 from invoice_models import UniversalInvoiceModel
 from processing_run_export import (
     stream_processing_runs_csv,
-    stream_universal_invoice_feedback_jsonl,
 )
 from processing_run_dependencies import (
     ProcessingRunServiceDependency,
@@ -30,6 +29,7 @@ from processing_run_service import (
     ProcessingRunNotFoundError,
     ProcessingRunReviewError,
     UniversalInvoiceUnavailableError,
+    UniversalInvoiceFeedbackExportError,
     ProcessingRunReviewService,
 )
 from security_dependencies import (
@@ -116,13 +116,19 @@ def export_universal_invoice_feedback(
         if principal is not None
         else "default"
     )
-    processing_runs = (
-        processing_run_service.export_universal_invoice_feedback(
-            tenant_id=tenant_id,
+    try:
+        content = (
+            processing_run_service.export_universal_invoice_feedback(
+                tenant_id=tenant_id,
+            )
         )
-    )
-    return StreamingResponse(
-        stream_universal_invoice_feedback_jsonl(processing_runs),
+    except UniversalInvoiceFeedbackExportError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+    return Response(
+        content=content,
         media_type="application/x-ndjson",
         headers={
             "Content-Disposition": (

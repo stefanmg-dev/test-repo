@@ -7,6 +7,9 @@ from typing import Any
 from invoice_mapper import map_extraction_to_universal_invoice
 
 
+UNIVERSAL_INVOICE_FEEDBACK_SCHEMA_VERSION = "1"
+
+
 EXPORT_COLUMNS = (
     "processing_run_id",
     "document_type",
@@ -107,6 +110,9 @@ def universal_invoice_feedback_record(processing_run):
         collections=processing_run.collections or {},
     )
     return {
+        "feedback_schema_version": (
+            UNIVERSAL_INVOICE_FEEDBACK_SCHEMA_VERSION
+        ),
         "processing_run_id": str(processing_run.id),
         "configuration_hash": processing_run.configuration_hash,
         "invoice_schema_version": (
@@ -132,17 +138,30 @@ def universal_invoice_feedback_record(processing_run):
     }
 
 
-def stream_universal_invoice_feedback_jsonl(
+def render_universal_invoice_feedback_jsonl(
     processing_runs: Iterable,
-):
-    for processing_run in processing_runs:
-        yield json.dumps(
+) -> str:
+    lines = [
+        json.dumps(
             universal_invoice_feedback_record(processing_run),
             ensure_ascii=False,
             sort_keys=True,
             separators=(",", ":"),
             allow_nan=False,
-        ) + "\n"
+        )
+        for processing_run in processing_runs
+    ]
+    return "" if not lines else "\n".join(lines) + "\n"
+
+
+def stream_universal_invoice_feedback_jsonl(
+    processing_runs: Iterable,
+):
+    content = render_universal_invoice_feedback_jsonl(
+        processing_runs
+    )
+    if content:
+        yield content
 
 
 def stream_processing_runs_csv(

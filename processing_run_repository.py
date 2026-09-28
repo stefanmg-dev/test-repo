@@ -141,6 +141,8 @@ class ProcessingRunRepository:
             ProcessingRun.review_status.in_(("approved", "corrected")),
             ProcessingRun.reviewed_at.is_not(None),
             ProcessingRun.final_values.is_not(None),
+            ProcessingRun.invoice_shadow_validation_status
+            == "succeeded",
         )
         if tenant_id is not None:
             statement = statement.where(
