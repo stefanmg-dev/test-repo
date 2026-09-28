@@ -583,3 +583,40 @@ def test_get_processing_run_universal_invoice_rejects_non_invoice():
     assert response.json()["detail"] == (
         "Universal invoice is available only for invoice runs"
     )
+
+def test_export_universal_invoice_feedback_as_jsonl():
+    service = QueryService()
+    service.run.review_status = "corrected"
+    service.run.reviewed_at = NOW
+    service.run.reviewed_by_type = "user"
+    service.run.configuration_hash = "hash-a"
+    service.run.invoice_schema_version = "1"
+    service.run.collections = {}
+    service.run.corrected_values = {"invoice_number": "124"}
+    service.feedback_export_tenant_id = None
+
+    def export_feedback(*, tenant_id=None):
+        service.feedback_export_tenant_id = tenant_id
+        return [service.run]
+
+    service.export_universal_invoice_feedback = export_feedback
+    install(service)
+
+    response = TestClient(app).get(
+        "/api/v1/processing-runs/"
+        "universal-invoice-feedback-export"
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith(
+        "application/x-ndjson"
+    )
+    assert response.headers["content-disposition"] == (
+        'attachment; filename="universal-invoice-feedback.jsonl"'
+    )
+    assert service.feedback_export_tenant_id == "default"
+    payload = response.text
+    assert '"invoice_number":"123"' in payload
+    assert '"invoice_number":"124"' in payload
+    assert "invoice.pdf" not in payload
+    assert "raw_text" not in payload

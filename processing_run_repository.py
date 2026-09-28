@@ -131,6 +131,27 @@ class ProcessingRunRepository:
             self._session.scalars(statement).all()
         )
 
+    def list_universal_invoice_feedback_runs(
+        self,
+        *,
+        tenant_id: str | None = None,
+    ) -> list[ProcessingRun]:
+        statement = select(ProcessingRun).where(
+            ProcessingRun.document_type == "invoice",
+            ProcessingRun.review_status.in_(("approved", "corrected")),
+            ProcessingRun.reviewed_at.is_not(None),
+            ProcessingRun.final_values.is_not(None),
+        )
+        if tenant_id is not None:
+            statement = statement.where(
+                ProcessingRun.tenant_id == tenant_id
+            )
+        statement = statement.order_by(
+            ProcessingRun.reviewed_at.asc(),
+            ProcessingRun.id.asc(),
+        )
+        return list(self._session.scalars(statement).all())
+
     def list_corrected_reviews(
         self,
         tenant_id: str | None = None,

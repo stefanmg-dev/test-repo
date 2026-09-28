@@ -1,5 +1,6 @@
 import csv
 import io
+import json
 from datetime import datetime, timezone
 from types import SimpleNamespace
 from uuid import uuid4
@@ -7,6 +8,7 @@ from uuid import uuid4
 from processing_run_export import (
     EXPORT_COLUMNS,
     stream_processing_runs_csv,
+    stream_universal_invoice_feedback_jsonl,
 )
 
 
@@ -25,6 +27,9 @@ def make_run(overrides=None):
         "completed_at": NOW,
         "reviewed_at": NOW,
         "configuration_hash": "abc123",
+        "invoice_schema_version": "1",
+        "reviewed_by_type": "user",
+        "collections": {},
         "final_values": {
             "invoice_number": "ORIGINAL",
         },
@@ -86,3 +91,54 @@ def test_neutralizes_spreadsheet_formula_prefixes():
     ])
 
     assert rows[0]["filename"] == "'=DANGEROUS()"
+
+def parse_feedback_jsonl(processing_runs):
+    content = "".join(
+        stream_universal_invoice_feedback_jsonl(processing_runs)
+    )
+    return [json.loads(line) for line in content.splitlines()]
+
+
+def test_exports_deterministic_universal_invoice_feedback_jsonl():
+    rows = parse_feedback_jsonl([make_run()])
+
+    assert rows == [
+        {
+            "configuration_hash": "abc123",
+            "invoice_schema_version": "1",
+            "original_universal_invoice": {
+                "abonat_number": None,
+                "business_partner_number": None,
+                "client_number": None,
+                "consumption_items": [],
+                "contract_account_number": None,
+                "contract_number": None,
+                "customer_address": None,
+                "customer_name": None,
+                "due_date": None,
+                "installation_number": None,
+                "invoice_number": "ORIGINAL",
+                "issue_date": None,
+                "metering_points": [],
+                "meters": [],
+                "schema_version": "1",
+                "services": [],
+                "supplier_id": None,
+                "supplier_name": None,
+                "total_amount": None,
+                "total_consumption": None,
+            },
+            "processing_run_id": str(rows[0]["processing_run_id"]),
+            "review_status": "corrected",
+            "reviewed_at": NOW.isoformat(),
+            "reviewed_by_type": "user",
+            "reviewed_universal_invoice": {
+                **rows[0]["original_universal_invoice"],
+                "invoice_number": "CORRECTED",
+            },
+        }
+    ]
+    serialized = json.dumps(rows[0], ensure_ascii=False)
+    assert "filename" not in serialized
+    assert "raw_text" not in serialized
+    assert "error" not in serialized

@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timezone
 from uuid import uuid4
 
 import pytest
@@ -72,4 +73,61 @@ def test_export_runs_is_tenant_isolated():
             ).delete(synchronize_session=False)
             session.commit()
 
+        session.close()
+
+def test_universal_invoice_feedback_export_is_tenant_scoped():
+    session = SessionLocal()
+    tenant_id = f"feedback-{uuid4()}"
+    other_tenant_id = f"feedback-other-{uuid4()}"
+    created_ids = []
+
+    def add_run(tenant, status, filename):
+        run = ProcessingRun(
+            tenant_id=tenant,
+            document_type="invoice",
+            filename=filename,
+            input_format="pdf",
+            processing_status="review",
+            requires_review=True,
+            review_status=status,
+            reviewed_at=datetime.now(timezone.utc),
+            reviewed_by_type="user",
+            final_values={"invoice_number": filename},
+            corrected_values=(
+                {"invoice_number": f"corrected-{filename}"}
+                if status == "corrected"
+                else None
+            ),
+            collections={},
+            invoice_schema_version="1",
+            configuration_hash="feedback-hash",
+        )
+        session.add(run)
+        session.flush()
+        created_ids.append(run.id)
+        return run
+
+    try:
+        approved = add_run(tenant_id, "approved", "approved.pdf")
+        corrected = add_run(tenant_id, "corrected", "corrected.pdf")
+        add_run(tenant_id, "rejected", "rejected.pdf")
+        add_run(other_tenant_id, "corrected", "other.pdf")
+        session.commit()
+
+        exported = (
+            ProcessingRunService(session)
+            .export_universal_invoice_feedback(tenant_id=tenant_id)
+        )
+
+        assert [run.id for run in exported] == [
+            approved.id,
+            corrected.id,
+        ]
+    finally:
+        session.rollback()
+        if created_ids:
+            session.query(ProcessingRun).filter(
+                ProcessingRun.id.in_(created_ids)
+            ).delete(synchronize_session=False)
+            session.commit()
         session.close()

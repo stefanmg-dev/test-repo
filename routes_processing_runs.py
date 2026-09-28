@@ -6,7 +6,10 @@ from fastapi.responses import StreamingResponse
 
 from extraction_models import ApiErrorResponseModel
 from invoice_models import UniversalInvoiceModel
-from processing_run_export import stream_processing_runs_csv
+from processing_run_export import (
+    stream_processing_runs_csv,
+    stream_universal_invoice_feedback_jsonl,
+)
 from processing_run_dependencies import (
     ProcessingRunServiceDependency,
     ProcessingRunReviewServiceDependency,
@@ -84,6 +87,47 @@ def export_processing_runs(
         headers={
             "Content-Disposition": (
                 'attachment; filename="processing-runs.csv"'
+            ),
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+@router.get(
+    "/universal-invoice-feedback-export",
+    response_class=StreamingResponse,
+    responses={
+        200: {
+            "description": "Universal Invoice feedback JSONL export",
+            "content": {"application/x-ndjson": {}},
+        }
+    },
+)
+def export_universal_invoice_feedback(
+    processing_run_service: ProcessingRunServiceDependency,
+    principal: OptionalApiKeyPrincipal,
+):
+    enforce_scope_if_authenticated(
+        principal,
+        PROCESSING_RUNS_READ,
+    )
+    tenant_id = (
+        principal.tenant_id
+        if principal is not None
+        else "default"
+    )
+    processing_runs = (
+        processing_run_service.export_universal_invoice_feedback(
+            tenant_id=tenant_id,
+        )
+    )
+    return StreamingResponse(
+        stream_universal_invoice_feedback_jsonl(processing_runs),
+        media_type="application/x-ndjson",
+        headers={
+            "Content-Disposition": (
+                "attachment; "
+                'filename="universal-invoice-feedback.jsonl"'
             ),
             "X-Content-Type-Options": "nosniff",
         },

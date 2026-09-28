@@ -184,6 +184,15 @@ class ProcessingRunService:
             tenant_id=tenant_id,
         )
 
+    def export_universal_invoice_feedback(
+        self,
+        *,
+        tenant_id: str | None = None,
+    ):
+        return self._repository.list_universal_invoice_feedback_runs(
+            tenant_id=tenant_id,
+        )
+
     def extraction_quality_analysis(
         self,
         tenant_id: str | None = None,
