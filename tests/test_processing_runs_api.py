@@ -122,6 +122,8 @@ class QueryService:
         processing_status=None,
         profile=None,
         requires_review=None, review_status=None,
+        invoice_shadow_validation_status=None,
+        invoice_schema_version=None,
         tenant_id=None,
     ):
         self.list_calls.append(
@@ -132,6 +134,12 @@ class QueryService:
                 "processing_status": processing_status,
                 "profile": profile,
                 "requires_review": requires_review,
+                "invoice_shadow_validation_status": (
+                    invoice_shadow_validation_status
+                ),
+                "invoice_schema_version": (
+                    invoice_schema_version
+                ),
                 "tenant_id": tenant_id,
             }
         )
@@ -188,6 +196,8 @@ def test_list_processing_runs_uses_pagination():
         "&processing_status=accepted"
         "&profile=telecom_a1"
         "&requires_review=false"
+        "&invoice_shadow_validation_status=succeeded"
+        "&invoice_schema_version=1"
     )
 
     assert response.status_code == 200
@@ -206,6 +216,8 @@ def test_list_processing_runs_uses_pagination():
             "processing_status": "accepted",
             "profile": "telecom_a1",
             "requires_review": False,
+            "invoice_shadow_validation_status": "succeeded",
+            "invoice_schema_version": "1",
             "tenant_id": "default",
         }
     ]
@@ -476,3 +488,21 @@ def test_get_invoice_shadow_summary_is_tenant_scoped():
         ],
     }
     assert service.invoice_shadow_summary_tenant_id == "default"
+
+
+def test_list_processing_runs_validates_invoice_shadow_status():
+    response = TestClient(app).get(
+        "/api/v1/processing-runs"
+        "?invoice_shadow_validation_status=unknown"
+    )
+
+    assert response.status_code == 422
+
+
+def test_list_processing_runs_validates_invoice_schema_version():
+    response = TestClient(app).get(
+        "/api/v1/processing-runs"
+        "?invoice_schema_version=invalid%20version"
+    )
+
+    assert response.status_code == 422

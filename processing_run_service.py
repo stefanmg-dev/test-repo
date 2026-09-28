@@ -243,6 +243,8 @@ class ProcessingRunService:
         profile: str | None = None,
         requires_review: bool | None = None,
         review_status: str | None = None,
+        invoice_shadow_validation_status: str | None = None,
+        invoice_schema_version: str | None = None,
         tenant_id: str | None = None,
     ) -> tuple[list[ProcessingRun], int]:
         filters = {
@@ -251,6 +253,10 @@ class ProcessingRunService:
             "profile": profile,
             "requires_review": requires_review,
             "review_status": review_status,
+            "invoice_shadow_validation_status": (
+                invoice_shadow_validation_status
+            ),
+            "invoice_schema_version": invoice_schema_version,
             "tenant_id": tenant_id,
         }
         return (

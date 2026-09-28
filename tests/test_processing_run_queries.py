@@ -62,6 +62,8 @@ def test_list_runs_returns_items_and_total():
         processing_status="accepted",
         profile="telecom_a1",
         requires_review=False,
+        invoice_shadow_validation_status="succeeded",
+        invoice_schema_version="1",
         tenant_id="tenant-1",
     )
 
@@ -76,6 +78,11 @@ def test_list_runs_returns_items_and_total():
         assert "processing_runs.processing_status" in sql
         assert "processing_runs.profile" in sql
         assert "processing_runs.requires_review" in sql
+        assert (
+            "processing_runs.invoice_shadow_validation_status"
+            in sql
+        )
+        assert "processing_runs.invoice_schema_version" in sql
         assert "processing_runs.tenant_id" in sql
 
 

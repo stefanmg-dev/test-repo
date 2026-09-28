@@ -80,6 +80,8 @@ class ProcessingRunRepository:
         profile: str | None = None,
         requires_review: bool | None = None,
         review_status: str | None = None,
+        invoice_shadow_validation_status: str | None = None,
+        invoice_schema_version: str | None = None,
         tenant_id: str | None = None,
     ) -> list[ProcessingRun]:
         statement = select(ProcessingRun)
@@ -90,6 +92,10 @@ class ProcessingRunRepository:
             profile=profile,
             requires_review=requires_review,
             review_status=review_status,
+            invoice_shadow_validation_status=(
+                invoice_shadow_validation_status
+            ),
+            invoice_schema_version=invoice_schema_version,
             tenant_id=tenant_id,
         )
         statement = (
@@ -396,6 +402,8 @@ class ProcessingRunRepository:
         profile: str | None = None,
         requires_review: bool | None = None,
         review_status: str | None = None,
+        invoice_shadow_validation_status: str | None = None,
+        invoice_schema_version: str | None = None,
         tenant_id: str | None = None,
     ) -> int:
         statement = select(
@@ -408,6 +416,10 @@ class ProcessingRunRepository:
             profile=profile,
             requires_review=requires_review,
             review_status=review_status,
+            invoice_shadow_validation_status=(
+                invoice_shadow_validation_status
+            ),
+            invoice_schema_version=invoice_schema_version,
             tenant_id=tenant_id,
         )
         return int(
@@ -423,6 +435,8 @@ class ProcessingRunRepository:
         profile: str | None,
         requires_review: bool | None,
         review_status: str | None,
+        invoice_shadow_validation_status: str | None,
+        invoice_schema_version: str | None,
         tenant_id: str | None,
     ):
         if tenant_id is not None:
@@ -450,5 +464,15 @@ class ProcessingRunRepository:
         if review_status is not None:
             statement = statement.where(
                 ProcessingRun.review_status == review_status
+            )
+        if invoice_shadow_validation_status is not None:
+            statement = statement.where(
+                ProcessingRun.invoice_shadow_validation_status
+                == invoice_shadow_validation_status
+            )
+        if invoice_schema_version is not None:
+            statement = statement.where(
+                ProcessingRun.invoice_schema_version
+                == invoice_schema_version
             )
         return statement

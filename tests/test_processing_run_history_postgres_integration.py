@@ -23,6 +23,8 @@ def make_run(
     status,
     requires_review,
     started_at,
+    invoice_shadow_validation_status=None,
+    invoice_schema_version=None,
 ):
     run = service.start_run(
         document_type="invoice",
@@ -47,6 +49,10 @@ def make_run(
         final_values={"filename": filename},
         collections={},
         validation={"valid": True, "errors": {}},
+        invoice_shadow_validation_status=(
+            invoice_shadow_validation_status
+        ),
+        invoice_schema_version=invoice_schema_version,
     )
 
 
@@ -65,6 +71,8 @@ def test_processing_run_history_queries_in_postgresql():
             status="accepted",
             requires_review=False,
             started_at=now - timedelta(seconds=2),
+            invoice_shadow_validation_status="succeeded",
+            invoice_schema_version="1",
         )
         newer = make_run(
             service,
@@ -73,6 +81,8 @@ def test_processing_run_history_queries_in_postgresql():
             status="review",
             requires_review=True,
             started_at=now - timedelta(seconds=1),
+            invoice_shadow_validation_status="failed",
+            invoice_schema_version="2",
         )
         created_ids.extend([older.id, newer.id])
 
@@ -96,6 +106,31 @@ def test_processing_run_history_queries_in_postgresql():
         ]
         assert matching_ids == [newer.id]
         assert total >= 1
+
+        shadow_items, shadow_total = service.list_runs(
+            offset=0,
+            limit=100,
+            document_type="invoice",
+            invoice_shadow_validation_status="failed",
+            invoice_schema_version="2",
+        )
+        assert [
+            item.id
+            for item in shadow_items
+            if item.id in created_ids
+        ] == [newer.id]
+        assert shadow_total >= 1
+
+        mismatched_items, _ = service.list_runs(
+            offset=0,
+            limit=100,
+            document_type="invoice",
+            invoice_shadow_validation_status="failed",
+            invoice_schema_version="1",
+        )
+        assert not {
+            item.id for item in mismatched_items
+        }.intersection(created_ids)
 
         unreviewed_items, unreviewed_total = (
             service.list_runs(

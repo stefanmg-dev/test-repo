@@ -688,6 +688,46 @@
               ],
               "title": "Review Status"
             }
+          },
+          {
+            "name": "invoice_shadow_validation_status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "succeeded",
+                    "failed",
+                    "not_applicable"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Invoice Shadow Validation Status"
+            }
+          },
+          {
+            "name": "invoice_schema_version",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 20,
+                  "pattern": "^[A-Za-z0-9._-]+$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Invoice Schema Version"
+            }
           }
         ],
         "responses": {

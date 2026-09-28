@@ -273,6 +273,23 @@ def list_processing_runs(
         | None,
         Query(),
     ] = None,
+    invoice_shadow_validation_status: Annotated[
+        Literal[
+            "succeeded",
+            "failed",
+            "not_applicable",
+        ]
+        | None,
+        Query(),
+    ] = None,
+    invoice_schema_version: Annotated[
+        str | None,
+        Query(
+            min_length=1,
+            max_length=20,
+            pattern=r"^[A-Za-z0-9._-]+$",
+        ),
+    ] = None,
 ):
     enforce_scope_if_authenticated(
         principal,
@@ -286,6 +303,10 @@ def list_processing_runs(
         profile=profile,
         requires_review=requires_review,
         review_status=review_status,
+        invoice_shadow_validation_status=(
+            invoice_shadow_validation_status
+        ),
+        invoice_schema_version=invoice_schema_version,
         tenant_id=(
             principal.tenant_id
             if principal is not None
