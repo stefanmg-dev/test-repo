@@ -135,6 +135,8 @@ class ProcessingRunRepository:
         self,
         *,
         limit: int,
+        after_reviewed_at: datetime | None = None,
+        after_processing_run_id: UUID | None = None,
         tenant_id: str | None = None,
     ) -> list[ProcessingRun]:
         statement = select(ProcessingRun).where(
@@ -149,13 +151,25 @@ class ProcessingRunRepository:
             statement = statement.where(
                 ProcessingRun.tenant_id == tenant_id
             )
+        if after_reviewed_at is not None:
+            statement = statement.where(
+                or_(
+                    ProcessingRun.reviewed_at > after_reviewed_at,
+                    (
+                        ProcessingRun.reviewed_at == after_reviewed_at
+                    )
+                    & (
+                        ProcessingRun.id > after_processing_run_id
+                    ),
+                )
+            )
         statement = (
             statement
             .order_by(
                 ProcessingRun.reviewed_at.asc(),
                 ProcessingRun.id.asc(),
             )
-            .limit(limit)
+            .limit(limit + 1)
         )
         return list(self._session.scalars(statement).all())
 

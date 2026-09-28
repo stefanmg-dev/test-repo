@@ -195,17 +195,27 @@ class ProcessingRunService:
         self,
         *,
         limit: int,
+        after_reviewed_at: datetime | None = None,
+        after_processing_run_id: UUID | None = None,
         tenant_id: str | None = None,
-    ) -> str:
+    ) -> tuple[str, datetime | None, UUID | None]:
         processing_runs = (
             self._repository.list_universal_invoice_feedback_runs(
                 limit=limit,
+                after_reviewed_at=after_reviewed_at,
+                after_processing_run_id=after_processing_run_id,
                 tenant_id=tenant_id,
             )
         )
+        has_more = len(processing_runs) > limit
+        page = processing_runs[:limit]
+        next_run = page[-1] if has_more and page else None
         try:
-            return render_universal_invoice_feedback_jsonl(
-                processing_runs
+            content = render_universal_invoice_feedback_jsonl(page)
+            return (
+                content,
+                next_run.reviewed_at if next_run else None,
+                next_run.id if next_run else None,
             )
         except Exception as exc:
             raise UniversalInvoiceFeedbackExportError(

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated, Literal
 from uuid import UUID
 
@@ -107,20 +108,34 @@ def export_universal_invoice_feedback(
     processing_run_service: ProcessingRunServiceDependency,
     principal: OptionalApiKeyPrincipal,
     limit: Annotated[int, Query(ge=1, le=1000)],
+    after_reviewed_at: datetime | None = None,
+    after_processing_run_id: UUID | None = None,
 ):
     enforce_scope_if_authenticated(
         principal,
         PROCESSING_RUNS_READ,
     )
+    if (after_reviewed_at is None) != (
+        after_processing_run_id is None
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "after_reviewed_at and after_processing_run_id "
+                "must be provided together"
+            ),
+        )
     tenant_id = (
         principal.tenant_id
         if principal is not None
         else "default"
     )
     try:
-        content = (
+        content, next_reviewed_at, next_run_id = (
             processing_run_service.export_universal_invoice_feedback(
                 limit=limit,
+                after_reviewed_at=after_reviewed_at,
+                after_processing_run_id=after_processing_run_id,
                 tenant_id=tenant_id,
             )
         )
@@ -129,16 +144,20 @@ def export_universal_invoice_feedback(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(exc),
         ) from exc
+    headers = {
+        "Content-Disposition": (
+            "attachment; "
+            'filename="universal-invoice-feedback.jsonl"'
+        ),
+        "X-Content-Type-Options": "nosniff",
+    }
+    if next_reviewed_at is not None and next_run_id is not None:
+        headers["X-Next-Reviewed-At"] = next_reviewed_at.isoformat()
+        headers["X-Next-Processing-Run-Id"] = str(next_run_id)
     return Response(
         content=content,
         media_type="application/x-ndjson",
-        headers={
-            "Content-Disposition": (
-                "attachment; "
-                'filename="universal-invoice-feedback.jsonl"'
-            ),
-            "X-Content-Type-Options": "nosniff",
-        },
+        headers=headers,
     )
 
 

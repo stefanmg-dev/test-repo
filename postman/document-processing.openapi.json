@@ -352,6 +352,40 @@
               "minimum": 1,
               "title": "Limit"
             }
+          },
+          {
+            "name": "after_reviewed_at",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After Reviewed At"
+            }
+          },
+          {
+            "name": "after_processing_run_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After Processing Run Id"
+            }
           }
         ],
         "responses": {

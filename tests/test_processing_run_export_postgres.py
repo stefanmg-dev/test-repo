@@ -115,7 +115,7 @@ def test_universal_invoice_feedback_export_is_tenant_scoped():
         add_run(other_tenant_id, "corrected", "other.pdf")
         session.commit()
 
-        exported = (
+        exported, next_reviewed_at, next_run_id = (
             ProcessingRunService(session)
             .export_universal_invoice_feedback(limit=100, tenant_id=tenant_id)
         )
@@ -127,8 +127,10 @@ def test_universal_invoice_feedback_export_is_tenant_scoped():
         assert str(corrected.id) in lines[1]
         assert "rejected.pdf" not in exported
         assert "other.pdf" not in exported
+        assert next_reviewed_at is None
+        assert next_run_id is None
 
-        limited = ProcessingRunService(
+        limited, next_reviewed_at, next_run_id = ProcessingRunService(
             session
         ).export_universal_invoice_feedback(
             limit=1,
@@ -137,6 +139,22 @@ def test_universal_invoice_feedback_export_is_tenant_scoped():
         limited_lines = limited.splitlines()
         assert len(limited_lines) == 1
         assert str(approved.id) in limited_lines[0]
+        assert next_reviewed_at == approved.reviewed_at
+        assert next_run_id == approved.id
+
+        resumed, final_reviewed_at, final_run_id = (
+            ProcessingRunService(session)
+            .export_universal_invoice_feedback(
+                limit=1,
+                after_reviewed_at=next_reviewed_at,
+                after_processing_run_id=next_run_id,
+                tenant_id=tenant_id,
+            )
+        )
+        assert str(corrected.id) in resumed
+        assert str(approved.id) not in resumed
+        assert final_reviewed_at is None
+        assert final_run_id is None
     finally:
         session.rollback()
         if created_ids:
@@ -170,11 +188,17 @@ def test_feedback_export_excludes_unsuccessful_shadow_runs():
         session.commit()
         created_ids.append(run.id)
 
-        content = ProcessingRunService(
-            session
-        ).export_universal_invoice_feedback(limit=100, tenant_id=tenant_id)
+        content, next_reviewed_at, next_run_id = (
+            ProcessingRunService(session)
+            .export_universal_invoice_feedback(
+                limit=100,
+                tenant_id=tenant_id,
+            )
+        )
 
         assert content == ""
+        assert next_reviewed_at is None
+        assert next_run_id is None
     finally:
         session.rollback()
         if created_ids:

@@ -596,8 +596,18 @@ def test_export_universal_invoice_feedback_as_jsonl():
     service.run.corrected_values = {"invoice_number": "124"}
     service.feedback_export_tenant_id = None
 
-    def export_feedback(*, limit, tenant_id=None):
+    def export_feedback(
+        *,
+        limit,
+        after_reviewed_at=None,
+        after_processing_run_id=None,
+        tenant_id=None,
+    ):
         service.feedback_export_limit = limit
+        service.feedback_export_after_reviewed_at = after_reviewed_at
+        service.feedback_export_after_processing_run_id = (
+            after_processing_run_id
+        )
         service.feedback_export_tenant_id = tenant_id
         return (
             '{"feedback_schema_version":"1",'
@@ -605,7 +615,7 @@ def test_export_universal_invoice_feedback_as_jsonl():
             '"invoice_number":"123"},'
             '"reviewed_universal_invoice":{'
             '"invoice_number":"124"}}\n'
-        )
+        ), NOW, service.run.id
 
     service.export_universal_invoice_feedback = export_feedback
     install(service)
@@ -623,7 +633,13 @@ def test_export_universal_invoice_feedback_as_jsonl():
         'attachment; filename="universal-invoice-feedback.jsonl"'
     )
     assert service.feedback_export_limit == 100
+    assert service.feedback_export_after_reviewed_at is None
+    assert service.feedback_export_after_processing_run_id is None
     assert service.feedback_export_tenant_id == "default"
+    assert response.headers["x-next-reviewed-at"] == NOW.isoformat()
+    assert response.headers["x-next-processing-run-id"] == str(
+        service.run.id
+    )
     payload = response.text
     assert '"feedback_schema_version":"1"' in payload
     assert '"invoice_number":"123"' in payload
@@ -634,7 +650,13 @@ def test_export_universal_invoice_feedback_as_jsonl():
 def test_feedback_export_returns_atomic_409():
     service = QueryService()
 
-    def fail_export(*, limit, tenant_id=None):
+    def fail_export(
+        *,
+        limit,
+        after_reviewed_at=None,
+        after_processing_run_id=None,
+        tenant_id=None,
+    ):
         raise UniversalInvoiceFeedbackExportError(
             "Universal invoice feedback export is unavailable"
         )
@@ -675,3 +697,22 @@ def test_feedback_export_validates_limit_bounds():
             f"universal-invoice-feedback-export?limit={value}"
         )
         assert response.status_code == 422
+
+def test_feedback_export_validates_cursor_pair():
+    service = QueryService()
+    install(service)
+
+    response = TestClient(app).get(
+        "/api/v1/processing-runs/"
+        "universal-invoice-feedback-export",
+        params={
+            "limit": 100,
+            "after_reviewed_at": NOW.isoformat(),
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "after_reviewed_at and after_processing_run_id "
+        "must be provided together"
+    )
