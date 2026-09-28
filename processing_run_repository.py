@@ -134,6 +134,7 @@ class ProcessingRunRepository:
     def list_universal_invoice_feedback_runs(
         self,
         *,
+        limit: int,
         tenant_id: str | None = None,
     ) -> list[ProcessingRun]:
         statement = select(ProcessingRun).where(
@@ -148,9 +149,13 @@ class ProcessingRunRepository:
             statement = statement.where(
                 ProcessingRun.tenant_id == tenant_id
             )
-        statement = statement.order_by(
-            ProcessingRun.reviewed_at.asc(),
-            ProcessingRun.id.asc(),
+        statement = (
+            statement
+            .order_by(
+                ProcessingRun.reviewed_at.asc(),
+                ProcessingRun.id.asc(),
+            )
+            .limit(limit)
         )
         return list(self._session.scalars(statement).all())
 

@@ -333,14 +333,6 @@
         ],
         "summary": "Export Universal Invoice Feedback",
         "operationId": "export_universal_invoice_feedback_api_v1_processing_runs_universal_invoice_feedback_export_get",
-        "responses": {
-          "200": {
-            "description": "Universal Invoice feedback JSONL export",
-            "content": {
-              "application/x-ndjson": {}
-            }
-          }
-        },
         "security": [
           {
             "ApiKeyAuth": []
@@ -348,7 +340,38 @@
           {
             "BearerAuth": []
           }
-        ]
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Universal Invoice feedback JSONL export",
+            "content": {
+              "application/x-ndjson": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/processing-runs/extraction-quality": {

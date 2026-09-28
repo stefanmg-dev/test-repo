@@ -596,7 +596,8 @@ def test_export_universal_invoice_feedback_as_jsonl():
     service.run.corrected_values = {"invoice_number": "124"}
     service.feedback_export_tenant_id = None
 
-    def export_feedback(*, tenant_id=None):
+    def export_feedback(*, limit, tenant_id=None):
+        service.feedback_export_limit = limit
         service.feedback_export_tenant_id = tenant_id
         return (
             '{"feedback_schema_version":"1",'
@@ -611,7 +612,7 @@ def test_export_universal_invoice_feedback_as_jsonl():
 
     response = TestClient(app).get(
         "/api/v1/processing-runs/"
-        "universal-invoice-feedback-export"
+        "universal-invoice-feedback-export?limit=100"
     )
 
     assert response.status_code == 200
@@ -621,6 +622,7 @@ def test_export_universal_invoice_feedback_as_jsonl():
     assert response.headers["content-disposition"] == (
         'attachment; filename="universal-invoice-feedback.jsonl"'
     )
+    assert service.feedback_export_limit == 100
     assert service.feedback_export_tenant_id == "default"
     payload = response.text
     assert '"feedback_schema_version":"1"' in payload
@@ -632,7 +634,7 @@ def test_export_universal_invoice_feedback_as_jsonl():
 def test_feedback_export_returns_atomic_409():
     service = QueryService()
 
-    def fail_export(*, tenant_id=None):
+    def fail_export(*, limit, tenant_id=None):
         raise UniversalInvoiceFeedbackExportError(
             "Universal invoice feedback export is unavailable"
         )
@@ -642,7 +644,7 @@ def test_feedback_export_returns_atomic_409():
 
     response = TestClient(app).get(
         "/api/v1/processing-runs/"
-        "universal-invoice-feedback-export"
+        "universal-invoice-feedback-export?limit=100"
     )
 
     assert response.status_code == 409
@@ -650,3 +652,26 @@ def test_feedback_export_returns_atomic_409():
         "detail": "Universal invoice feedback export is unavailable"
     }
     assert "feedback_schema_version" not in response.text
+
+def test_feedback_export_requires_limit():
+    service = QueryService()
+    install(service)
+
+    response = TestClient(app).get(
+        "/api/v1/processing-runs/"
+        "universal-invoice-feedback-export"
+    )
+
+    assert response.status_code == 422
+
+
+def test_feedback_export_validates_limit_bounds():
+    service = QueryService()
+    install(service)
+
+    for value in (0, 1001):
+        response = TestClient(app).get(
+            "/api/v1/processing-runs/"
+            f"universal-invoice-feedback-export?limit={value}"
+        )
+        assert response.status_code == 422

@@ -194,10 +194,12 @@ class ProcessingRunService:
     def export_universal_invoice_feedback(
         self,
         *,
+        limit: int,
         tenant_id: str | None = None,
     ) -> str:
         processing_runs = (
             self._repository.list_universal_invoice_feedback_runs(
+                limit=limit,
                 tenant_id=tenant_id,
             )
         )

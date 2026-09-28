@@ -106,6 +106,7 @@ def export_processing_runs(
 def export_universal_invoice_feedback(
     processing_run_service: ProcessingRunServiceDependency,
     principal: OptionalApiKeyPrincipal,
+    limit: Annotated[int, Query(ge=1, le=1000)],
 ):
     enforce_scope_if_authenticated(
         principal,
@@ -119,6 +120,7 @@ def export_universal_invoice_feedback(
     try:
         content = (
             processing_run_service.export_universal_invoice_feedback(
+                limit=limit,
                 tenant_id=tenant_id,
             )
         )

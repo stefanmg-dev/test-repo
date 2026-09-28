@@ -117,7 +117,7 @@ def test_universal_invoice_feedback_export_is_tenant_scoped():
 
         exported = (
             ProcessingRunService(session)
-            .export_universal_invoice_feedback(tenant_id=tenant_id)
+            .export_universal_invoice_feedback(limit=100, tenant_id=tenant_id)
         )
 
         lines = exported.splitlines()
@@ -127,6 +127,16 @@ def test_universal_invoice_feedback_export_is_tenant_scoped():
         assert str(corrected.id) in lines[1]
         assert "rejected.pdf" not in exported
         assert "other.pdf" not in exported
+
+        limited = ProcessingRunService(
+            session
+        ).export_universal_invoice_feedback(
+            limit=1,
+            tenant_id=tenant_id,
+        )
+        limited_lines = limited.splitlines()
+        assert len(limited_lines) == 1
+        assert str(approved.id) in limited_lines[0]
     finally:
         session.rollback()
         if created_ids:
@@ -162,7 +172,7 @@ def test_feedback_export_excludes_unsuccessful_shadow_runs():
 
         content = ProcessingRunService(
             session
-        ).export_universal_invoice_feedback(tenant_id=tenant_id)
+        ).export_universal_invoice_feedback(limit=100, tenant_id=tenant_id)
 
         assert content == ""
     finally:
