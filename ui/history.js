@@ -35,6 +35,7 @@ const elements = {
     invoiceShadowNotApplicable: byId("invoiceShadowNotApplicable"),
     invoiceShadowSuccessRate: byId("invoiceShadowSuccessRate"),
     invoiceShadowSchemaVersions: byId("invoiceShadowSchemaVersions"),
+    invoiceShadowFailureReasons: byId("invoiceShadowFailureReasons"),
     pageInfo: byId("historyPageInfo"),
     previous: byId("previousPageButton"),
     next: byId("nextPageButton"),
@@ -229,6 +230,7 @@ function resetInvoiceShadowSummary() {
     elements.invoiceShadowNotApplicable.textContent = "—";
     elements.invoiceShadowSuccessRate.textContent = "—";
     elements.invoiceShadowSchemaVersions.textContent = "—";
+    elements.invoiceShadowFailureReasons.textContent = "—";
 }
 
 async function loadInvoiceShadowSummary() {
@@ -257,6 +259,12 @@ async function loadInvoiceShadowSummary() {
             body.schema_versions.length
                 ? body.schema_versions
                     .map((item) => `${item.schema_version}: ${item.total}`)
+                    .join(", ")
+                : "—";
+        elements.invoiceShadowFailureReasons.textContent =
+            body.failure_reasons.length
+                ? body.failure_reasons
+                    .map((item) => `${item.reason}: ${item.count}`)
                     .join(", ")
                 : "—";
         elements.invoiceShadowSummaryStatus.textContent =
@@ -599,6 +607,10 @@ async function loadDetail(runId) {
         appendDetail(
             "Invoice shadow статус",
             body.invoice_shadow_validation_status,
+        );
+        appendDetail(
+            "Invoice shadow причина",
+            body.invoice_shadow_validation_reason,
         );
         appendDetail("Общо време", body.duration_ms == null ? null : `${body.duration_ms} ms`);
         appendDetail("Step timings", body.step_timings);

@@ -104,6 +104,12 @@ def test_processing_history_browser_smoke(live_server_url):
                 "failed": 1,
             }
         ],
+        "failure_reasons": [
+            {
+                "reason": "validation_error",
+                "count": 1,
+            }
+        ],
     }
     review_summary_body = {
         "total_requiring_review": 10,
@@ -127,7 +133,8 @@ def test_processing_history_browser_smoke(live_server_url):
         },
         "review_status": "pending",
         "invoice_schema_version": "1",
-        "invoice_shadow_validation_status": "succeeded",
+        "invoice_shadow_validation_status": "failed",
+        "invoice_shadow_validation_reason": "validation_error",
         "final_values": {
             "invoice_number": "TEST-123",
             "page_count": 1,
@@ -284,6 +291,9 @@ def test_processing_history_browser_smoke(live_server_url):
         assert page.locator(
             "#invoiceShadowSchemaVersions"
         ).inner_text() == "1: 4"
+        assert page.locator(
+            "#invoiceShadowFailureReasons"
+        ).inner_text() == "validation_error: 1"
 
         page.get_by_label("Тип документ").fill("invoice")
         page.get_by_label("Статус", exact=True).select_option("accepted")
@@ -329,7 +339,13 @@ def test_processing_history_browser_smoke(live_server_url):
             dialog.get_by_text("Invoice shadow статус", exact=True)
         ).to_be_visible()
         expect(
-            dialog.get_by_text("succeeded", exact=True)
+            dialog.get_by_text("failed", exact=True)
+        ).to_be_visible()
+        expect(
+            dialog.get_by_text("Invoice shadow причина", exact=True)
+        ).to_be_visible()
+        expect(
+            dialog.get_by_text("validation_error", exact=True)
         ).to_be_visible()
         invoice_input = page.locator(
             "#reviewField-invoice_number"
