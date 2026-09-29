@@ -59,25 +59,6 @@ def test_real_toplofikacia_pdf_end_to_end(
 
     assert body["document_type"] == "invoice"
     assert body["profile"] == "heating_toplofikacia_sofia"
-    import json
-
-    Path(
-        "/tmp/toplofikacia_collection_diagnostic.json"
-    ).write_text(
-        json.dumps(
-            {
-                "processing_status": body["processing_status"],
-                "collection_validation": (
-                    body["collection_validation"]
-                ),
-                "services": body["collections"]["services"],
-            },
-            ensure_ascii=False,
-            indent=2,
-        ) + "\n",
-        encoding="utf-8",
-    )
-
     assert body["processing_status"] == "accepted"
 
     assert body["validation"] == {
