@@ -124,6 +124,14 @@ function showMessage(
     );
 
     elements.messageArea.classList.add(type);
+    elements.messageArea.setAttribute(
+        "role",
+        type === "error" ? "alert" : "status"
+    );
+    elements.messageArea.setAttribute(
+        "aria-live",
+        type === "error" ? "assertive" : "polite"
+    );
 }
 
 
@@ -133,6 +141,14 @@ function clearMessage() {
     elements.messageArea.classList.remove(
         "success",
         "error"
+    );
+    elements.messageArea.setAttribute(
+        "role",
+        "status"
+    );
+    elements.messageArea.setAttribute(
+        "aria-live",
+        "polite"
     );
 }
 
@@ -407,6 +423,9 @@ function renderValidationErrors(errors) {
 
     const box = document.createElement("div");
     box.className = "message-area error";
+    box.setAttribute("role", "alert");
+    box.setAttribute("aria-live", "assertive");
+    box.setAttribute("aria-atomic", "true");
 
     const heading = document.createElement(
         "strong"

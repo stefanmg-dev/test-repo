@@ -46,7 +46,7 @@
                 </div>
             </header>
 
-            <section id="messageArea" class="message-area" aria-live="polite"></section>
+            <section id="messageArea" class="message-area" role="status" aria-live="polite" aria-atomic="true"></section>
 
             <section class="editor-panel">
                 <div class="document-editor">
@@ -61,10 +61,10 @@
                     <form id="documentTestForm" class="form-grid">
                         <div class="form-group">
                             <label for="documentType">Тип документ</label>
-                            <select id="documentType" class="form-control" required>
+                            <select id="documentType" class="form-control" aria-describedby="documentTypeHelp" required>
                                 <option value="">Зареждане...</option>
                             </select>
-                            <div class="form-help">Показват се типовете с поне едно конфигурирано поле.</div>
+                            <div id="documentTypeHelp" class="form-help">Показват се типовете с поне едно конфигурирано поле.</div>
                         </div>
 
                         <div class="form-group">
@@ -74,9 +74,10 @@
                                 class="form-control"
                                 type="file"
                                 accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                                aria-describedby="documentFileHelp"
                                 required
                             >
-                            <div class="form-help">Избери реален PDF, сканиран PDF или изображение.</div>
+                            <div id="documentFileHelp" class="form-help">Избери PDF, JPG, JPEG или PNG файл.</div>
                         </div>
 
                         <div class="form-group full-width">
@@ -88,7 +89,7 @@
                 </div>
             </section>
 
-            <section id="processingSection" class="editor-panel hidden" style="margin-top: 22px;">
+            <section id="processingSection" class="editor-panel hidden" role="status" aria-live="polite" aria-atomic="true" style="margin-top: 22px;">
                 <div class="empty-state">
                     <div class="empty-state-icon">OCR</div>
                     <h2>Документът се обработва</h2>
