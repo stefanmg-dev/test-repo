@@ -34,3 +34,8 @@ memory.json
 postman
 
 node_modules
+
+# PostgreSQL logical backup artifacts
+*.dump
+*.backup
+backups/
