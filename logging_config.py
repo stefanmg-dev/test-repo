@@ -39,6 +39,8 @@ SAFE_EXTRA_FIELDS = frozenset(
         "cursor_supplied",
         "exported_count",
         "next_cursor_available",
+        "feedback_export_outcome",
+        "failure_reason",
         "tenant_id",
     }
 )

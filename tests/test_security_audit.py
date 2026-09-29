@@ -183,6 +183,7 @@ def test_feedback_export_audit_contains_only_operational_metadata():
             cursor_supplied=True,
             exported_count=2,
             next_cursor_available=True,
+            feedback_export_outcome="continued",
         )
     finally:
         logger.handlers = previous_handlers
@@ -194,6 +195,7 @@ def test_feedback_export_audit_contains_only_operational_metadata():
     assert payload["cursor_supplied"] is True
     assert payload["exported_count"] == 2
     assert payload["next_cursor_available"] is True
+    assert payload["feedback_export_outcome"] == "continued"
     assert payload["tenant_id"] == "tenant-1"
     forbidden = {
         "final_values",
@@ -206,3 +208,38 @@ def test_feedback_export_audit_contains_only_operational_metadata():
     }
     assert forbidden.isdisjoint(payload)
     assert payload["processing_run_id"] is None
+
+
+def test_feedback_export_failure_audit_is_secret_safe():
+    stream = StringIO()
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(JsonLogFormatter())
+    logger = logging.getLogger("document_processing.security")
+    previous_handlers = logger.handlers
+    previous_propagate = logger.propagate
+    previous_level = logger.level
+    logger.handlers = [handler]
+    logger.propagate = False
+    logger.setLevel(logging.INFO)
+    try:
+        audit_security_event(
+            "security.processing_invoice_feedback_export_failed",
+            message="Universal Invoice feedback export failed",
+            result="failure",
+            feedback_export_limit=100,
+            cursor_supplied=True,
+            feedback_export_outcome="error",
+            failure_reason="mapping_error",
+        )
+    finally:
+        logger.handlers = previous_handlers
+        logger.propagate = previous_propagate
+        logger.setLevel(previous_level)
+
+    payload = json.loads(stream.getvalue())
+    assert payload["feedback_export_outcome"] == "error"
+    assert payload["failure_reason"] == "mapping_error"
+    assert "after_reviewed_at" not in payload
+    assert "after_processing_run_id" not in payload
+    assert "filename" not in payload
+    assert "final_values" not in payload

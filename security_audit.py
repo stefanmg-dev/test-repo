@@ -25,6 +25,8 @@ def audit_security_event(
     cursor_supplied: bool | None = None,
     exported_count: int | None = None,
     next_cursor_available: bool | None = None,
+    feedback_export_outcome: str | None = None,
+    failure_reason: str | None = None,
 ) -> None:
     extra = {
         "event": event,
@@ -60,5 +62,9 @@ def audit_security_event(
         extra["exported_count"] = exported_count
     if next_cursor_available is not None:
         extra["next_cursor_available"] = next_cursor_available
+    if feedback_export_outcome is not None:
+        extra["feedback_export_outcome"] = feedback_export_outcome
+    if failure_reason is not None:
+        extra["failure_reason"] = failure_reason
 
     logger.info(message, extra=extra)

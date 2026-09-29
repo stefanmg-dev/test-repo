@@ -140,11 +140,28 @@ def export_universal_invoice_feedback(
             )
         )
     except UniversalInvoiceFeedbackExportError as exc:
+        audit_security_event(
+            "security.processing_invoice_feedback_export_failed",
+            message="Universal Invoice feedback export failed",
+            result="failure",
+            principal=principal,
+            feedback_export_limit=limit,
+            cursor_supplied=after_reviewed_at is not None,
+            feedback_export_outcome="error",
+            failure_reason="mapping_error",
+        )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(exc),
         ) from exc
     exported_count = content.count("\n")
+    next_cursor_available = next_reviewed_at is not None
+    if exported_count == 0:
+        feedback_export_outcome = "empty"
+    elif next_cursor_available:
+        feedback_export_outcome = "continued"
+    else:
+        feedback_export_outcome = "final_page"
     audit_security_event(
         "security.processing_invoice_feedback_exported",
         message="Universal Invoice feedback exported",
@@ -153,7 +170,8 @@ def export_universal_invoice_feedback(
         feedback_export_limit=limit,
         cursor_supplied=after_reviewed_at is not None,
         exported_count=exported_count,
-        next_cursor_available=next_reviewed_at is not None,
+        next_cursor_available=next_cursor_available,
+        feedback_export_outcome=feedback_export_outcome,
     )
     headers = {
         "Content-Disposition": (

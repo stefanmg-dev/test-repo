@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from types import SimpleNamespace
+from unittest.mock import patch
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -716,3 +717,84 @@ def test_feedback_export_validates_cursor_pair():
         "after_reviewed_at and after_processing_run_id "
         "must be provided together"
     )
+
+
+def test_feedback_export_observes_empty_page():
+    service = QueryService()
+    service.export_universal_invoice_feedback = lambda **kwargs: (
+        "",
+        None,
+        None,
+    )
+    install(service)
+
+    with patch(
+        "routes_processing_runs.audit_security_event"
+    ) as audit:
+        response = TestClient(app).get(
+            "/api/v1/processing-runs/"
+            "universal-invoice-feedback-export?limit=100"
+        )
+
+    assert response.status_code == 200
+    audit.assert_called_once()
+    metadata = audit.call_args.kwargs
+    assert metadata["exported_count"] == 0
+    assert metadata["next_cursor_available"] is False
+    assert metadata["feedback_export_outcome"] == "empty"
+
+
+def test_feedback_export_observes_final_page():
+    service = QueryService()
+    service.export_universal_invoice_feedback = lambda **kwargs: (
+        '{"feedback_schema_version":"1"}\n',
+        None,
+        None,
+    )
+    install(service)
+
+    with patch(
+        "routes_processing_runs.audit_security_event"
+    ) as audit:
+        response = TestClient(app).get(
+            "/api/v1/processing-runs/"
+            "universal-invoice-feedback-export?limit=100"
+        )
+
+    assert response.status_code == 200
+    metadata = audit.call_args.kwargs
+    assert metadata["exported_count"] == 1
+    assert metadata["next_cursor_available"] is False
+    assert metadata["feedback_export_outcome"] == "final_page"
+
+
+def test_feedback_export_observes_mapping_error():
+    service = QueryService()
+
+    def fail_export(**kwargs):
+        raise UniversalInvoiceFeedbackExportError(
+            "Universal invoice feedback export is unavailable"
+        )
+
+    service.export_universal_invoice_feedback = fail_export
+    install(service)
+
+    with patch(
+        "routes_processing_runs.audit_security_event"
+    ) as audit:
+        response = TestClient(app).get(
+            "/api/v1/processing-runs/"
+            "universal-invoice-feedback-export?limit=100"
+        )
+
+    assert response.status_code == 409
+    audit.assert_called_once()
+    assert audit.call_args.args[0] == (
+        "security.processing_invoice_feedback_export_failed"
+    )
+    metadata = audit.call_args.kwargs
+    assert metadata["result"] == "failure"
+    assert metadata["feedback_export_outcome"] == "error"
+    assert metadata["failure_reason"] == "mapping_error"
+    assert "after_reviewed_at" not in metadata
+    assert "after_processing_run_id" not in metadata
