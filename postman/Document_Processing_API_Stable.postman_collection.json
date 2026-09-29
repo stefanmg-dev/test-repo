@@ -455,6 +455,76 @@
           ]
         },
         {
+          "name": "Universal Invoice Feedback Export - First Page",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/x-ndjson",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/processing-runs/universal-invoice-feedback-export?limit={{feedback_export_limit}}",
+            "description": "Tenant-aware bounded first page. Stores next cursor response headers when another page is available."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSONL\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/x-ndjson\"); });",
+                  "pm.test(\"X-Request-ID is present\", function () { pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.be.a(\"string\").and.not.empty; });",
+                  "const reviewedAt = pm.response.headers.get(\"X-Next-Reviewed-At\"); const runId = pm.response.headers.get(\"X-Next-Processing-Run-Id\"); pm.test(\"Next cursor headers are paired\", function () { pm.expect(Boolean(reviewedAt)).to.eql(Boolean(runId)); }); if (reviewedAt && runId) { pm.environment.set(\"feedback_after_reviewed_at\", reviewedAt); pm.environment.set(\"feedback_after_processing_run_id\", runId); } else { pm.environment.unset(\"feedback_after_reviewed_at\"); pm.environment.unset(\"feedback_after_processing_run_id\"); }",
+                  "const lines = pm.response.text().split(\"\\n\").filter(Boolean); pm.test(\"Export respects requested bound\", function () { pm.expect(lines.length).to.be.at.most(Number(pm.environment.get(\"feedback_export_limit\") || 100)); }); lines.forEach(line => { const item = JSON.parse(line); pm.expect(item.feedback_schema_version).to.eql(\"1\"); pm.expect(item).not.to.have.property(\"filename\"); pm.expect(item).not.to.have.property(\"raw_text\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Universal Invoice Feedback Export - Resume",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/x-ndjson",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/processing-runs/universal-invoice-feedback-export?limit={{feedback_export_limit}}&after_reviewed_at={{feedback_after_reviewed_at}}&after_processing_run_id={{feedback_after_processing_run_id}}",
+            "description": "Resume from the paired tuple cursor saved by the first-page request. Do not send only one cursor component."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get(\"feedback_after_reviewed_at\") || !pm.environment.get(\"feedback_after_processing_run_id\")) { throw new Error(\"Run the first-page feedback export and obtain both next cursor headers before resume.\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSONL\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/x-ndjson\"); });",
+                  "const reviewedAt = pm.response.headers.get(\"X-Next-Reviewed-At\"); const runId = pm.response.headers.get(\"X-Next-Processing-Run-Id\"); pm.test(\"Next cursor headers are paired\", function () { pm.expect(Boolean(reviewedAt)).to.eql(Boolean(runId)); }); if (reviewedAt && runId) { pm.environment.set(\"feedback_after_reviewed_at\", reviewedAt); pm.environment.set(\"feedback_after_processing_run_id\", runId); } else { pm.environment.unset(\"feedback_after_reviewed_at\"); pm.environment.unset(\"feedback_after_processing_run_id\"); }",
+                  "const lines = pm.response.text().split(\"\\n\").filter(Boolean); lines.forEach(line => { const item = JSON.parse(line); pm.expect(item.feedback_schema_version).to.eql(\"1\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Retention Preview",
           "event": [
             {
