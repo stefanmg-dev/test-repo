@@ -89,8 +89,13 @@
                                 <p id="selectedDocumentTypeSummary">0 конфигурирани полета</p>
                                 <div id="fieldScopeSection" class="hidden">
                                     <p>
-                                        Активен профил:
-                                        <strong id="selectedProfileName">Няма избран профил</strong>
+                                        Профил по подразбиране:
+                                        <strong id="defaultProfileName">Няма избран профил</strong>
+                                    </p>
+                                    <label for="profileSelector">Профил за редакция</label>
+                                    <select id="profileSelector" class="form-control"></select>
+                                    <p class="form-help">
+                                        Изборът променя само профила, който редактирате. Не променя автоматичния runtime профил.
                                     </p>
                                     <label for="fieldScope">Обхват на полетата</label>
                                     <select id="fieldScope" class="form-control">

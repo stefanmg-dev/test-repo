@@ -8,6 +8,7 @@ const state = {
     documentTypeMetadata: {},
     selectedDocumentType: null,
     selectedFieldScope: "legacy",
+    selectedProfileName: null,
     modalConfirmHandler: null,
 };
 
@@ -24,7 +25,8 @@ const el = {
     selectedDocumentTypeSummary: byId("selectedDocumentTypeSummary"),
     fieldScopeSection: byId("fieldScopeSection"),
     fieldScope: byId("fieldScope"),
-    selectedProfileName: byId("selectedProfileName"),
+    profileSelector: byId("profileSelector"),
+    defaultProfileName: byId("defaultProfileName"),
     fieldList: byId("fieldList"),
     messageArea: byId("messageArea"),
     modalBackdrop: byId("modalBackdrop"),
@@ -201,7 +203,11 @@ function renderDocumentTypes() {
 }
 
 function getSelectedProfile(config) {
-    return config.default_profile || null;
+    const profiles = config.profiles || {};
+    if (state.selectedProfileName in profiles) {
+        return state.selectedProfileName;
+    }
+    return config.default_profile || Object.keys(profiles)[0] || null;
 }
 
 function getSelectedFields(config) {
@@ -222,17 +228,27 @@ function updateFieldScope(config) {
     const profileName = getSelectedProfile(config);
 
     el.fieldScope.replaceChildren();
+    el.profileSelector.replaceChildren();
     el.fieldScopeSection.classList.toggle(
         "hidden",
         !usesProfiles
     );
-    el.selectedProfileName.textContent =
-        profileName || "Няма избран профил";
+    el.defaultProfileName.textContent =
+        config.default_profile || "Няма избран профил";
 
     if (!usesProfiles) {
         state.selectedFieldScope = "legacy";
+        state.selectedProfileName = null;
         return;
     }
+
+    state.selectedProfileName = profileName;
+    for (const name of Object.keys(config.profiles || {}).sort()) {
+        const option = new Option(name, name);
+        option.selected = name === profileName;
+        el.profileSelector.append(option);
+    }
+    el.profileSelector.disabled = !profileName;
 
     if (!["common", "profile"].includes(state.selectedFieldScope)) {
         state.selectedFieldScope = "common";
@@ -257,7 +273,11 @@ function buildFieldEndpoint(documentType, fieldName = null) {
         endpoint = `/document-types/${encodedType}/common-fields`;
     } else if (state.selectedFieldScope === "profile") {
         const config = state.documentTypes[documentType];
-        const profileName = encodeURIComponent(config.default_profile);
+        const selectedProfile = getSelectedProfile(config);
+        if (!selectedProfile) {
+            throw new Error("Няма избран профил за редакция.");
+        }
+        const profileName = encodeURIComponent(selectedProfile);
         endpoint = `/document-types/${encodedType}/profiles/${profileName}/fields`;
     } else {
         endpoint = `/document-types/${encodedType}/fields`;
@@ -293,6 +313,9 @@ function renderFields(config) {
 }
 
 function selectDocumentType(name) {
+    if (state.selectedDocumentType !== name) {
+        state.selectedProfileName = null;
+    }
     state.selectedDocumentType = name;
     renderDocumentTypes();
 
@@ -829,6 +852,13 @@ el.openCreateDocumentTypeButton.addEventListener("click", openCreateDocumentType
 el.renameDocumentTypeButton.addEventListener("click", openRenameDocumentTypeModal);
 el.deleteDocumentTypeButton.addEventListener("click", confirmDeleteDocumentType);
 el.openAddFieldButton.addEventListener("click", () => openFieldModal());
+el.profileSelector.addEventListener("change", () => {
+    state.selectedProfileName = el.profileSelector.value || null;
+    state.selectedFieldScope = "profile";
+    const config = state.documentTypes[state.selectedDocumentType];
+    updateFieldScope(config);
+    renderFields(config);
+});
 el.fieldScope.addEventListener("change", () => {
     state.selectedFieldScope = el.fieldScope.value;
     const config = state.documentTypes[state.selectedDocumentType];
