@@ -45,7 +45,12 @@ const elements = {
     closeDialog: byId("closeHistoryDetailButton"),
 };
 
-const state = { offset: 0, total: 0, loading: false };
+const state = {
+    offset: 0,
+    total: 0,
+    loading: false,
+    dialogReturnFocus: null,
+};
 
 async function readJson(response) {
     try { return await response.json(); } catch { return null; }
@@ -54,11 +59,21 @@ async function readJson(response) {
 function showMessage(message, type = "error") {
     elements.messageArea.textContent = message;
     elements.messageArea.className = `message-area ${type}`;
+    elements.messageArea.setAttribute(
+        "role",
+        type === "error" ? "alert" : "status",
+    );
+    elements.messageArea.setAttribute(
+        "aria-live",
+        type === "error" ? "assertive" : "polite",
+    );
 }
 
 function clearMessage() {
     elements.messageArea.textContent = "";
     elements.messageArea.className = "message-area";
+    elements.messageArea.setAttribute("role", "status");
+    elements.messageArea.setAttribute("aria-live", "polite");
 }
 
 function setApiStatus(online) {
@@ -609,6 +624,21 @@ function appendReviewActions(runId, processingRun) {
 }
 
 
+function openHistoryDialog() {
+    state.dialogReturnFocus =
+        document.activeElement instanceof HTMLElement
+            ? document.activeElement
+            : null;
+    elements.dialog.showModal();
+    elements.closeDialog.focus();
+}
+
+function restoreHistoryDialogFocus() {
+    const returnFocus = state.dialogReturnFocus;
+    state.dialogReturnFocus = null;
+    if (returnFocus?.isConnected) returnFocus.focus();
+}
+
 async function loadUniversalInvoice(runId, filename) {
     try {
         const response = await window.documentAuth.authenticatedFetch(
@@ -623,7 +653,7 @@ async function loadUniversalInvoice(runId, filename) {
         elements.dialogTitle.textContent = `${filename} · Universal Invoice`;
         elements.dialogBody.replaceChildren();
         appendDetail("Universal Invoice", body);
-        elements.dialog.showModal();
+        openHistoryDialog();
     } catch (error) {
         showMessage(
             `Universal Invoice не е достъпен: ${error.message}`,
@@ -664,7 +694,7 @@ async function loadDetail(runId) {
         appendDetail("Валидация", body.validation);
         appendDetail("Грешка", body.error);
         appendReviewActions(runId, body);
-        elements.dialog.showModal();
+        openHistoryDialog();
     } catch (error) {
         showMessage(`Неуспешно зареждане на детайлите: ${error.message}`);
     }
@@ -693,7 +723,14 @@ elements.next.addEventListener("click", () => {
     state.offset += PAGE_SIZE;
     loadHistory();
 });
-elements.closeDialog.addEventListener("click", () => elements.dialog.close());
+elements.closeDialog.addEventListener(
+    "click",
+    () => elements.dialog.close(),
+);
+elements.dialog.addEventListener(
+    "close",
+    restoreHistoryDialogFocus,
+);
 
 window.documentAuth.initialize().then(
     refreshHistoryPage,
