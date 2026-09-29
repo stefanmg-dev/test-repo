@@ -21,6 +21,10 @@ def audit_security_event(
     retention_cutoff: Any | None = None,
     retention_limit: int | None = None,
     deleted_count: int | None = None,
+    feedback_export_limit: int | None = None,
+    cursor_supplied: bool | None = None,
+    exported_count: int | None = None,
+    next_cursor_available: bool | None = None,
 ) -> None:
     extra = {
         "event": event,
@@ -48,5 +52,13 @@ def audit_security_event(
         extra["retention_limit"] = retention_limit
     if deleted_count is not None:
         extra["deleted_count"] = deleted_count
+    if feedback_export_limit is not None:
+        extra["feedback_export_limit"] = feedback_export_limit
+    if cursor_supplied is not None:
+        extra["cursor_supplied"] = cursor_supplied
+    if exported_count is not None:
+        extra["exported_count"] = exported_count
+    if next_cursor_available is not None:
+        extra["next_cursor_available"] = next_cursor_available
 
     logger.info(message, extra=extra)

@@ -144,6 +144,17 @@ def export_universal_invoice_feedback(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(exc),
         ) from exc
+    exported_count = content.count("\n")
+    audit_security_event(
+        "security.processing_invoice_feedback_exported",
+        message="Universal Invoice feedback exported",
+        result="success",
+        principal=principal,
+        feedback_export_limit=limit,
+        cursor_supplied=after_reviewed_at is not None,
+        exported_count=exported_count,
+        next_cursor_available=next_reviewed_at is not None,
+    )
     headers = {
         "Content-Disposition": (
             "attachment; "

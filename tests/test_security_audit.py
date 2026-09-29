@@ -154,3 +154,55 @@ def test_retention_audit_contains_only_operational_metadata():
     assert payload["tenant_id"] == "tenant-1"
     assert "final_values" not in payload
     assert "corrected_values" not in payload
+
+
+def test_feedback_export_audit_contains_only_operational_metadata():
+    stream = StringIO()
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(JsonLogFormatter())
+    logger = logging.getLogger("document_processing.security")
+    previous_handlers = logger.handlers
+    previous_propagate = logger.propagate
+    previous_level = logger.level
+    logger.handlers = [handler]
+    logger.propagate = False
+    logger.setLevel(logging.INFO)
+    principal = SecurityPrincipal(
+        principal_type="service",
+        subject="feedback-reader",
+        tenant_id="tenant-1",
+        scopes=frozenset({"processing-runs:read"}),
+    )
+    try:
+        audit_security_event(
+            "security.processing_invoice_feedback_exported",
+            message="Universal Invoice feedback exported",
+            result="success",
+            principal=principal,
+            feedback_export_limit=100,
+            cursor_supplied=True,
+            exported_count=2,
+            next_cursor_available=True,
+        )
+    finally:
+        logger.handlers = previous_handlers
+        logger.propagate = previous_propagate
+        logger.setLevel(previous_level)
+
+    payload = json.loads(stream.getvalue())
+    assert payload["feedback_export_limit"] == 100
+    assert payload["cursor_supplied"] is True
+    assert payload["exported_count"] == 2
+    assert payload["next_cursor_available"] is True
+    assert payload["tenant_id"] == "tenant-1"
+    forbidden = {
+        "final_values",
+        "corrected_values",
+        "filename",
+        "raw_text",
+        "after_reviewed_at",
+        "after_processing_run_id",
+        "api_key",
+    }
+    assert forbidden.isdisjoint(payload)
+    assert payload["processing_run_id"] is None

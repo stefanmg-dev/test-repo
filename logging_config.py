@@ -35,6 +35,10 @@ SAFE_EXTRA_FIELDS = frozenset(
         "retention_cutoff",
         "retention_limit",
         "deleted_count",
+        "feedback_export_limit",
+        "cursor_supplied",
+        "exported_count",
+        "next_cursor_available",
         "tenant_id",
     }
 )
