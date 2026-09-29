@@ -320,3 +320,82 @@ def test_configuration_browser_switches_profile_for_editing(
         "default_profile"
     ] == "telecom_a1"
     assert console_errors == []
+
+
+def test_configuration_modal_keyboard_focus_behavior(
+    live_server_url,
+):
+    config_body = {
+        "document_types": {
+            "invoice": {
+                "default_profile": "telecom_a1",
+                "common_fields": [],
+                "profiles": {
+                    "telecom_a1": {
+                        "fields": [],
+                    }
+                },
+            }
+        },
+        "resolved_document_types": {},
+        "document_type_metadata": {
+            "invoice": {
+                "status": "ready",
+                "ready": True,
+                "field_count": 0,
+            }
+        },
+    }
+
+    with sync_playwright() as playwright:
+        executable = Path(playwright.chromium.executable_path)
+        if not executable.exists():
+            pytest.skip("Playwright Chromium is not installed")
+
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(
+            viewport={"width": 1280, "height": 900}
+        )
+        page.route(
+            "**/api/v1/auth/config",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"enabled": False}),
+            ),
+        )
+        page.route(
+            "**/api/v1/config/document-types",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(config_body),
+            ),
+        )
+        page.goto(
+            f"{live_server_url}/ui/index.html",
+            wait_until="networkidle",
+        )
+
+        trigger = page.locator("#openAddFieldButton")
+        trigger.focus()
+        expect(trigger).to_be_focused()
+        trigger.press("Enter")
+
+        dialog = page.get_by_role("dialog")
+        expect(dialog).to_be_visible()
+        expect(page.locator("#fieldName")).to_be_focused()
+
+        page.locator("#confirmModalButton").focus()
+        expect(page.locator("#confirmModalButton")).to_be_focused()
+        page.keyboard.press("Tab")
+        expect(page.locator("#closeModalButton")).to_be_focused()
+
+        page.keyboard.press("Shift+Tab")
+        expect(page.locator("#confirmModalButton")).to_be_focused()
+
+        page.keyboard.press("Escape")
+        expect(dialog).to_be_hidden()
+        expect(trigger).to_be_focused()
+
+        browser.close()

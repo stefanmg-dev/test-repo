@@ -10,6 +10,7 @@ const state = {
     selectedFieldScope: "legacy",
     selectedProfileName: null,
     modalConfirmHandler: null,
+    modalReturnFocus: null,
 };
 
 const byId = (id) => document.getElementById(id);
@@ -30,6 +31,7 @@ const el = {
     fieldList: byId("fieldList"),
     messageArea: byId("messageArea"),
     modalBackdrop: byId("modalBackdrop"),
+    configurationModal: byId("configurationModal"),
     modalTitle: byId("modalTitle"),
     modalBody: byId("modalBody"),
     confirmModalButton: byId("confirmModalButton"),
@@ -377,20 +379,65 @@ async function loadConfiguration(preserveSelection = true) {
     }
 }
 
+function getModalFocusableElements() {
+    return Array.from(
+        el.configurationModal.querySelectorAll(
+            'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+        )
+    ).filter((element) => !element.closest(".hidden"));
+}
+
 function openModal({ title, body, confirmText = "Запази", onConfirm }) {
+    state.modalReturnFocus =
+        document.activeElement instanceof HTMLElement
+            ? document.activeElement
+            : null;
     el.modalTitle.textContent = title;
     el.modalBody.replaceChildren();
     el.modalBody.appendChild(body);
     el.confirmModalButton.textContent = confirmText;
     state.modalConfirmHandler = onConfirm;
     el.modalBackdrop.classList.remove("hidden");
-    el.modalBody.querySelector("input, select, textarea")?.focus();
+    const initialFocus =
+        el.modalBody.querySelector("input, select, textarea")
+        || el.closeModalButton;
+    initialFocus.focus();
 }
 
 function closeModal() {
+    if (el.modalBackdrop.classList.contains("hidden")) return;
     el.modalBackdrop.classList.add("hidden");
     el.modalBody.replaceChildren();
     state.modalConfirmHandler = null;
+    const returnFocus = state.modalReturnFocus;
+    state.modalReturnFocus = null;
+    if (returnFocus?.isConnected) returnFocus.focus();
+}
+
+function trapModalFocus(event) {
+    if (
+        event.key !== "Tab"
+        || el.modalBackdrop.classList.contains("hidden")
+    ) {
+        return;
+    }
+
+    const focusable = getModalFocusableElements();
+    if (!focusable.length) {
+        event.preventDefault();
+        el.configurationModal.focus();
+        return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+    }
 }
 
 function textInput(id, label, value = "", options = {}) {
@@ -842,7 +889,14 @@ el.modalBackdrop.addEventListener("click", (event) => {
     if (event.target === el.modalBackdrop) closeModal();
 });
 document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !el.modalBackdrop.classList.contains("hidden")) closeModal();
+    if (
+        event.key === "Escape"
+        && !el.modalBackdrop.classList.contains("hidden")
+    ) {
+        closeModal();
+        return;
+    }
+    trapModalFocus(event);
 });
 el.navRefresh.addEventListener("click", async () => {
     await loadConfiguration();

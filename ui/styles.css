@@ -953,3 +953,12 @@ textarea.form-control {
     padding-left: 20px;
     color: #991b1b;
 }
+
+.button:focus-visible,
+.icon-button:focus-visible,
+.nav-item:focus-visible,
+.document-type-item:focus-visible,
+.form-control:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.72);
+    outline-offset: 2px;
+}
