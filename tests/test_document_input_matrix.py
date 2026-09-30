@@ -344,3 +344,69 @@ def test_corrupted_image_is_rejected_as_invalid_document_input(
                 b"\x89PNG\r\n\x1a\ncorrupted-content",
             )
         )
+
+
+def test_image_only_pdf_uses_real_pdf_rendering_and_cleans_pages(
+    monkeypatch,
+):
+    first_page = Image.new(
+        "RGB",
+        (320, 180),
+        "white",
+    )
+    second_page = Image.new(
+        "RGB",
+        (320, 180),
+        "lightgray",
+    )
+    pdf_buffer = BytesIO()
+    first_page.save(
+        pdf_buffer,
+        "PDF",
+        save_all=True,
+        append_images=[second_page],
+        resolution=150.0,
+    )
+
+    rendered_paths = []
+
+    def fake_run_ocr_with_quality(image_path):
+        rendered_paths.append(image_path)
+        with Image.open(image_path) as image:
+            assert image.format == "PNG"
+            assert image.width > 0
+            assert image.height > 0
+
+        return {
+            "text": f"Synthetic scanned page {len(rendered_paths)}",
+            "quality": accepted_image_quality("PNG"),
+        }
+
+    monkeypatch.setattr(
+        ocr_engine,
+        "run_ocr_with_quality",
+        fake_run_ocr_with_quality,
+    )
+
+    result = extract(
+        make_upload(
+            "synthetic-scan.pdf",
+            pdf_buffer.getvalue(),
+        )
+    )
+
+    assert result["text"] == (
+        "Synthetic scanned page 1\n\n"
+        "Synthetic scanned page 2"
+    )
+    assert result["quality"]["status"] == "accepted"
+    assert result["quality"]["requires_review"] is False
+    assert result["quality"]["input"]["format"] == "PDF"
+    assert result["quality"]["input"]["source"] == "scanned_pdf"
+    assert result["quality"]["input"]["page_count"] == 2
+    assert len(result["quality"]["input"]["pages"]) == 2
+    assert len(rendered_paths) == 2
+    assert all(
+        not Path(rendered_path).exists()
+        for rendered_path in rendered_paths
+    )
