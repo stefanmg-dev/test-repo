@@ -414,11 +414,12 @@
         "tags": [
           "processing-runs"
         ],
-        "summary": "Get Extraction Quality Analysis",
+        "summary": "Analyze reviewed extraction quality",
+        "description": "Aggregates tenant-owned corrected runs by document type, profile, and configuration hash to show correction counts and rates. Requires the processing-runs:read scope when authenticated.",
         "operationId": "get_extraction_quality_analysis_api_v1_processing_runs_extraction_quality_get",
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Reviewed extraction quality analysis.",
             "content": {
               "application/json": {
                 "schema": {
@@ -443,11 +444,12 @@
         "tags": [
           "processing-runs"
         ],
-        "summary": "Get Invoice Shadow Summary",
+        "summary": "Summarize Universal Invoice shadow validation",
+        "description": "Returns tenant-owned shadow-validation totals, success rate, schema version breakdown, and safe failure reason counts without document values. Requires the processing-runs:read scope when authenticated.",
         "operationId": "get_invoice_shadow_summary_api_v1_processing_runs_invoice_shadow_summary_get",
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Universal Invoice shadow-validation summary.",
             "content": {
               "application/json": {
                 "schema": {
@@ -472,11 +474,12 @@
         "tags": [
           "processing-runs"
         ],
-        "summary": "Get Processing Run Review Summary",
+        "summary": "Summarize processing run reviews",
+        "description": "Returns tenant-owned review workflow counts and average completed review duration. Requires the processing-runs:read scope when authenticated.",
         "operationId": "get_processing_run_review_summary_api_v1_processing_runs_review_summary_get",
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Processing review workflow summary.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3801,14 +3804,19 @@
           "corrected_runs": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Corrected Runs"
+            "title": "Corrected Runs",
+            "description": "Tenant-owned corrected runs included in the analysis.",
+            "examples": [
+              1
+            ]
           },
           "groups": {
             "items": {
               "$ref": "#/components/schemas/ExtractionQualityGroupModel"
             },
             "type": "array",
-            "title": "Groups"
+            "title": "Groups",
+            "description": "Quality groups partitioned by document type, profile, and configuration hash."
           }
         },
         "additionalProperties": false,
@@ -3823,12 +3831,20 @@
         "properties": {
           "field_name": {
             "type": "string",
-            "title": "Field Name"
+            "title": "Field Name",
+            "description": "Configured scalar field name.",
+            "examples": [
+              "invoice_number"
+            ]
           },
           "corrections": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Corrections"
+            "title": "Corrections",
+            "description": "Corrected runs in which this field changed.",
+            "examples": [
+              1
+            ]
           }
         },
         "additionalProperties": false,
@@ -3844,27 +3860,32 @@
           "total": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Total"
+            "title": "Total",
+            "description": "Compared field occurrences."
           },
           "unchanged": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Unchanged"
+            "title": "Unchanged",
+            "description": "Field occurrences left unchanged."
           },
           "changed": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Changed"
+            "title": "Changed",
+            "description": "Existing field values changed."
           },
           "added": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Added"
+            "title": "Added",
+            "description": "Values added by reviewers."
           },
           "removed": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Removed"
+            "title": "Removed",
+            "description": "Values removed by reviewers."
           }
         },
         "additionalProperties": false,
@@ -3882,7 +3903,11 @@
         "properties": {
           "document_type": {
             "type": "string",
-            "title": "Document Type"
+            "title": "Document Type",
+            "description": "Document type represented by this quality group.",
+            "examples": [
+              "invoice"
+            ]
           },
           "profile": {
             "anyOf": [
@@ -3893,7 +3918,11 @@
                 "type": "null"
               }
             ],
-            "title": "Profile"
+            "title": "Profile",
+            "description": "Resolved supplier profile, or null when not applicable.",
+            "examples": [
+              "telecom_a1"
+            ]
           },
           "configuration_hash": {
             "anyOf": [
@@ -3904,41 +3933,57 @@
                 "type": "null"
               }
             ],
-            "title": "Configuration Hash"
+            "title": "Configuration Hash",
+            "description": "Configuration snapshot hash used by the corrected runs.",
+            "examples": [
+              "hash-synthetic"
+            ]
           },
           "corrected_runs": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Corrected Runs"
+            "title": "Corrected Runs",
+            "description": "Corrected runs included in this group.",
+            "examples": [
+              1
+            ]
           },
           "field_counts": {
-            "$ref": "#/components/schemas/ExtractionQualityFieldCountsModel"
+            "$ref": "#/components/schemas/ExtractionQualityFieldCountsModel",
+            "description": "Compared field occurrences by change category."
           },
           "corrections": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Corrections"
+            "title": "Corrections",
+            "description": "Changed, added, and removed field occurrences.",
+            "examples": [
+              1
+            ]
           },
           "correction_rate": {
             "type": "number",
             "maximum": 1.0,
             "minimum": 0.0,
-            "title": "Correction Rate"
+            "title": "Correction Rate",
+            "description": "Corrections divided by compared field occurrences.",
+            "examples": [
+              0.5
+            ]
           },
           "field_corrections": {
             "items": {
               "$ref": "#/components/schemas/ExtractionQualityFieldCorrectionModel"
             },
             "type": "array",
-            "title": "Field Corrections"
+            "title": "Field Corrections",
+            "description": "Correction counts grouped by configured field name."
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
           "document_type",
-          "profile",
-          "configuration_hash",
           "corrected_runs",
           "field_counts",
           "corrections",
@@ -4497,12 +4542,20 @@
               "validation_error",
               "mapper_error"
             ],
-            "title": "Reason"
+            "title": "Reason",
+            "description": "Safe shadow-validation failure reason code.",
+            "examples": [
+              "validation_error"
+            ]
           },
           "count": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Count"
+            "title": "Count",
+            "description": "Number of failed runs with this reason.",
+            "examples": [
+              1
+            ]
           }
         },
         "additionalProperties": false,
@@ -4517,22 +4570,38 @@
         "properties": {
           "schema_version": {
             "type": "string",
-            "title": "Schema Version"
+            "title": "Schema Version",
+            "description": "Universal Invoice schema version.",
+            "examples": [
+              "1"
+            ]
           },
           "total": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Total"
+            "title": "Total",
+            "description": "Invoice runs evaluated with this schema version.",
+            "examples": [
+              4
+            ]
           },
           "succeeded": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Succeeded"
+            "title": "Succeeded",
+            "description": "Runs whose shadow validation succeeded.",
+            "examples": [
+              3
+            ]
           },
           "failed": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Failed"
+            "title": "Failed",
+            "description": "Runs whose shadow validation failed.",
+            "examples": [
+              1
+            ]
           }
         },
         "additionalProperties": false,
@@ -4550,22 +4619,38 @@
           "total": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Total"
+            "title": "Total",
+            "description": "Tenant-owned runs included in the summary.",
+            "examples": [
+              5
+            ]
           },
           "succeeded": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Succeeded"
+            "title": "Succeeded",
+            "description": "Invoice runs with successful shadow validation.",
+            "examples": [
+              3
+            ]
           },
           "failed": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Failed"
+            "title": "Failed",
+            "description": "Invoice runs with failed shadow validation.",
+            "examples": [
+              1
+            ]
           },
           "not_applicable": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Not Applicable"
+            "title": "Not Applicable",
+            "description": "Runs for which invoice shadow validation did not apply.",
+            "examples": [
+              1
+            ]
           },
           "success_rate": {
             "anyOf": [
@@ -4578,21 +4663,27 @@
                 "type": "null"
               }
             ],
-            "title": "Success Rate"
+            "title": "Success Rate",
+            "description": "Succeeded divided by succeeded plus failed. Null when no applicable invoice runs exist.",
+            "examples": [
+              0.75
+            ]
           },
           "schema_versions": {
             "items": {
               "$ref": "#/components/schemas/InvoiceShadowSchemaVersionSummaryModel"
             },
             "type": "array",
-            "title": "Schema Versions"
+            "title": "Schema Versions",
+            "description": "Applicable invoice results grouped by schema version."
           },
           "failure_reasons": {
             "items": {
               "$ref": "#/components/schemas/InvoiceShadowFailureReasonSummaryModel"
             },
             "type": "array",
-            "title": "Failure Reasons"
+            "title": "Failure Reasons",
+            "description": "Failed invoice results grouped by safe reason code."
           }
         },
         "additionalProperties": false,
@@ -5640,27 +5731,47 @@
           "total_requiring_review": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Total Requiring Review"
+            "title": "Total Requiring Review",
+            "description": "Tenant-owned runs that entered the review workflow.",
+            "examples": [
+              10
+            ]
           },
           "pending": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Pending"
+            "title": "Pending",
+            "description": "Review-required runs without a terminal decision.",
+            "examples": [
+              4
+            ]
           },
           "approved": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Approved"
+            "title": "Approved",
+            "description": "Runs approved without corrected values.",
+            "examples": [
+              2
+            ]
           },
           "corrected": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Corrected"
+            "title": "Corrected",
+            "description": "Runs completed with reviewer-corrected values.",
+            "examples": [
+              3
+            ]
           },
           "rejected": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Rejected"
+            "title": "Rejected",
+            "description": "Runs rejected during review.",
+            "examples": [
+              1
+            ]
           },
           "average_review_duration_ms": {
             "anyOf": [
@@ -5672,7 +5783,11 @@
                 "type": "null"
               }
             ],
-            "title": "Average Review Duration Ms"
+            "title": "Average Review Duration Ms",
+            "description": "Average elapsed milliseconds from run completion to terminal review. Null when no completed reviews are available.",
+            "examples": [
+              1500
+            ]
           }
         },
         "additionalProperties": false,

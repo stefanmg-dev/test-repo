@@ -182,33 +182,86 @@ class ProcessingRunListResponseModel(BaseModel):
 
 class InvoiceShadowSchemaVersionSummaryModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    schema_version: str
-    total: int = Field(ge=0)
-    succeeded: int = Field(ge=0)
-    failed: int = Field(ge=0)
+
+    schema_version: str = Field(
+        description="Universal Invoice schema version.",
+        examples=["1"],
+    )
+    total: int = Field(
+        ge=0,
+        description="Invoice runs evaluated with this schema version.",
+        examples=[4],
+    )
+    succeeded: int = Field(
+        ge=0,
+        description="Runs whose shadow validation succeeded.",
+        examples=[3],
+    )
+    failed: int = Field(
+        ge=0,
+        description="Runs whose shadow validation failed.",
+        examples=[1],
+    )
 
 
 class InvoiceShadowFailureReasonSummaryModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
     reason: Literal[
         "validation_error",
         "mapper_error",
-    ]
-    count: int = Field(ge=0)
+    ] = Field(
+        description="Safe shadow-validation failure reason code.",
+        examples=["validation_error"],
+    )
+    count: int = Field(
+        ge=0,
+        description="Number of failed runs with this reason.",
+        examples=[1],
+    )
 
 
 class InvoiceShadowSummaryModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    total: int = Field(ge=0)
-    succeeded: int = Field(ge=0)
-    failed: int = Field(ge=0)
-    not_applicable: int = Field(ge=0)
-    success_rate: float | None = Field(default=None, ge=0, le=1)
-    schema_versions: list[InvoiceShadowSchemaVersionSummaryModel]
+
+    total: int = Field(
+        ge=0,
+        description="Tenant-owned runs included in the summary.",
+        examples=[5],
+    )
+    succeeded: int = Field(
+        ge=0,
+        description="Invoice runs with successful shadow validation.",
+        examples=[3],
+    )
+    failed: int = Field(
+        ge=0,
+        description="Invoice runs with failed shadow validation.",
+        examples=[1],
+    )
+    not_applicable: int = Field(
+        ge=0,
+        description="Runs for which invoice shadow validation did not apply.",
+        examples=[1],
+    )
+    success_rate: float | None = Field(
+        default=None,
+        ge=0,
+        le=1,
+        description=(
+            "Succeeded divided by succeeded plus failed. Null when no "
+            "applicable invoice runs exist."
+        ),
+        examples=[0.75],
+    )
+    schema_versions: list[InvoiceShadowSchemaVersionSummaryModel] = Field(
+        description="Applicable invoice results grouped by schema version."
+    )
     failure_reasons: list[
         InvoiceShadowFailureReasonSummaryModel
-    ]
-
+    ] = Field(
+        description="Failed invoice results grouped by safe reason code."
+    )
 
 class ProcessingRunRetentionPreviewModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -312,51 +365,119 @@ class ProcessingRunReviewModel(BaseModel):
 class ProcessingRunReviewSummaryModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    total_requiring_review: int = Field(ge=0)
-    pending: int = Field(ge=0)
-    approved: int = Field(ge=0)
-    corrected: int = Field(ge=0)
-    rejected: int = Field(ge=0)
+    total_requiring_review: int = Field(
+        ge=0,
+        description="Tenant-owned runs that entered the review workflow.",
+        examples=[10],
+    )
+    pending: int = Field(
+        ge=0,
+        description="Review-required runs without a terminal decision.",
+        examples=[4],
+    )
+    approved: int = Field(
+        ge=0,
+        description="Runs approved without corrected values.",
+        examples=[2],
+    )
+    corrected: int = Field(
+        ge=0,
+        description="Runs completed with reviewer-corrected values.",
+        examples=[3],
+    )
+    rejected: int = Field(
+        ge=0,
+        description="Runs rejected during review.",
+        examples=[1],
+    )
     average_review_duration_ms: int | None = Field(
         default=None,
         ge=0,
+        description=(
+            "Average elapsed milliseconds from run completion to terminal "
+            "review. Null when no completed reviews are available."
+        ),
+        examples=[1500],
     )
-
 
 class ExtractionQualityFieldCorrectionModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    field_name: str
-    corrections: int = Field(ge=0)
+    field_name: str = Field(
+        description="Configured scalar field name.",
+        examples=["invoice_number"],
+    )
+    corrections: int = Field(
+        ge=0,
+        description="Corrected runs in which this field changed.",
+        examples=[1],
+    )
 
 
 class ExtractionQualityFieldCountsModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    total: int = Field(ge=0)
-    unchanged: int = Field(ge=0)
-    changed: int = Field(ge=0)
-    added: int = Field(ge=0)
-    removed: int = Field(ge=0)
+    total: int = Field(ge=0, description="Compared field occurrences.")
+    unchanged: int = Field(ge=0, description="Field occurrences left unchanged.")
+    changed: int = Field(ge=0, description="Existing field values changed.")
+    added: int = Field(ge=0, description="Values added by reviewers.")
+    removed: int = Field(ge=0, description="Values removed by reviewers.")
 
 
 class ExtractionQualityGroupModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    document_type: str
-    profile: str | None
-    configuration_hash: str | None
-    corrected_runs: int = Field(ge=0)
-    field_counts: ExtractionQualityFieldCountsModel
-    corrections: int = Field(ge=0)
-    correction_rate: float = Field(ge=0, le=1)
+    document_type: str = Field(
+        description="Document type represented by this quality group.",
+        examples=["invoice"],
+    )
+    profile: str | None = Field(
+        default=None,
+        description="Resolved supplier profile, or null when not applicable.",
+        examples=["telecom_a1"],
+    )
+    configuration_hash: str | None = Field(
+        default=None,
+        description="Configuration snapshot hash used by the corrected runs.",
+        examples=["hash-synthetic"],
+    )
+    corrected_runs: int = Field(
+        ge=0,
+        description="Corrected runs included in this group.",
+        examples=[1],
+    )
+    field_counts: ExtractionQualityFieldCountsModel = Field(
+        description="Compared field occurrences by change category."
+    )
+    corrections: int = Field(
+        ge=0,
+        description="Changed, added, and removed field occurrences.",
+        examples=[1],
+    )
+    correction_rate: float = Field(
+        ge=0,
+        le=1,
+        description="Corrections divided by compared field occurrences.",
+        examples=[0.5],
+    )
     field_corrections: list[
         ExtractionQualityFieldCorrectionModel
-    ]
+    ] = Field(
+        description="Correction counts grouped by configured field name."
+    )
 
 
 class ExtractionQualityAnalysisModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    corrected_runs: int = Field(ge=0)
-    groups: list[ExtractionQualityGroupModel]
+    corrected_runs: int = Field(
+        ge=0,
+        description="Tenant-owned corrected runs included in the analysis.",
+        examples=[1],
+    )
+    groups: list[ExtractionQualityGroupModel] = Field(
+        description=(
+            "Quality groups partitioned by document type, profile, and "
+            "configuration hash."
+        )
+    )

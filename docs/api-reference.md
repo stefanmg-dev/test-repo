@@ -653,31 +653,42 @@ Each item identifies the run, document type, optional profile, original filename
 
 ### GET `/api/v1/processing-runs/extraction-quality`
 
-**Purpose:** Get Extraction Quality Analysis.
+**Purpose:** Analyze reviewed extraction quality for tenant-owned corrected runs.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `processing-runs:read` through `ApiKeyAuth` or `BearerAuth`. Results are tenant-isolated. When legacy anonymous access is enabled, the default tenant is used.
 
-**Parameters:** None documented.
+**Successful response:** `ExtractionQualityAnalysisModel`.
 
-**Request body:** None.
+- `corrected_runs`: Number of corrected runs included in the analysis.
+- `groups`: Results partitioned by document type, optional profile, and configuration hash.
+- `document_type`: Document type represented by a group.
+- `profile`: Resolved supplier profile, or `null` when profiles do not apply.
+- `configuration_hash`: Configuration snapshot hash shared by the group, or `null` when unavailable.
+- `field_counts`: Compared field occurrences classified as total, unchanged, changed, added, or removed.
+- `corrections`: Changed, added, and removed field occurrences.
+- `correction_rate`: Corrections divided by compared field occurrences, from `0` to `1`.
+- `field_corrections`: Correction counts grouped by configured field name.
 
-**Responses:**
-
-- `200`: Successful Response Response: `application/json`: `ExtractionQualityAnalysisModel`.
+The operation returns aggregate review-derived metrics and does not return document values.
 
 ### GET `/api/v1/processing-runs/invoice-shadow-summary`
 
-**Purpose:** Get Invoice Shadow Summary.
+**Purpose:** Summarize Universal Invoice shadow-validation outcomes without returning document values.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `processing-runs:read` through `ApiKeyAuth` or `BearerAuth`. Results are tenant-isolated. When legacy anonymous access is enabled, the default tenant is used.
 
-**Parameters:** None documented.
+**Successful response:** `InvoiceShadowSummaryModel`.
 
-**Request body:** None.
-
-**Responses:**
-
-- `200`: Successful Response Response: `application/json`: `InvoiceShadowSummaryModel`.
+- `total`: Tenant-owned runs included in the summary.
+- `succeeded`: Invoice runs whose shadow validation succeeded.
+- `failed`: Invoice runs whose shadow validation failed.
+- `not_applicable`: Runs for which invoice shadow validation did not apply.
+- `success_rate`: `succeeded / (succeeded + failed)`, or `null` when no applicable invoice runs exist.
+- `schema_versions`: Applicable invoice results grouped by Universal Invoice schema version.
+- `failure_reasons`: Failed results grouped by safe reason code.
+- `schema_version`: Universal Invoice schema version for one breakdown item.
+- `reason`: `validation_error` or `mapper_error`.
+- `count`: Number of failures with the corresponding safe reason code.
 
 ### POST `/api/v1/processing-runs/retention-execute`
 
@@ -710,17 +721,18 @@ Each item identifies the run, document type, optional profile, original filename
 
 ### GET `/api/v1/processing-runs/review-summary`
 
-**Purpose:** Get Processing Run Review Summary.
+**Purpose:** Summarize the tenant review workflow and completed-review duration.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `processing-runs:read` through `ApiKeyAuth` or `BearerAuth`. Results are tenant-isolated. When legacy anonymous access is enabled, the default tenant is used.
 
-**Parameters:** None documented.
+**Successful response:** `ProcessingRunReviewSummaryModel`.
 
-**Request body:** None.
-
-**Responses:**
-
-- `200`: Successful Response Response: `application/json`: `ProcessingRunReviewSummaryModel`.
+- `total_requiring_review`: Runs that entered the review workflow.
+- `pending`: Review-required runs without a terminal decision.
+- `approved`: Runs approved without corrected values.
+- `corrected`: Runs completed with reviewer-corrected values.
+- `rejected`: Runs rejected during review.
+- `average_review_duration_ms`: Average elapsed milliseconds from run completion to a terminal review decision, or `null` when no completed reviews are available.
 
 ### GET `/api/v1/processing-runs/universal-invoice-feedback-export`
 

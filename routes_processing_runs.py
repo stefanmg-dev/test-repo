@@ -192,6 +192,13 @@ def export_universal_invoice_feedback(
 
 @router.get(
     "/extraction-quality",
+    summary="Analyze reviewed extraction quality",
+    description=(
+        "Aggregates tenant-owned corrected runs by document type, profile, "
+        "and configuration hash to show correction counts and rates. "
+        "Requires the processing-runs:read scope when authenticated."
+    ),
+    response_description="Reviewed extraction quality analysis.",
     response_model=ExtractionQualityAnalysisModel,
 )
 def get_extraction_quality_analysis(
@@ -213,6 +220,13 @@ def get_extraction_quality_analysis(
 
 @router.get(
     "/invoice-shadow-summary",
+    summary="Summarize Universal Invoice shadow validation",
+    description=(
+        "Returns tenant-owned shadow-validation totals, success rate, schema "
+        "version breakdown, and safe failure reason counts without document "
+        "values. Requires the processing-runs:read scope when authenticated."
+    ),
+    response_description="Universal Invoice shadow-validation summary.",
     response_model=InvoiceShadowSummaryModel,
 )
 def get_invoice_shadow_summary(
@@ -234,6 +248,13 @@ def get_invoice_shadow_summary(
 
 @router.get(
     "/review-summary",
+    summary="Summarize processing run reviews",
+    description=(
+        "Returns tenant-owned review workflow counts and average completed "
+        "review duration. Requires the processing-runs:read scope when "
+        "authenticated."
+    ),
+    response_description="Processing review workflow summary.",
     response_model=ProcessingRunReviewSummaryModel,
 )
 def get_processing_run_review_summary(
