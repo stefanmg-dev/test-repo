@@ -307,7 +307,8 @@
         "tags": [
           "processing-runs"
         ],
-        "summary": "Export Processing Runs",
+        "summary": "Export processing runs as CSV",
+        "description": "Streams a tenant-scoped CSV snapshot of processing-run lifecycle, review, configuration, filename, and effective-value metadata. The export excludes raw OCR text. Authenticated requests require the processing-runs:read scope.",
         "operationId": "export_processing_runs_api_v1_processing_runs_export_get",
         "responses": {
           "200": {
@@ -332,7 +333,8 @@
         "tags": [
           "processing-runs"
         ],
-        "summary": "Export Universal Invoice Feedback",
+        "summary": "Export reviewed Universal Invoice feedback as JSONL",
+        "description": "Returns a deterministic tenant-scoped JSONL page of reviewed invoice feedback with original and reviewed Universal Invoice representations and review/configuration metadata. The export excludes filenames and raw OCR text. Resume with both next-cursor headers. Authenticated requests require the processing-runs:read scope.",
         "operationId": "export_universal_invoice_feedback_api_v1_processing_runs_universal_invoice_feedback_export_get",
         "security": [
           {
@@ -351,8 +353,10 @@
               "type": "integer",
               "maximum": 1000,
               "minimum": 1,
+              "description": "Required page size from 1 to 1000 records.",
               "title": "Limit"
-            }
+            },
+            "description": "Required page size from 1 to 1000 records."
           },
           {
             "name": "after_reviewed_at",
@@ -368,8 +372,10 @@
                   "type": "null"
                 }
               ],
+              "description": "First component of the exclusive tuple cursor. Supply together with after_processing_run_id.",
               "title": "After Reviewed At"
-            }
+            },
+            "description": "First component of the exclusive tuple cursor. Supply together with after_processing_run_id."
           },
           {
             "name": "after_processing_run_id",
@@ -385,15 +391,43 @@
                   "type": "null"
                 }
               ],
+              "description": "Second component of the exclusive tuple cursor. Supply together with after_reviewed_at.",
               "title": "After Processing Run Id"
-            }
+            },
+            "description": "Second component of the exclusive tuple cursor. Supply together with after_reviewed_at."
           }
         ],
         "responses": {
           "200": {
-            "description": "Universal Invoice feedback JSONL export",
+            "description": "Universal Invoice feedback JSONL export page",
+            "headers": {
+              "X-Next-Reviewed-At": {
+                "description": "First component of the next-page cursor; omitted on the final page.",
+                "schema": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "X-Next-Processing-Run-Id": {
+                "description": "Second component of the next-page cursor; omitted on the final page.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
             "content": {
               "application/x-ndjson": {}
+            }
+          },
+          "409": {
+            "description": "Feedback export mapping failed atomically",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseModel"
+                }
+              }
             }
           },
           "422": {

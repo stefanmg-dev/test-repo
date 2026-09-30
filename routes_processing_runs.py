@@ -55,6 +55,13 @@ router = APIRouter(
 
 @router.get(
     "/export",
+    summary="Export processing runs as CSV",
+    description=(
+        "Streams a tenant-scoped CSV snapshot of processing-run lifecycle, "
+        "review, configuration, filename, and effective-value metadata. "
+        "The export excludes raw OCR text. Authenticated requests require "
+        "the processing-runs:read scope."
+    ),
     response_class=StreamingResponse,
     responses={
         200: {
@@ -96,20 +103,72 @@ def export_processing_runs(
 
 @router.get(
     "/universal-invoice-feedback-export",
+    summary="Export reviewed Universal Invoice feedback as JSONL",
+    description=(
+        "Returns a deterministic tenant-scoped JSONL page of reviewed "
+        "invoice feedback with original and reviewed Universal Invoice "
+        "representations and review/configuration metadata. The export "
+        "excludes filenames and raw OCR text. Resume with both next-cursor "
+        "headers. Authenticated requests require the processing-runs:read "
+        "scope."
+    ),
     response_class=StreamingResponse,
     responses={
         200: {
-            "description": "Universal Invoice feedback JSONL export",
+            "description": "Universal Invoice feedback JSONL export page",
+            "headers": {
+                "X-Next-Reviewed-At": {
+                    "description": (
+                        "First component of the next-page cursor; omitted "
+                        "on the final page."
+                    ),
+                    "schema": {"type": "string", "format": "date-time"},
+                },
+                "X-Next-Processing-Run-Id": {
+                    "description": (
+                        "Second component of the next-page cursor; omitted "
+                        "on the final page."
+                    ),
+                    "schema": {"type": "string", "format": "uuid"},
+                },
+            },
             "content": {"application/x-ndjson": {}},
-        }
+        },
+        status.HTTP_409_CONFLICT: {
+            "description": "Feedback export mapping failed atomically",
+            "model": ApiErrorResponseModel,
+        },
     },
 )
 def export_universal_invoice_feedback(
     processing_run_service: ProcessingRunServiceDependency,
     principal: OptionalApiKeyPrincipal,
-    limit: Annotated[int, Query(ge=1, le=1000)],
-    after_reviewed_at: datetime | None = None,
-    after_processing_run_id: UUID | None = None,
+    limit: Annotated[
+        int,
+        Query(
+            ge=1,
+            le=1000,
+            description="Required page size from 1 to 1000 records.",
+        ),
+    ],
+    after_reviewed_at: Annotated[
+        datetime | None,
+        Query(
+            description=(
+                "First component of the exclusive tuple cursor. Supply "
+                "together with after_processing_run_id."
+            )
+        ),
+    ] = None,
+    after_processing_run_id: Annotated[
+        UUID | None,
+        Query(
+            description=(
+                "Second component of the exclusive tuple cursor. Supply "
+                "together with after_reviewed_at."
+            )
+        ),
+    ] = None,
 ):
     enforce_scope_if_authenticated(
         principal,

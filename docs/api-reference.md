@@ -639,17 +639,29 @@ Each item identifies the run, document type, optional profile, original filename
 
 ### GET `/api/v1/processing-runs/export`
 
-**Purpose:** Export Processing Runs.
+**Purpose:** Stream a tenant-scoped CSV snapshot of processing-run lifecycle, review, configuration, filename, and effective-value metadata.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `processing-runs:read` through `ApiKeyAuth` or `BearerAuth`. When legacy anonymous access is enabled, the default tenant is used.
 
-**Parameters:** None documented.
+**Response media type:** `text/csv; charset=utf-8`.
 
-**Request body:** None.
+**Download filename:** `processing-runs.csv`.
 
-**Responses:**
+**CSV columns:**
 
-- `200`: Processing runs CSV export Response: `text/csv`: `documented schema`.
+- `processing_run_id`: Unique processing-run identifier.
+- `document_type`: Configured document type.
+- `profile`: Resolved supplier profile, empty when unavailable.
+- `filename`: Original uploaded filename.
+- `processing_status`: Processing lifecycle outcome.
+- `review_status`: Review state, empty when review does not apply.
+- `created_at`: Run creation timestamp.
+- `completed_at`: Completion timestamp, empty while incomplete.
+- `reviewed_at`: Review timestamp, empty before review.
+- `configuration_hash`: Resolved configuration snapshot hash.
+- `effective_values_json`: Deterministic JSON containing corrected values for corrected reviews, original final values otherwise, and empty for rejected reviews.
+
+The export excludes raw OCR text. Values beginning with spreadsheet-formula prefixes are escaped to reduce CSV formula-injection risk.
 
 ### GET `/api/v1/processing-runs/extraction-quality`
 
@@ -754,22 +766,47 @@ Call preview before execution to inspect the current deletion boundary and candi
 
 ### GET `/api/v1/processing-runs/universal-invoice-feedback-export`
 
-**Purpose:** Export Universal Invoice Feedback.
+**Purpose:** Export a deterministic, resumable JSONL page of reviewed Universal Invoice feedback for the caller's tenant.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `processing-runs:read` through `ApiKeyAuth` or `BearerAuth`. When legacy anonymous access is enabled, the default tenant is used.
 
-**Parameters:**
+**Response media type:** `application/x-ndjson`.
 
-- `limit` (query, required): Maximum number of records to return or export, subject to the endpoint bounds.
-- `after_reviewed_at` (query, optional): First component of the resumable feedback-export cursor. Supply it together with `after_processing_run_id`.
-- `after_processing_run_id` (query, optional): Second component of the resumable feedback-export cursor. Supply it together with `after_reviewed_at`.
+**Download filename:** `universal-invoice-feedback.jsonl`.
 
-**Request body:** None.
+**Query parameters:**
 
-**Responses:**
+- `limit` (integer, required, range `1..1000`): Maximum records in one page.
+- `after_reviewed_at` (date-time, optional): First component of the exclusive tuple cursor.
+- `after_processing_run_id` (UUID, optional): Second component of the exclusive tuple cursor.
 
-- `200`: Universal Invoice feedback JSONL export Response: `application/x-ndjson`: `documented schema`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+Both cursor components must be supplied together. Omit both for the first page.
+
+**JSONL record fields:**
+
+- `feedback_schema_version`: Version of the feedback export record contract.
+- `processing_run_id`: Source processing-run identifier.
+- `configuration_hash`: Configuration snapshot hash used by the run.
+- `invoice_schema_version`: Universal Invoice schema version.
+- `review_status`: Recorded terminal review state.
+- `reviewed_at`: Review timestamp.
+- `reviewed_by_type`: Principal type that recorded the review.
+- `original_universal_invoice`: Universal Invoice mapped from original final values.
+- `reviewed_universal_invoice`: Universal Invoice mapped from corrected values for corrected reviews, otherwise from original values.
+
+The export excludes filenames and raw OCR text. Records use deterministic JSON serialization and ordering.
+
+**Pagination response headers:**
+
+- `X-Next-Reviewed-At`: First component of the next-page cursor.
+- `X-Next-Processing-Run-Id`: Second component of the next-page cursor.
+
+When both headers are present, pass both values to retrieve the next page. Their absence marks the final page. An empty body represents an empty page.
+
+**Error responses:**
+
+- `409`: Universal Invoice mapping failed. The response is atomic and contains no partial JSONL records.
+- `422`: `limit` is missing or outside `1..1000`, a cursor value is invalid, or only one cursor component was supplied.
 
 ### GET `/api/v1/processing-runs/{run_id}`
 
