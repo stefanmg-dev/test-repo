@@ -935,7 +935,8 @@
         "tags": [
           "processing-runs"
         ],
-        "summary": "Get Processing Run Review",
+        "summary": "Get processing run review",
+        "description": "Returns the tenant-owned review record and effective values for a processing run. Requires the processing-runs:review scope.",
         "operationId": "get_processing_run_review_api_v1_processing_runs__run_id__review_get",
         "security": [
           {
@@ -953,17 +954,29 @@
             "schema": {
               "type": "string",
               "format": "uuid",
+              "description": "Unique identifier of the processing run to review.",
               "title": "Run Id"
-            }
+            },
+            "description": "Unique identifier of the processing run to review."
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Processing run review state and effective values.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProcessingRunReviewModel"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Processing run was not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseModel"
                 }
               }
             }
@@ -984,7 +997,8 @@
         "tags": [
           "processing-runs"
         ],
-        "summary": "Update Processing Run Review",
+        "summary": "Record a processing run review decision",
+        "description": "Records one terminal review decision for a tenant-owned processing run and preserves the original extraction values for audit. Requires the processing-runs:review scope.",
         "operationId": "update_processing_run_review_api_v1_processing_runs__run_id__review_put",
         "security": [
           {
@@ -1002,8 +1016,10 @@
             "schema": {
               "type": "string",
               "format": "uuid",
+              "description": "Unique identifier of the processing run to review.",
               "title": "Run Id"
-            }
+            },
+            "description": "Unique identifier of the processing run to review."
           }
         ],
         "requestBody": {
@@ -1018,11 +1034,31 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Recorded review decision and effective values.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProcessingRunReviewModel"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Processing run was not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseModel"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Review decision conflicts with the run state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseModel"
                 }
               }
             }
@@ -5425,7 +5461,11 @@
           "processing_run_id": {
             "type": "string",
             "format": "uuid",
-            "title": "Processing Run Id"
+            "title": "Processing Run Id",
+            "description": "Unique identifier of the reviewed processing run.",
+            "examples": [
+              "00000000-0000-4000-8000-000000000001"
+            ]
           },
           "status": {
             "anyOf": [
@@ -5436,7 +5476,11 @@
                 "type": "null"
               }
             ],
-            "title": "Status"
+            "title": "Status",
+            "description": "Current review state. Null before the review workflow starts.",
+            "examples": [
+              "corrected"
+            ]
           },
           "original_values": {
             "anyOf": [
@@ -5448,7 +5492,8 @@
                 "type": "null"
               }
             ],
-            "title": "Original Values"
+            "title": "Original Values",
+            "description": "Original final extraction values preserved for audit."
           },
           "corrected_values": {
             "anyOf": [
@@ -5460,7 +5505,8 @@
                 "type": "null"
               }
             ],
-            "title": "Corrected Values"
+            "title": "Corrected Values",
+            "description": "Reviewer-supplied corrected values, when present."
           },
           "effective_values": {
             "anyOf": [
@@ -5472,7 +5518,8 @@
                 "type": "null"
               }
             ],
-            "title": "Effective Values"
+            "title": "Effective Values",
+            "description": "Values consumers should use after review: corrected values for corrected reviews, otherwise original values."
           },
           "comment": {
             "anyOf": [
@@ -5483,7 +5530,8 @@
                 "type": "null"
               }
             ],
-            "title": "Comment"
+            "title": "Comment",
+            "description": "Optional reviewer comment."
           },
           "reviewed_at": {
             "anyOf": [
@@ -5495,7 +5543,8 @@
                 "type": "null"
               }
             ],
-            "title": "Reviewed At"
+            "title": "Reviewed At",
+            "description": "UTC timestamp when the review decision was recorded."
           },
           "reviewed_by_type": {
             "anyOf": [
@@ -5506,7 +5555,8 @@
                 "type": "null"
               }
             ],
-            "title": "Reviewed By Type"
+            "title": "Reviewed By Type",
+            "description": "Authenticated principal type that recorded the review."
           },
           "reviewed_by_subject": {
             "anyOf": [
@@ -5517,21 +5567,14 @@
                 "type": "null"
               }
             ],
-            "title": "Reviewed By Subject"
+            "title": "Reviewed By Subject",
+            "description": "Authenticated subject that recorded the review."
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "processing_run_id",
-          "status",
-          "original_values",
-          "corrected_values",
-          "effective_values",
-          "comment",
-          "reviewed_at",
-          "reviewed_by_type",
-          "reviewed_by_subject"
+          "processing_run_id"
         ],
         "title": "ProcessingRunReviewModel"
       },
@@ -5544,7 +5587,11 @@
               "corrected",
               "rejected"
             ],
-            "title": "Status"
+            "title": "Status",
+            "description": "Terminal review decision. Use corrected when corrected_values contains reviewer-approved replacements.",
+            "examples": [
+              "corrected"
+            ]
           },
           "corrected_values": {
             "anyOf": [
@@ -5556,7 +5603,13 @@
                 "type": "null"
               }
             ],
-            "title": "Corrected Values"
+            "title": "Corrected Values",
+            "description": "Reviewer-approved scalar values. Required by business rules for a corrected decision and omitted otherwise.",
+            "examples": [
+              {
+                "invoice_number": "INV-SYNTH-002"
+              }
+            ]
           },
           "comment": {
             "anyOf": [
@@ -5568,7 +5621,11 @@
                 "type": "null"
               }
             ],
-            "title": "Comment"
+            "title": "Comment",
+            "description": "Optional review note, limited to 2000 characters.",
+            "examples": [
+              "Verified against the synthetic document."
+            ]
           }
         },
         "additionalProperties": false,

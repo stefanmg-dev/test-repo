@@ -516,10 +516,25 @@ def review_response(processing_run):
 
 @router.get(
     "/{run_id}/review",
+    summary="Get processing run review",
+    description=(
+        "Returns the tenant-owned review record and effective values for a "
+        "processing run. Requires the processing-runs:review scope."
+    ),
+    response_description="Processing run review state and effective values.",
     response_model=ProcessingRunReviewModel,
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Processing run was not found",
+            "model": ApiErrorResponseModel,
+        }
+    },
 )
 def get_processing_run_review(
-    run_id: UUID,
+    run_id: Annotated[
+        UUID,
+        Path(description="Unique identifier of the processing run to review."),
+    ],
     service: ProcessingRunReviewServiceDependency,
     principal: Annotated[
         SecurityPrincipal,
@@ -541,10 +556,30 @@ def get_processing_run_review(
 
 @router.put(
     "/{run_id}/review",
+    summary="Record a processing run review decision",
+    description=(
+        "Records one terminal review decision for a tenant-owned processing "
+        "run and preserves the original extraction values for audit. "
+        "Requires the processing-runs:review scope."
+    ),
+    response_description="Recorded review decision and effective values.",
     response_model=ProcessingRunReviewModel,
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Processing run was not found",
+            "model": ApiErrorResponseModel,
+        },
+        status.HTTP_409_CONFLICT: {
+            "description": "Review decision conflicts with the run state",
+            "model": ApiErrorResponseModel,
+        },
+    },
 )
 def update_processing_run_review(
-    run_id: UUID,
+    run_id: Annotated[
+        UUID,
+        Path(description="Unique identifier of the processing run to review."),
+    ],
     request: ProcessingRunReviewRequestModel,
     service: ProcessingRunReviewServiceDependency,
     principal: Annotated[

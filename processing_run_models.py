@@ -240,27 +240,74 @@ class ProcessingRunReviewRequestModel(BaseModel):
         "approved",
         "corrected",
         "rejected",
-    ]
-    corrected_values: dict[str, Any] | None = None
+    ] = Field(
+        description=(
+            "Terminal review decision. Use corrected when corrected_values "
+            "contains reviewer-approved replacements."
+        ),
+        examples=["corrected"],
+    )
+    corrected_values: dict[str, Any] | None = Field(
+        default=None,
+        description=(
+            "Reviewer-approved scalar values. Required by business rules "
+            "for a corrected decision and omitted otherwise."
+        ),
+        examples=[{"invoice_number": "INV-SYNTH-002"}],
+    )
     comment: str | None = Field(
         default=None,
         max_length=2000,
+        description="Optional review note, limited to 2000 characters.",
+        examples=["Verified against the synthetic document."],
     )
 
 
 class ProcessingRunReviewModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    processing_run_id: UUID
-    status: str | None
-    original_values: dict[str, Any] | None
-    corrected_values: dict[str, Any] | None
-    effective_values: dict[str, Any] | None
-    comment: str | None
-    reviewed_at: datetime | None
-    reviewed_by_type: str | None
-    reviewed_by_subject: str | None
-
+    processing_run_id: UUID = Field(
+        description="Unique identifier of the reviewed processing run.",
+        examples=["00000000-0000-4000-8000-000000000001"],
+    )
+    status: str | None = Field(
+        default=None,
+        description=(
+            "Current review state. Null before the review workflow starts."
+        ),
+        examples=["corrected"],
+    )
+    original_values: dict[str, Any] | None = Field(
+        default=None,
+        description="Original final extraction values preserved for audit."
+    )
+    corrected_values: dict[str, Any] | None = Field(
+        default=None,
+        description="Reviewer-supplied corrected values, when present."
+    )
+    effective_values: dict[str, Any] | None = Field(
+        default=None,
+        description=(
+            "Values consumers should use after review: corrected values "
+            "for corrected reviews, otherwise original values."
+        ),
+    )
+    comment: str | None = Field(
+        default=None,
+        description="Optional reviewer comment."
+    )
+    reviewed_at: datetime | None = Field(
+        default=None,
+        description="UTC timestamp when the review decision was recorded."
+    )
+    reviewed_by_type: str | None = Field(
+        default=None,
+        description="Authenticated principal type that recorded the review."
+    )
+    reviewed_by_subject: str | None = Field(
+        default=None,
+        description="Authenticated subject that recorded the review."
+    )
 
 class ProcessingRunReviewSummaryModel(BaseModel):
     model_config = ConfigDict(extra="forbid")

@@ -778,37 +778,54 @@ The response contains all list-item fields plus:
 
 ### GET `/api/v1/processing-runs/{run_id}/review`
 
-**Purpose:** Get Processing Run Review.
+**Purpose:** Return the review state, original extraction values, reviewer corrections, and effective values for one tenant-owned processing run.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Requires `processing-runs:review` through `ApiKeyAuth` or `BearerAuth`. Tenant isolation is enforced by the authenticated principal.
 
-**Parameters:**
+**Path parameter:**
 
-- `run_id` (path, required): Unique identifier of the processing run to retrieve, review, or preview.
+- `run_id` (UUID, required): Unique identifier of the processing run whose review record is requested.
 
-**Request body:** None.
+**Successful response:** `ProcessingRunReviewModel`.
 
-**Responses:**
+- `processing_run_id`: Reviewed processing-run identifier.
+- `status`: Current review state; nullable before review begins.
+- `original_values`: Original final extraction values preserved for audit.
+- `corrected_values`: Reviewer-supplied replacements, or `null` when no correction exists.
+- `effective_values`: Values consumers should use after review. Corrected reviews use corrected values; other states use original values.
+- `comment`: Optional reviewer note.
+- `reviewed_at`: UTC review timestamp, nullable before a decision.
+- `reviewed_by_type`: Authenticated principal type that recorded the decision.
+- `reviewed_by_subject`: Authenticated subject that recorded the decision.
 
-- `200`: Successful Response Response: `application/json`: `ProcessingRunReviewModel`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+**Error responses:**
+
+- `404`: No reviewable processing run with this identifier exists for the caller's tenant.
+- `422`: `run_id` is not a valid UUID.
 
 ### PUT `/api/v1/processing-runs/{run_id}/review`
 
-**Purpose:** Update Processing Run Review.
+**Purpose:** Record one terminal review decision while preserving the original extraction values for audit.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Requires `processing-runs:review` through `ApiKeyAuth` or `BearerAuth`. The decision is tenant-scoped and attributed to the authenticated principal.
 
-**Parameters:**
+**Path parameter:**
 
-- `run_id` (path, required): Unique identifier of the processing run to retrieve, review, or preview.
+- `run_id` (UUID, required): Unique identifier of the processing run to review.
 
-**Request body:** `application/json`: `ProcessingRunReviewRequestModel`
+**Request body:** `ProcessingRunReviewRequestModel`.
 
-**Responses:**
+- `status` (required): `approved`, `corrected`, or `rejected`.
+- `corrected_values` (optional): Reviewer-approved scalar replacements. Use with the `corrected` decision according to review business rules.
+- `comment` (optional, maximum 2000 characters): Review note.
 
-- `200`: Successful Response Response: `application/json`: `ProcessingRunReviewModel`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+**Successful response:** `ProcessingRunReviewModel` with the recorded decision and resulting effective values.
+
+**Error responses:**
+
+- `404`: No reviewable processing run with this identifier exists for the caller's tenant.
+- `409`: The decision conflicts with the current run or review state, for example when a terminal review is already recorded.
+- `422`: The UUID, decision value, corrected values, or comment violates request validation.
 
 ### GET `/api/v1/processing-runs/{run_id}/universal-invoice`
 
