@@ -162,6 +162,20 @@ def get_input_format(filename: str | None) -> str:
 
 @router.post(
     "/extract-document",
+    summary="Extract structured data from a document",
+    description=(
+        "Uploads one PDF, JPG, JPEG, or PNG document and processes "
+        "it synchronously using the configured document type. The "
+        "pipeline validates the upload, obtains native text and/or "
+        "OCR text, resolves an optional supplier profile, extracts "
+        "scalar fields and collections, validates the result, and "
+        "persists a tenant-aware processing run. Authenticated "
+        "requests require the documents:extract scope."
+    ),
+    response_description=(
+        "Extraction result, quality decision, validation metadata, "
+        "and structured scalar and collection values."
+    ),
     response_model=ExtractionResponseModel,
     response_model_exclude_none=True,
     responses={
@@ -200,9 +214,19 @@ async def extract_document(
     principal: OptionalApiKeyPrincipal,
     document_type: str = Form(
         ...,
+        description=(
+            "Configured document type that defines extraction "
+            "fields, profiles, collections, and validation rules."
+        ),
         examples=["invoice"],
     ),
-    file: UploadFile = File(...),
+    file: UploadFile = File(
+        ...,
+        description=(
+            "Document binary. Supported formats are PDF, JPG, JPEG, "
+            "and PNG, subject to configured upload limits."
+        ),
+    ),
 ):
     enforce_scope_if_authenticated(
         principal,

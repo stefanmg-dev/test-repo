@@ -808,22 +808,41 @@ Authentication can be supplied through an API key or OIDC bearer token where req
 
 ### POST `/extract-document`
 
-**Purpose:** Extract Document.
+**Purpose:** Upload one supported document and synchronously extract configured scalar fields and repeated collections.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Behavior:** The operation validates the upload, obtains native PDF text and/or OCR text, resolves an optional supplier profile, applies deterministic extraction rules and the optional LLM stage, validates the result, and persists a tenant-aware processing run. The response is the immediate extraction result; later lifecycle and review state are available through Processing History.
 
-**Parameters:** None documented.
+**Access:** Authenticated callers require `documents:extract` through `ApiKeyAuth` or `BearerAuth`. When legacy anonymous access is enabled, the request uses the default tenant and legacy system identity.
 
-**Request body:** `multipart/form-data`: `Body_extract_document_extract_document_post`
+**Content type:** `multipart/form-data`.
 
-**Responses:**
+**Form fields:**
 
-- `200`: Successful Response Response: `application/json`: `ExtractionResponseModel`.
-- `404`: Document type was not found Response: `application/json`: `ApiErrorResponseModel`.
-- `409`: Document type is not ready for extraction Response: `application/json`: `ApiErrorResponseModel`.
-- `413`: Uploaded file is too large Response: `application/json`: `DocumentInputErrorResponseModel`.
-- `415`: Unsupported file type Response: `application/json`: `DocumentInputErrorResponseModel`.
-- `422`: Request validation error or invalid document content Response: `application/json`: `documented schema`.
+- `document_type` (string, required): Configured document type that defines fields, profiles, collections, and validation rules. Example: `invoice`.
+- `file` (binary, required): PDF, JPG, JPEG, or PNG document, subject to configured upload size, filename, PDF page, image dimension, pixel-count, extension, and signature limits.
+
+**Successful response:** `ExtractionResponseModel`.
+
+Important response fields:
+
+- `document_type`: Document configuration used for extraction.
+- `processing_status`: `accepted`, `review`, or `invalid`. `review` means processing completed but human verification is required.
+- `profile`: Resolved supplier profile, or `null` when profiles do not apply or no profile was selected.
+- `quality`: Input-quality decision, technical source metadata, review flag, and non-fatal warnings.
+- `raw_text`: Native and/or OCR text used by the pipeline. This field can contain sensitive document content.
+- `llm_values`: Values returned by the optional LLM stage before deterministic rule application.
+- `final_values`: Final normalized scalar values. Keys depend on the configured document type.
+- `collections`: Repeated extracted structures grouped by collection name, such as services, meters, or consumption items.
+- `validation`: Scalar-field validation result with messages grouped by field name.
+- `collection_validation`: Collection item and summary-rule validation result.
+
+**Error responses:**
+
+- `404`: The requested document type does not exist.
+- `409`: The document type exists but has no usable extraction configuration.
+- `413`: The upload exceeds the configured size limit.
+- `415`: The file extension or detected signature is unsupported.
+- `422`: Multipart request validation failed, or the document is corrupted or violates configured document input limits.
 
 ### GET `/health`
 

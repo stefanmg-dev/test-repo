@@ -7,7 +7,8 @@
   "paths": {
     "/extract-document": {
       "post": {
-        "summary": "Extract Document",
+        "summary": "Extract structured data from a document",
+        "description": "Uploads one PDF, JPG, JPEG, or PNG document and processes it synchronously using the configured document type. The pipeline validates the upload, obtains native text and/or OCR text, resolves an optional supplier profile, extracts scalar fields and collections, validates the result, and persists a tenant-aware processing run. Authenticated requests require the documents:extract scope.",
         "operationId": "extract_document_extract_document_post",
         "requestBody": {
           "content": {
@@ -21,7 +22,7 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Extraction result, quality decision, validation metadata, and structured scalar and collection values.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2909,7 +2910,11 @@
           "detail": {
             "type": "string",
             "minLength": 1,
-            "title": "Detail"
+            "title": "Detail",
+            "description": "Human-readable API error detail.",
+            "examples": [
+              "Document type was not found"
+            ]
           }
         },
         "additionalProperties": false,
@@ -3163,6 +3168,7 @@
           "document_type": {
             "type": "string",
             "title": "Document Type",
+            "description": "Configured document type that defines extraction fields, profiles, collections, and validation rules.",
             "examples": [
               "invoice"
             ]
@@ -3170,7 +3176,8 @@
           "file": {
             "type": "string",
             "contentMediaType": "application/octet-stream",
-            "title": "File"
+            "title": "File",
+            "description": "Document binary. Supported formats are PDF, JPG, JPEG, and PNG, subject to configured upload limits."
           }
         },
         "type": "object",
@@ -3576,7 +3583,11 @@
           "detail": {
             "type": "string",
             "minLength": 1,
-            "title": "Detail"
+            "title": "Detail",
+            "description": "Human-readable API error detail.",
+            "examples": [
+              "Document type was not found"
+            ]
           }
         },
         "additionalProperties": false,
@@ -3883,7 +3894,11 @@
           "document_type": {
             "type": "string",
             "minLength": 1,
-            "title": "Document Type"
+            "title": "Document Type",
+            "description": "Configured document type used to resolve extraction fields and validation rules.",
+            "examples": [
+              "invoice"
+            ]
           },
           "processing_status": {
             "type": "string",
@@ -3892,7 +3907,11 @@
               "review",
               "invalid"
             ],
-            "title": "Processing Status"
+            "title": "Processing Status",
+            "description": "Final processing decision: accepted, review, or invalid. Review means processing completed but human verification is required.",
+            "examples": [
+              "accepted"
+            ]
           },
           "profile": {
             "anyOf": [
@@ -3906,24 +3925,43 @@
                 "type": "null"
               }
             ],
-            "title": "Profile"
+            "title": "Profile",
+            "description": "Resolved supplier profile. Null when the document type has no profiles or no profile could be selected.",
+            "examples": [
+              "telecom_a1"
+            ]
           },
           "quality": {
-            "$ref": "#/components/schemas/InputQualityModel"
+            "$ref": "#/components/schemas/InputQualityModel",
+            "description": "Input quality assessment and any non-fatal warnings."
           },
           "raw_text": {
             "type": "string",
-            "title": "Raw Text"
+            "title": "Raw Text",
+            "description": "Combined native PDF and/or OCR text used by the extraction pipeline. May contain sensitive document content.",
+            "examples": [
+              "Synthetic invoice OCR text"
+            ]
           },
           "llm_values": {
             "additionalProperties": true,
             "type": "object",
-            "title": "Llm Values"
+            "title": "Llm Values",
+            "description": "Raw values returned by the optional LLM extraction stage before deterministic rules and validation.",
+            "examples": [
+              {}
+            ]
           },
           "final_values": {
             "additionalProperties": true,
             "type": "object",
-            "title": "Final Values"
+            "title": "Final Values",
+            "description": "Final scalar values after profile resolution, rule application, and value normalization. Keys depend on the configured document type.",
+            "examples": [
+              {
+                "invoice_number": "INV-SYNTH-001"
+              }
+            ]
           },
           "collections": {
             "additionalProperties": {
@@ -3934,13 +3972,21 @@
               "type": "array"
             },
             "type": "object",
-            "title": "Collections"
+            "title": "Collections",
+            "description": "Extracted repeated structures grouped by configured collection name, such as services, meters, or consumption_items.",
+            "examples": [
+              {
+                "services": []
+              }
+            ]
           },
           "collection_validation": {
-            "$ref": "#/components/schemas/ExtractionValidationModel"
+            "$ref": "#/components/schemas/ExtractionValidationModel",
+            "description": "Validation result for extracted collection items and collection summary rules."
           },
           "validation": {
-            "$ref": "#/components/schemas/ExtractionValidationModel"
+            "$ref": "#/components/schemas/ExtractionValidationModel",
+            "description": "Validation result for final scalar extraction values."
           }
         },
         "additionalProperties": false,
@@ -3958,7 +4004,11 @@
         "properties": {
           "valid": {
             "type": "boolean",
-            "title": "Valid"
+            "title": "Valid",
+            "description": "True when all configured validation rules in this validation scope passed.",
+            "examples": [
+              true
+            ]
           },
           "errors": {
             "additionalProperties": {
@@ -3968,7 +4018,11 @@
               "type": "array"
             },
             "type": "object",
-            "title": "Errors"
+            "title": "Errors",
+            "description": "Validation messages grouped by scalar field or collection item path. Empty when valid is true.",
+            "examples": [
+              {}
+            ]
           }
         },
         "additionalProperties": false,
@@ -3995,32 +4049,56 @@
         "properties": {
           "format": {
             "type": "string",
-            "title": "Format"
+            "title": "Format",
+            "description": "Detected image format.",
+            "examples": [
+              "PNG"
+            ]
           },
           "width": {
             "type": "integer",
             "exclusiveMinimum": 0.0,
-            "title": "Width"
+            "title": "Width",
+            "description": "Image width in pixels.",
+            "examples": [
+              1652
+            ]
           },
           "height": {
             "type": "integer",
             "exclusiveMinimum": 0.0,
-            "title": "Height"
+            "title": "Height",
+            "description": "Image height in pixels.",
+            "examples": [
+              2338
+            ]
           },
           "short_edge": {
             "type": "integer",
             "exclusiveMinimum": 0.0,
-            "title": "Short Edge"
+            "title": "Short Edge",
+            "description": "Shorter image edge in pixels.",
+            "examples": [
+              1652
+            ]
           },
           "long_edge": {
             "type": "integer",
             "exclusiveMinimum": 0.0,
-            "title": "Long Edge"
+            "title": "Long Edge",
+            "description": "Longer image edge in pixels.",
+            "examples": [
+              2338
+            ]
           },
           "pixel_count": {
             "type": "integer",
             "exclusiveMinimum": 0.0,
-            "title": "Pixel Count"
+            "title": "Pixel Count",
+            "description": "Total number of image pixels.",
+            "examples": [
+              3862376
+            ]
           },
           "mode": {
             "anyOf": [
@@ -4031,7 +4109,11 @@
                 "type": "null"
               }
             ],
-            "title": "Mode"
+            "title": "Mode",
+            "description": "Image color mode when available, for example RGB or L.",
+            "examples": [
+              "RGB"
+            ]
           },
           "dpi": {
             "anyOf": [
@@ -4045,7 +4127,14 @@
                 "type": "null"
               }
             ],
-            "title": "Dpi"
+            "title": "Dpi",
+            "description": "Horizontal and vertical dots-per-inch values when present in the source metadata.",
+            "examples": [
+              [
+                150.0,
+                150.0
+              ]
+            ]
           }
         },
         "additionalProperties": false,
@@ -4068,11 +4157,19 @@
               "accepted",
               "review"
             ],
-            "title": "Status"
+            "title": "Status",
+            "description": "Input quality decision: accepted or review.",
+            "examples": [
+              "accepted"
+            ]
           },
           "requires_review": {
             "type": "boolean",
-            "title": "Requires Review"
+            "title": "Requires Review",
+            "description": "Whether input quality or profile resolution requires human review.",
+            "examples": [
+              false
+            ]
           },
           "input": {
             "anyOf": [
@@ -4083,14 +4180,16 @@
                 "$ref": "#/components/schemas/PdfQualityInputModel"
               }
             ],
-            "title": "Input"
+            "title": "Input",
+            "description": "Technical metadata used to assess the uploaded image or PDF."
           },
           "warnings": {
             "items": {
               "$ref": "#/components/schemas/QualityWarningModel"
             },
             "type": "array",
-            "title": "Warnings"
+            "title": "Warnings",
+            "description": "Non-fatal quality and profile resolution warnings."
           }
         },
         "additionalProperties": false,
@@ -4474,32 +4573,56 @@
         "properties": {
           "format": {
             "type": "string",
-            "title": "Format"
+            "title": "Format",
+            "description": "Detected image format.",
+            "examples": [
+              "PNG"
+            ]
           },
           "width": {
             "type": "integer",
             "exclusiveMinimum": 0.0,
-            "title": "Width"
+            "title": "Width",
+            "description": "Image width in pixels.",
+            "examples": [
+              1652
+            ]
           },
           "height": {
             "type": "integer",
             "exclusiveMinimum": 0.0,
-            "title": "Height"
+            "title": "Height",
+            "description": "Image height in pixels.",
+            "examples": [
+              2338
+            ]
           },
           "short_edge": {
             "type": "integer",
             "exclusiveMinimum": 0.0,
-            "title": "Short Edge"
+            "title": "Short Edge",
+            "description": "Shorter image edge in pixels.",
+            "examples": [
+              1652
+            ]
           },
           "long_edge": {
             "type": "integer",
             "exclusiveMinimum": 0.0,
-            "title": "Long Edge"
+            "title": "Long Edge",
+            "description": "Longer image edge in pixels.",
+            "examples": [
+              2338
+            ]
           },
           "pixel_count": {
             "type": "integer",
             "exclusiveMinimum": 0.0,
-            "title": "Pixel Count"
+            "title": "Pixel Count",
+            "description": "Total number of image pixels.",
+            "examples": [
+              3862376
+            ]
           },
           "mode": {
             "anyOf": [
@@ -4510,7 +4633,11 @@
                 "type": "null"
               }
             ],
-            "title": "Mode"
+            "title": "Mode",
+            "description": "Image color mode when available, for example RGB or L.",
+            "examples": [
+              "RGB"
+            ]
           },
           "dpi": {
             "anyOf": [
@@ -4524,7 +4651,14 @@
                 "type": "null"
               }
             ],
-            "title": "Dpi"
+            "title": "Dpi",
+            "description": "Horizontal and vertical dots-per-inch values when present in the source metadata.",
+            "examples": [
+              [
+                150.0,
+                150.0
+              ]
+            ]
           }
         },
         "additionalProperties": false,
@@ -4544,7 +4678,11 @@
           "format": {
             "type": "string",
             "const": "PDF",
-            "title": "Format"
+            "title": "Format",
+            "description": "Normalized input format for PDF documents.",
+            "examples": [
+              "PDF"
+            ]
           },
           "source": {
             "type": "string",
@@ -4552,12 +4690,20 @@
               "native_pdf",
               "scanned_pdf"
             ],
-            "title": "Source"
+            "title": "Source",
+            "description": "Text acquisition path: native_pdf contains a text layer; scanned_pdf is processed page-by-page with OCR.",
+            "examples": [
+              "scanned_pdf"
+            ]
           },
           "page_count": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Page Count"
+            "title": "Page Count",
+            "description": "Number of rendered PDF pages.",
+            "examples": [
+              2
+            ]
           },
           "pages": {
             "anyOf": [
@@ -4571,7 +4717,8 @@
                 "type": "null"
               }
             ],
-            "title": "Pages"
+            "title": "Pages",
+            "description": "Per-page image quality metadata for scanned PDFs. The field is omitted for native PDFs."
           }
         },
         "additionalProperties": false,
@@ -5351,12 +5498,20 @@
           "code": {
             "type": "string",
             "minLength": 1,
-            "title": "Code"
+            "title": "Code",
+            "description": "Stable machine-readable warning code produced by input quality or profile resolution checks.",
+            "examples": [
+              "low_resolution"
+            ]
           },
           "message": {
             "type": "string",
             "minLength": 1,
-            "title": "Message"
+            "title": "Message",
+            "description": "Human-readable explanation of the quality warning.",
+            "examples": [
+              "The document resolution may reduce OCR accuracy."
+            ]
           }
         },
         "additionalProperties": false,
@@ -5391,7 +5546,8 @@
               "$ref": "#/components/schemas/RequestValidationIssueModel"
             },
             "type": "array",
-            "title": "Detail"
+            "title": "Detail",
+            "description": "Request validation issues returned by FastAPI."
           }
         },
         "additionalProperties": false,
@@ -5405,7 +5561,11 @@
         "properties": {
           "type": {
             "type": "string",
-            "title": "Type"
+            "title": "Type",
+            "description": "Stable validation issue type.",
+            "examples": [
+              "missing"
+            ]
           },
           "loc": {
             "items": {
@@ -5419,14 +5579,26 @@
               ]
             },
             "type": "array",
-            "title": "Loc"
+            "title": "Loc",
+            "description": "Request location of the invalid value, such as body, form field, query parameter, or path parameter.",
+            "examples": [
+              [
+                "body",
+                "file"
+              ]
+            ]
           },
           "msg": {
             "type": "string",
-            "title": "Msg"
+            "title": "Msg",
+            "description": "Human-readable validation message.",
+            "examples": [
+              "Field required"
+            ]
           },
           "input": {
-            "title": "Input"
+            "title": "Input",
+            "description": "Rejected input value when FastAPI exposes it."
           },
           "ctx": {
             "anyOf": [
@@ -5438,7 +5610,8 @@
                 "type": "null"
               }
             ],
-            "title": "Ctx"
+            "title": "Ctx",
+            "description": "Optional structured context for the validation issue."
           }
         },
         "additionalProperties": true,
