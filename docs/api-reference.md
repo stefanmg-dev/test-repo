@@ -412,39 +412,49 @@ The field is renamed when the replacement `field.name` differs from `field_name`
 
 ### POST `/api/v1/config/document-types/{document_type}/profiles/{profile_name}`
 
-**Purpose:** Add Profile.
+**Purpose:** Add one uniquely named profile to a profile-based document-type configuration.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `profile_name` (path, required): Name of the supplier-specific profile or generic fallback profile.
+- `document_type` (required): Existing profile-based document-type configuration key.
+- `profile_name` (required): New profile name matching `^[a-z][a-z0-9_]*$`, with length `1..100`.
 
-**Request body:** `application/json`: `AddProfileRequest`
+**Request body:** `AddProfileRequest` containing `profile`: `DocumentProfileModel`.
 
-**Responses:**
+- `fields`: Profile-specific extraction fields.
+- `collections`: Optional profile-specific collections keyed by collection name.
+- `summary_validations`: Cross-field collection summary validations.
 
-- `201`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+The operation does not change `default_profile`. A newly added profile must be selected separately if it should become the default.
+
+**Successful response:** `201` with `OperationResponse`.
+
+**Error responses:**
+
+- `404`: The document type does not exist.
+- `409`: The document type uses legacy configuration, or the profile name already exists.
+- `422`: The profile name or profile payload violates request validation.
 
 ### DELETE `/api/v1/config/document-types/{document_type}/profiles/{profile_name}`
 
-**Purpose:** Delete Profile.
+**Purpose:** Delete one existing non-default profile from a profile-based document-type configuration.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `profile_name` (path, required): Name of the supplier-specific profile or generic fallback profile.
+- `document_type` (required): Existing profile-based document-type configuration key.
+- `profile_name` (required): Existing non-default profile name to delete.
 
-**Request body:** None.
+**Successful response:** `OperationResponse`.
 
-**Responses:**
+**Error responses:**
 
-- `200`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+- `404`: The document type or profile does not exist.
+- `409`: The document type uses legacy configuration, or the requested profile is the current `default_profile`.
+- `422`: A path value violates request validation.
 
 ### POST `/api/v1/config/document-types/{document_type}/profiles/{profile_name}/collections/{collection_name}`
 

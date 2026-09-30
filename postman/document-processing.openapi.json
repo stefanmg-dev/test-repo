@@ -1560,7 +1560,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Add Profile",
+        "summary": "Add a document configuration profile",
+        "description": "Adds one uniquely named profile to a profile-based document type. Legacy document types are rejected. Authenticated requests require the config:write scope.",
         "operationId": "add_profile_api_v1_config_document_types__document_type__profiles__profile_name__post",
         "security": [
           {
@@ -1577,8 +1578,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Profile-based document-type configuration key.",
               "title": "Document Type"
-            }
+            },
+            "description": "Profile-based document-type configuration key."
           },
           {
             "name": "profile_name",
@@ -1589,8 +1592,10 @@
               "minLength": 1,
               "maxLength": 100,
               "pattern": "^[a-z][a-z0-9_]*$",
+              "description": "New profile name matching the profile-name contract.",
               "title": "Profile Name"
-            }
+            },
+            "description": "New profile name matching the profile-name contract."
           }
         ],
         "requestBody": {
@@ -1605,7 +1610,7 @@
         },
         "responses": {
           "201": {
-            "description": "Successful Response",
+            "description": "Profile creation result.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1630,7 +1635,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Delete Profile",
+        "summary": "Delete a document configuration profile",
+        "description": "Deletes one existing non-default profile from a profile-based document type. Authenticated requests require the config:write scope.",
         "operationId": "delete_profile_api_v1_config_document_types__document_type__profiles__profile_name__delete",
         "security": [
           {
@@ -1647,8 +1653,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Profile-based document-type configuration key.",
               "title": "Document Type"
-            }
+            },
+            "description": "Profile-based document-type configuration key."
           },
           {
             "name": "profile_name",
@@ -1659,13 +1667,15 @@
               "minLength": 1,
               "maxLength": 100,
               "pattern": "^[a-z][a-z0-9_]*$",
+              "description": "Existing non-default profile name to delete.",
               "title": "Profile Name"
-            }
+            },
+            "description": "Existing non-default profile name to delete."
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Profile deletion result.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3020,7 +3030,8 @@
       "AddProfileRequest": {
         "properties": {
           "profile": {
-            "$ref": "#/components/schemas/DocumentProfileModel"
+            "$ref": "#/components/schemas/DocumentProfileModel",
+            "description": "Complete profile configuration to add."
           }
         },
         "additionalProperties": false,
@@ -3789,7 +3800,8 @@
               "$ref": "#/components/schemas/DocumentFieldModel"
             },
             "type": "array",
-            "title": "Fields"
+            "title": "Fields",
+            "description": "Profile-specific extraction fields."
           },
           "collections": {
             "anyOf": [
@@ -3803,14 +3815,16 @@
                 "type": "null"
               }
             ],
-            "title": "Collections"
+            "title": "Collections",
+            "description": "Profile-specific collections keyed by collection name."
           },
           "summary_validations": {
             "items": {
               "$ref": "#/components/schemas/CollectionSummaryValidationModel"
             },
             "type": "array",
-            "title": "Summary Validations"
+            "title": "Summary Validations",
+            "description": "Cross-field collection summary validations."
           }
         },
         "additionalProperties": false,

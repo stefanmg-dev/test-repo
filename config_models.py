@@ -198,14 +198,23 @@ class CollectionSummaryValidationModel(BaseModel):
 class DocumentProfileModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    fields: list[DocumentFieldModel] = Field(default_factory=list)
+    fields: list[DocumentFieldModel] = Field(
+        default_factory=list,
+        description="Profile-specific extraction fields."
+    )
     collections: dict[
         str,
         DocumentCollectionModel,
-    ] | None = None
+    ] | None = Field(
+        default=None,
+        description="Profile-specific collections keyed by collection name."
+    )
     summary_validations: list[
         CollectionSummaryValidationModel
-    ] = Field(default_factory=list)
+    ] = Field(
+        default_factory=list,
+        description="Cross-field collection summary validations."
+    )
 
 
 class DocumentTypeModel(BaseModel):
@@ -304,7 +313,9 @@ class CreateDocumentTypeRequest(BaseModel):
 class AddProfileRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    profile: DocumentProfileModel
+    profile: DocumentProfileModel = Field(
+        description="Complete profile configuration to add."
+    )
 
 
 class RenameDocumentTypeRequest(BaseModel):

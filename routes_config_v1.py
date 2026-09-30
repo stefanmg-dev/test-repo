@@ -497,17 +497,28 @@ def delete_field(
 
 @router.post(
     "/document-types/{document_type}/profiles/{profile_name}",
+    summary="Add a document configuration profile",
+    description=(
+        "Adds one uniquely named profile to a profile-based document type. "
+        "Legacy document types are rejected. Authenticated requests require "
+        "the config:write scope."
+    ),
+    response_description="Profile creation result.",
     response_model=OperationResponse,
     status_code=status.HTTP_201_CREATED,
 )
 def add_profile(
-    document_type: str,
     request: AddProfileRequest,
+    document_type: str = Path(
+        ...,
+        description="Profile-based document-type configuration key.",
+    ),
     profile_name: str = Path(
         ...,
         min_length=1,
         max_length=100,
         pattern=r"^[a-z][a-z0-9_]*$",
+        description="New profile name matching the profile-name contract.",
     ),
 ):
     config = load_config()
@@ -541,15 +552,25 @@ def add_profile(
 
 @router.delete(
     "/document-types/{document_type}/profiles/{profile_name}",
+    summary="Delete a document configuration profile",
+    description=(
+        "Deletes one existing non-default profile from a profile-based "
+        "document type. Authenticated requests require the config:write scope."
+    ),
+    response_description="Profile deletion result.",
     response_model=OperationResponse,
 )
 def delete_profile(
-    document_type: str,
+    document_type: str = Path(
+        ...,
+        description="Profile-based document-type configuration key.",
+    ),
     profile_name: str = Path(
         ...,
         min_length=1,
         max_length=100,
         pattern=r"^[a-z][a-z0-9_]*$",
+        description="Existing non-default profile name to delete.",
     ),
 ):
     config = load_config()
