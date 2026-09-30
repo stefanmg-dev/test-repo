@@ -393,6 +393,15 @@ def execute_processing_run_retention(
 
 @router.get(
     "/{run_id}/universal-invoice",
+    summary="Get Universal Invoice preview",
+    description=(
+        "Maps the persisted final values and collections of one tenant-owned "
+        "invoice processing run to the versioned Universal Invoice schema. "
+        "The operation is read-only and requires the processing-runs:read "
+        "scope when authenticated. Nullable scalar fields indicate that the "
+        "source run did not provide the corresponding value."
+    ),
+    response_description="Versioned Universal Invoice preview.",
     response_model=UniversalInvoiceModel,
     responses={
         status.HTTP_404_NOT_FOUND: {
@@ -406,7 +415,14 @@ def execute_processing_run_retention(
     },
 )
 def get_processing_run_universal_invoice(
-    run_id: UUID,
+    run_id: Annotated[
+        UUID,
+        Path(
+            description=(
+                "Unique identifier of the invoice processing run to preview."
+            )
+        ),
+    ],
     processing_run_service: ProcessingRunServiceDependency,
     principal: OptionalApiKeyPrincipal,
 ):

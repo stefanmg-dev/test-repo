@@ -618,7 +618,8 @@
         "tags": [
           "processing-runs"
         ],
-        "summary": "Get Processing Run Universal Invoice",
+        "summary": "Get Universal Invoice preview",
+        "description": "Maps the persisted final values and collections of one tenant-owned invoice processing run to the versioned Universal Invoice schema. The operation is read-only and requires the processing-runs:read scope when authenticated. Nullable scalar fields indicate that the source run did not provide the corresponding value.",
         "operationId": "get_processing_run_universal_invoice_api_v1_processing_runs__run_id__universal_invoice_get",
         "security": [
           {
@@ -636,13 +637,15 @@
             "schema": {
               "type": "string",
               "format": "uuid",
+              "description": "Unique identifier of the invoice processing run to preview.",
               "title": "Run Id"
-            }
+            },
+            "description": "Unique identifier of the invoice processing run to preview."
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Versioned Universal Invoice preview.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4351,7 +4354,11 @@
                 "type": "null"
               }
             ],
-            "title": "Tariff"
+            "title": "Tariff",
+            "description": "Tariff or consumption category.",
+            "examples": [
+              "day"
+            ]
           },
           "previous_reading": {
             "anyOf": [
@@ -4368,7 +4375,11 @@
                 "type": "null"
               }
             ],
-            "title": "Previous Reading"
+            "title": "Previous Reading",
+            "description": "Previous meter reading, when available.",
+            "examples": [
+              1200
+            ]
           },
           "current_reading": {
             "anyOf": [
@@ -4385,7 +4396,11 @@
                 "type": "null"
               }
             ],
-            "title": "Current Reading"
+            "title": "Current Reading",
+            "description": "Current meter reading, when available.",
+            "examples": [
+              1300
+            ]
           },
           "difference": {
             "anyOf": [
@@ -4402,7 +4417,11 @@
                 "type": "null"
               }
             ],
-            "title": "Difference"
+            "title": "Difference",
+            "description": "Difference between current and previous readings.",
+            "examples": [
+              100
+            ]
           },
           "correction": {
             "anyOf": [
@@ -4419,7 +4438,11 @@
                 "type": "null"
               }
             ],
-            "title": "Correction"
+            "title": "Correction",
+            "description": "Applied consumption correction, when available.",
+            "examples": [
+              0
+            ]
           },
           "quantity": {
             "anyOf": [
@@ -4436,7 +4459,11 @@
                 "type": "null"
               }
             ],
-            "title": "Quantity"
+            "title": "Quantity",
+            "description": "Final consumption quantity for this item.",
+            "examples": [
+              100
+            ]
           },
           "unit": {
             "anyOf": [
@@ -4447,7 +4474,11 @@
                 "type": "null"
               }
             ],
-            "title": "Unit"
+            "title": "Unit",
+            "description": "Consumption unit, when available.",
+            "examples": [
+              "kWh"
+            ]
           }
         },
         "additionalProperties": false,
@@ -4465,7 +4496,11 @@
                 "type": "null"
               }
             ],
-            "title": "Meter Number"
+            "title": "Meter Number",
+            "description": "Supplier-defined meter identifier.",
+            "examples": [
+              "METER-SYNTH-001"
+            ]
           }
         },
         "additionalProperties": false,
@@ -4483,7 +4518,11 @@
                 "type": "null"
               }
             ],
-            "title": "Metering Point Number"
+            "title": "Metering Point Number",
+            "description": "Supplier-defined metering point identifier.",
+            "examples": [
+              "MP-SYNTH-001"
+            ]
           }
         },
         "additionalProperties": false,
@@ -4501,7 +4540,11 @@
                 "type": "null"
               }
             ],
-            "title": "Description"
+            "title": "Description",
+            "description": "Service or charge description.",
+            "examples": [
+              "Synthetic monthly service"
+            ]
           },
           "unit": {
             "anyOf": [
@@ -4512,7 +4555,11 @@
                 "type": "null"
               }
             ],
-            "title": "Unit"
+            "title": "Unit",
+            "description": "Unit associated with quantity or price, when available.",
+            "examples": [
+              "month"
+            ]
           },
           "quantity": {
             "anyOf": [
@@ -4529,7 +4576,11 @@
                 "type": "null"
               }
             ],
-            "title": "Quantity"
+            "title": "Quantity",
+            "description": "Service quantity in the source representation.",
+            "examples": [
+              1
+            ]
           },
           "unit_price": {
             "anyOf": [
@@ -4546,7 +4597,11 @@
                 "type": "null"
               }
             ],
-            "title": "Unit Price"
+            "title": "Unit Price",
+            "description": "Price per service unit, when available.",
+            "examples": [
+              25.0
+            ]
           },
           "amount": {
             "anyOf": [
@@ -4563,7 +4618,11 @@
                 "type": "null"
               }
             ],
-            "title": "Amount"
+            "title": "Amount",
+            "description": "Total amount for this service or charge.",
+            "examples": [
+              25.0
+            ]
           }
         },
         "additionalProperties": false,
@@ -6030,7 +6089,11 @@
             "type": "string",
             "const": "1",
             "title": "Schema Version",
-            "default": "1"
+            "description": "Version of the Universal Invoice response schema.",
+            "default": "1",
+            "examples": [
+              "1"
+            ]
           },
           "supplier_name": {
             "anyOf": [
@@ -6041,7 +6104,11 @@
                 "type": "null"
               }
             ],
-            "title": "Supplier Name"
+            "title": "Supplier Name",
+            "description": "Supplier name.",
+            "examples": [
+              "Synthetic Supplier"
+            ]
           },
           "supplier_id": {
             "anyOf": [
@@ -6052,7 +6119,11 @@
                 "type": "null"
               }
             ],
-            "title": "Supplier Id"
+            "title": "Supplier Id",
+            "description": "Supplier identifier, when available.",
+            "examples": [
+              "SUP-SYNTH-001"
+            ]
           },
           "invoice_number": {
             "anyOf": [
@@ -6063,7 +6134,11 @@
                 "type": "null"
               }
             ],
-            "title": "Invoice Number"
+            "title": "Invoice Number",
+            "description": "Supplier invoice number.",
+            "examples": [
+              "INV-SYNTH-001"
+            ]
           },
           "issue_date": {
             "anyOf": [
@@ -6074,7 +6149,11 @@
                 "type": "null"
               }
             ],
-            "title": "Issue Date"
+            "title": "Issue Date",
+            "description": "Invoice issue date as extracted from the document.",
+            "examples": [
+              "2026-09-01"
+            ]
           },
           "customer_name": {
             "anyOf": [
@@ -6085,7 +6164,11 @@
                 "type": "null"
               }
             ],
-            "title": "Customer Name"
+            "title": "Customer Name",
+            "description": "Customer name as printed on the invoice.",
+            "examples": [
+              "Synthetic Customer"
+            ]
           },
           "customer_address": {
             "anyOf": [
@@ -6096,7 +6179,11 @@
                 "type": "null"
               }
             ],
-            "title": "Customer Address"
+            "title": "Customer Address",
+            "description": "Customer address as printed on the invoice.",
+            "examples": [
+              "1 Example Street"
+            ]
           },
           "due_date": {
             "anyOf": [
@@ -6107,7 +6194,11 @@
                 "type": "null"
               }
             ],
-            "title": "Due Date"
+            "title": "Due Date",
+            "description": "Payment due date as extracted from the document.",
+            "examples": [
+              "2026-09-30"
+            ]
           },
           "total_amount": {
             "anyOf": [
@@ -6124,7 +6215,11 @@
                 "type": "null"
               }
             ],
-            "title": "Total Amount"
+            "title": "Total Amount",
+            "description": "Total invoice amount in the source representation.",
+            "examples": [
+              25.0
+            ]
           },
           "contract_number": {
             "anyOf": [
@@ -6135,7 +6230,11 @@
                 "type": "null"
               }
             ],
-            "title": "Contract Number"
+            "title": "Contract Number",
+            "description": "Supplier contract number, when available.",
+            "examples": [
+              "CON-SYNTH-001"
+            ]
           },
           "client_number": {
             "anyOf": [
@@ -6146,7 +6245,11 @@
                 "type": "null"
               }
             ],
-            "title": "Client Number"
+            "title": "Client Number",
+            "description": "Supplier client number, when available.",
+            "examples": [
+              "CLI-SYNTH-001"
+            ]
           },
           "abonat_number": {
             "anyOf": [
@@ -6157,7 +6260,11 @@
                 "type": "null"
               }
             ],
-            "title": "Abonat Number"
+            "title": "Abonat Number",
+            "description": "Subscriber number, when available.",
+            "examples": [
+              "AB-SYNTH-001"
+            ]
           },
           "total_consumption": {
             "anyOf": [
@@ -6174,7 +6281,11 @@
                 "type": "null"
               }
             ],
-            "title": "Total Consumption"
+            "title": "Total Consumption",
+            "description": "Total consumption in the source representation.",
+            "examples": [
+              100
+            ]
           },
           "business_partner_number": {
             "anyOf": [
@@ -6185,7 +6296,11 @@
                 "type": "null"
               }
             ],
-            "title": "Business Partner Number"
+            "title": "Business Partner Number",
+            "description": "Business partner number, when available.",
+            "examples": [
+              "BP-SYNTH-001"
+            ]
           },
           "contract_account_number": {
             "anyOf": [
@@ -6196,7 +6311,11 @@
                 "type": "null"
               }
             ],
-            "title": "Contract Account Number"
+            "title": "Contract Account Number",
+            "description": "Contract account number, when available.",
+            "examples": [
+              "CA-SYNTH-001"
+            ]
           },
           "installation_number": {
             "anyOf": [
@@ -6207,35 +6326,43 @@
                 "type": "null"
               }
             ],
-            "title": "Installation Number"
+            "title": "Installation Number",
+            "description": "Installation number, when available.",
+            "examples": [
+              "INST-SYNTH-001"
+            ]
           },
           "services": {
             "items": {
               "$ref": "#/components/schemas/InvoiceServiceModel"
             },
             "type": "array",
-            "title": "Services"
+            "title": "Services",
+            "description": "Normalized invoice service and charge items."
           },
           "metering_points": {
             "items": {
               "$ref": "#/components/schemas/InvoiceMeteringPointModel"
             },
             "type": "array",
-            "title": "Metering Points"
+            "title": "Metering Points",
+            "description": "Normalized metering point identifiers."
           },
           "meters": {
             "items": {
               "$ref": "#/components/schemas/InvoiceMeterModel"
             },
             "type": "array",
-            "title": "Meters"
+            "title": "Meters",
+            "description": "Normalized meter identifiers."
           },
           "consumption_items": {
             "items": {
               "$ref": "#/components/schemas/InvoiceConsumptionItemModel"
             },
             "type": "array",
-            "title": "Consumption Items"
+            "title": "Consumption Items",
+            "description": "Normalized meter-reading and consumption items."
           }
         },
         "additionalProperties": false,

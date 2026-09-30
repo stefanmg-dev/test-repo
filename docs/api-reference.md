@@ -896,22 +896,41 @@ The response contains all list-item fields plus:
 
 ### GET `/api/v1/processing-runs/{run_id}/universal-invoice`
 
-**Purpose:** Get Processing Run Universal Invoice.
+**Purpose:** Return a read-only, versioned Universal Invoice preview mapped from the persisted final values and collections of one tenant-owned invoice processing run.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `processing-runs:read` through `ApiKeyAuth` or `BearerAuth`. Tenant isolation is enforced by the authenticated principal. When legacy anonymous access is enabled, the default tenant is used.
 
-**Parameters:**
+**Path parameter:**
 
-- `run_id` (path, required): Unique identifier of the processing run to retrieve, review, or preview.
+- `run_id` (UUID, required): Unique identifier of the invoice processing run to preview.
 
-**Request body:** None.
+**Successful response:** `UniversalInvoiceModel`.
 
-**Responses:**
+Core scalar fields:
 
-- `200`: Successful Response Response: `application/json`: `UniversalInvoiceModel`.
-- `404`: Processing run was not found Response: `application/json`: `ApiErrorResponseModel`.
-- `409`: Universal invoice is unavailable Response: `application/json`: `ApiErrorResponseModel`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+- `schema_version`: Version of the Universal Invoice response contract.
+- `supplier_name`, `supplier_id`: Supplier identity values when available.
+- `invoice_number`, `issue_date`, `due_date`: Invoice identifiers and dates as extracted from the source run.
+- `customer_name`, `customer_address`: Customer details when available.
+- `total_amount`: Total invoice amount in the source representation.
+- `contract_number`, `client_number`, `abonat_number`: Supplier-specific customer or contract identifiers when available.
+- `business_partner_number`, `contract_account_number`, `installation_number`: Utility-account identifiers when available.
+- `total_consumption`: Total consumption in the source representation.
+
+Repeated structures:
+
+- `services`: Normalized service and charge items with description, unit, quantity, unit price, and amount.
+- `metering_points`: Normalized metering point identifiers.
+- `meters`: Normalized meter identifiers.
+- `consumption_items`: Normalized tariff, meter-reading, correction, quantity, and unit values.
+
+Nullable scalar fields mean the persisted source run did not provide the corresponding value. Repeated structures are returned as empty arrays when no items are available. Numeric invoice values may be represented as strings, integers, or floating-point numbers to preserve the normalized source representation.
+
+**Error responses:**
+
+- `404`: No processing run with this identifier exists for the caller's tenant.
+- `409`: The run is not an invoice, or its persisted extraction cannot be mapped to the Universal Invoice schema.
+- `422`: `run_id` is not a valid UUID.
 
 ### POST `/extract-document`
 
