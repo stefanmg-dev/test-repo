@@ -608,28 +608,34 @@ Authentication can be supplied through an API key or OIDC bearer token where req
 
 ### GET `/api/v1/processing-runs`
 
-**Purpose:** List Processing Runs.
+**Purpose:** Return a bounded page of processing-run summaries for operational monitoring, filtering, and navigation to run details.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `processing-runs:read` through `ApiKeyAuth` or `BearerAuth`. Results are tenant-isolated. When legacy anonymous access is enabled, the default tenant is used.
 
-**Parameters:**
+**Filtering and pagination:** Offset pagination is applied after all filters. Supplied filters use AND semantics.
 
-- `offset` (query, optional): Number of matching processing runs to skip before returning results.
-- `limit` (query, optional): Maximum number of records to return or export, subject to the endpoint bounds.
-- `document_type` (query, optional): Configuration key for the document category, for example `invoice`.
-- `processing_status` (query, optional): Returns only runs with the requested processing outcome.
-- `profile` (query, optional): Returns only runs processed with the requested supplier profile.
-- `requires_review` (query, optional): Returns only runs that match the requested human-review requirement.
-- `review_status` (query, optional): Returns only runs with the requested review decision or state.
-- `invoice_shadow_validation_status` (query, optional): Returns only invoice runs with the requested Universal Invoice shadow-validation status.
-- `invoice_schema_version` (query, optional): Returns only runs associated with the requested Universal Invoice schema version.
+**Query parameters:**
 
-**Request body:** None.
+- `offset` (integer, optional, default `0`, minimum `0`): Number of matching runs to skip.
+- `limit` (integer, optional, default `20`, range `1..100`): Maximum number of summaries to return.
+- `document_type` (string, optional, length `1..100`): Filter by configured document type, for example `invoice`.
+- `processing_status` (optional): Filter by `processing`, `accepted`, `review`, `invalid`, or `failed`.
+- `profile` (string, optional): Filter by resolved supplier profile. The value must match the profile-name format.
+- `requires_review` (boolean, optional): Filter by whether human review is required.
+- `review_status` (optional): Filter by `pending`, `approved`, `corrected`, or `rejected`.
+- `invoice_shadow_validation_status` (optional): Filter by `succeeded`, `failed`, or `not_applicable`.
+- `invoice_schema_version` (string, optional): Filter by Universal Invoice schema version.
 
-**Responses:**
+**Successful response:** `ProcessingRunListResponseModel`.
 
-- `200`: Successful Response Response: `application/json`: `ProcessingRunListResponseModel`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+- `items`: Summaries for the requested page. Extracted document values are intentionally omitted.
+- `total`: Total number of tenant-owned runs matching all supplied filters.
+- `offset`: Applied offset.
+- `limit`: Applied page-size limit.
+
+Each item identifies the run, document type, optional profile, original filename, input format, processing and review states, review requirement, lifecycle timestamps, and duration in milliseconds. Nullable completion and duration fields remain `null` while processing is incomplete; review status is `null` when review does not apply.
+
+**Error response:** `422` when pagination bounds, enum filters, profile format, or invoice schema version format are invalid.
 
 ### GET `/api/v1/processing-runs/export`
 
@@ -737,21 +743,38 @@ Authentication can be supplied through an API key or OIDC bearer token where req
 
 ### GET `/api/v1/processing-runs/{run_id}`
 
-**Purpose:** Get Processing Run.
+**Purpose:** Return the full persisted processing, extraction, validation, review, timing, and configuration metadata for one tenant-owned run.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `processing-runs:read` through `ApiKeyAuth` or `BearerAuth`. Tenant isolation is enforced by the authenticated principal; a run owned by another tenant is not returned.
 
-**Parameters:**
+**Path parameter:**
 
-- `run_id` (path, required): Unique identifier of the processing run to retrieve, review, or preview.
+- `run_id` (UUID, required): Unique processing-run identifier.
 
-**Request body:** None.
+**Successful response:** `ProcessingRunDetailModel`.
 
-**Responses:**
+The response contains all list-item fields plus:
 
-- `200`: Successful Response Response: `application/json`: `ProcessingRunDetailModel`.
-- `404`: Processing run was not found Response: `application/json`: `ApiErrorResponseModel`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+- `step_timings`: Pipeline-step durations in milliseconds.
+- `quality`: Persisted input-quality decision and warnings.
+- `final_values`: Persisted final scalar extraction values.
+- `corrected_values`: Reviewer corrections, or `null` when none exist.
+- `configuration_hash`: SHA-256 identifier of the resolved configuration snapshot.
+- `configuration_snapshot`: Resolved extraction configuration used by the run.
+- `configuration_schema_version`: Schema version of the configuration snapshot.
+- `invoice_schema_version`: Universal Invoice schema version used for invoice shadow validation.
+- `invoice_shadow_validation_status`: `succeeded`, `failed`, or `not_applicable` when available.
+- `invoice_shadow_validation_reason`: Safe reason code `validation_error` or `mapper_error` when shadow validation failed.
+- `review_comment`, `reviewed_at`, `reviewed_by_type`, `reviewed_by_subject`: Review audit metadata, nullable before review.
+- `collections`: Persisted repeated extraction structures.
+- `validation`: Persisted scalar and collection validation metadata.
+- `error`: Safe structured failure metadata, nullable for runs without a processing failure.
+- `updated_at`: UTC timestamp of the most recent persisted update.
+
+**Error responses:**
+
+- `404`: No processing run with this identifier exists for the caller's tenant.
+- `422`: `run_id` is not a valid UUID.
 
 ### GET `/api/v1/processing-runs/{run_id}/review`
 

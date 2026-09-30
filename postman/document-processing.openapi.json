@@ -650,7 +650,8 @@
         "tags": [
           "processing-runs"
         ],
-        "summary": "Get Processing Run",
+        "summary": "Get processing run details",
+        "description": "Returns the tenant-owned processing run identified by run_id, including persisted extraction, validation, review, timing, configuration, and safe failure metadata. Authenticated requests require the processing-runs:read scope.",
         "operationId": "get_processing_run_api_v1_processing_runs__run_id__get",
         "security": [
           {
@@ -668,13 +669,15 @@
             "schema": {
               "type": "string",
               "format": "uuid",
+              "description": "Unique identifier of the processing run to retrieve.",
               "title": "Run Id"
-            }
+            },
+            "description": "Unique identifier of the processing run to retrieve."
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Detailed processing run metadata.",
             "content": {
               "application/json": {
                 "schema": {
@@ -711,7 +714,8 @@
         "tags": [
           "processing-runs"
         ],
-        "summary": "List Processing Runs",
+        "summary": "List processing runs",
+        "description": "Returns a bounded offset-based page of processing runs owned by the authenticated tenant. Optional filters are combined with AND semantics. List items intentionally omit extracted document values. Authenticated requests require the processing-runs:read scope.",
         "operationId": "list_processing_runs_api_v1_processing_runs_get",
         "security": [
           {
@@ -729,9 +733,11 @@
             "schema": {
               "type": "integer",
               "minimum": 0,
+              "description": "Number of matching runs to skip.",
               "default": 0,
               "title": "Offset"
-            }
+            },
+            "description": "Number of matching runs to skip."
           },
           {
             "name": "limit",
@@ -741,9 +747,11 @@
               "type": "integer",
               "maximum": 100,
               "minimum": 1,
+              "description": "Maximum page size from 1 to 100.",
               "default": 20,
               "title": "Limit"
-            }
+            },
+            "description": "Maximum page size from 1 to 100."
           },
           {
             "name": "document_type",
@@ -760,8 +768,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Filter by configured document type.",
               "title": "Document Type"
-            }
+            },
+            "description": "Filter by configured document type."
           },
           {
             "name": "processing_status",
@@ -783,8 +793,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Filter by processing lifecycle status.",
               "title": "Processing Status"
-            }
+            },
+            "description": "Filter by processing lifecycle status."
           },
           {
             "name": "profile",
@@ -802,8 +814,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Filter by resolved supplier profile.",
               "title": "Profile"
-            }
+            },
+            "description": "Filter by resolved supplier profile."
           },
           {
             "name": "requires_review",
@@ -818,8 +832,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Filter by human-review requirement.",
               "title": "Requires Review"
-            }
+            },
+            "description": "Filter by human-review requirement."
           },
           {
             "name": "review_status",
@@ -840,8 +856,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Filter by review workflow state.",
               "title": "Review Status"
-            }
+            },
+            "description": "Filter by review workflow state."
           },
           {
             "name": "invoice_shadow_validation_status",
@@ -861,8 +879,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Filter by Universal Invoice shadow-validation status.",
               "title": "Invoice Shadow Validation Status"
-            }
+            },
+            "description": "Filter by Universal Invoice shadow-validation status."
           },
           {
             "name": "invoice_schema_version",
@@ -880,13 +900,15 @@
                   "type": "null"
                 }
               ],
+              "description": "Filter by Universal Invoice schema version.",
               "title": "Invoice Schema Version"
-            }
+            },
+            "description": "Filter by Universal Invoice schema version."
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Paginated processing run summaries.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4735,11 +4757,19 @@
           "id": {
             "type": "string",
             "format": "uuid",
-            "title": "Id"
+            "title": "Id",
+            "description": "Unique processing run identifier.",
+            "examples": [
+              "00000000-0000-4000-8000-000000000001"
+            ]
           },
           "document_type": {
             "type": "string",
-            "title": "Document Type"
+            "title": "Document Type",
+            "description": "Configured document type used for extraction.",
+            "examples": [
+              "invoice"
+            ]
           },
           "profile": {
             "anyOf": [
@@ -4750,23 +4780,43 @@
                 "type": "null"
               }
             ],
-            "title": "Profile"
+            "title": "Profile",
+            "description": "Resolved supplier profile, when applicable.",
+            "examples": [
+              "telecom_a1"
+            ]
           },
           "filename": {
             "type": "string",
-            "title": "Filename"
+            "title": "Filename",
+            "description": "Original uploaded filename.",
+            "examples": [
+              "synthetic-invoice.pdf"
+            ]
           },
           "input_format": {
             "type": "string",
-            "title": "Input Format"
+            "title": "Input Format",
+            "description": "Normalized uploaded file format.",
+            "examples": [
+              "pdf"
+            ]
           },
           "processing_status": {
             "type": "string",
-            "title": "Processing Status"
+            "title": "Processing Status",
+            "description": "Current or final lifecycle status, such as processing, accepted, review, invalid, or failed.",
+            "examples": [
+              "accepted"
+            ]
           },
           "requires_review": {
             "type": "boolean",
-            "title": "Requires Review"
+            "title": "Requires Review",
+            "description": "Whether the run requires human review.",
+            "examples": [
+              false
+            ]
           },
           "review_status": {
             "anyOf": [
@@ -4777,12 +4827,17 @@
                 "type": "null"
               }
             ],
-            "title": "Review Status"
+            "title": "Review Status",
+            "description": "Review workflow state: pending, approved, corrected, or rejected. Null when review does not apply.",
+            "examples": [
+              "pending"
+            ]
           },
           "started_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Started At"
+            "title": "Started At",
+            "description": "UTC timestamp when processing started."
           },
           "completed_at": {
             "anyOf": [
@@ -4794,7 +4849,8 @@
                 "type": "null"
               }
             ],
-            "title": "Completed At"
+            "title": "Completed At",
+            "description": "UTC timestamp when processing completed. Null while the run is still processing."
           },
           "duration_ms": {
             "anyOf": [
@@ -4806,12 +4862,17 @@
                 "type": "null"
               }
             ],
-            "title": "Duration Ms"
+            "title": "Duration Ms",
+            "description": "Total processing duration in milliseconds. Null until processing completes.",
+            "examples": [
+              1250
+            ]
           },
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "description": "UTC timestamp when the processing run was created."
           },
           "step_timings": {
             "anyOf": [
@@ -4825,7 +4886,13 @@
                 "type": "null"
               }
             ],
-            "title": "Step Timings"
+            "title": "Step Timings",
+            "description": "Pipeline step durations in milliseconds.",
+            "examples": [
+              {
+                "document_input_ms": 120
+              }
+            ]
           },
           "quality": {
             "anyOf": [
@@ -4837,7 +4904,8 @@
                 "type": "null"
               }
             ],
-            "title": "Quality"
+            "title": "Quality",
+            "description": "Persisted input-quality result and warnings."
           },
           "final_values": {
             "anyOf": [
@@ -4849,7 +4917,8 @@
                 "type": "null"
               }
             ],
-            "title": "Final Values"
+            "title": "Final Values",
+            "description": "Persisted final scalar extraction values."
           },
           "corrected_values": {
             "anyOf": [
@@ -4861,7 +4930,8 @@
                 "type": "null"
               }
             ],
-            "title": "Corrected Values"
+            "title": "Corrected Values",
+            "description": "Reviewer-supplied corrected values, when present."
           },
           "configuration_hash": {
             "anyOf": [
@@ -4872,7 +4942,8 @@
                 "type": "null"
               }
             ],
-            "title": "Configuration Hash"
+            "title": "Configuration Hash",
+            "description": "SHA-256 identifier of the resolved configuration snapshot."
           },
           "configuration_snapshot": {
             "anyOf": [
@@ -4884,7 +4955,8 @@
                 "type": "null"
               }
             ],
-            "title": "Configuration Snapshot"
+            "title": "Configuration Snapshot",
+            "description": "Resolved extraction configuration used by this run."
           },
           "configuration_schema_version": {
             "anyOf": [
@@ -4895,7 +4967,8 @@
                 "type": "null"
               }
             ],
-            "title": "Configuration Schema Version"
+            "title": "Configuration Schema Version",
+            "description": "Schema version of the persisted configuration snapshot."
           },
           "invoice_schema_version": {
             "anyOf": [
@@ -4906,7 +4979,8 @@
                 "type": "null"
               }
             ],
-            "title": "Invoice Schema Version"
+            "title": "Invoice Schema Version",
+            "description": "Universal Invoice schema version used for invoice shadow validation."
           },
           "invoice_shadow_validation_status": {
             "anyOf": [
@@ -4922,7 +4996,8 @@
                 "type": "null"
               }
             ],
-            "title": "Invoice Shadow Validation Status"
+            "title": "Invoice Shadow Validation Status",
+            "description": "Universal Invoice shadow-validation outcome."
           },
           "invoice_shadow_validation_reason": {
             "anyOf": [
@@ -4937,7 +5012,8 @@
                 "type": "null"
               }
             ],
-            "title": "Invoice Shadow Validation Reason"
+            "title": "Invoice Shadow Validation Reason",
+            "description": "Safe failure reason code when shadow validation failed."
           },
           "review_comment": {
             "anyOf": [
@@ -4948,7 +5024,8 @@
                 "type": "null"
               }
             ],
-            "title": "Review Comment"
+            "title": "Review Comment",
+            "description": "Optional human-review comment."
           },
           "reviewed_at": {
             "anyOf": [
@@ -4960,7 +5037,8 @@
                 "type": "null"
               }
             ],
-            "title": "Reviewed At"
+            "title": "Reviewed At",
+            "description": "UTC timestamp of the recorded review decision."
           },
           "reviewed_by_type": {
             "anyOf": [
@@ -4971,7 +5049,8 @@
                 "type": "null"
               }
             ],
-            "title": "Reviewed By Type"
+            "title": "Reviewed By Type",
+            "description": "Principal type that recorded the review decision."
           },
           "reviewed_by_subject": {
             "anyOf": [
@@ -4982,7 +5061,8 @@
                 "type": "null"
               }
             ],
-            "title": "Reviewed By Subject"
+            "title": "Reviewed By Subject",
+            "description": "Authenticated subject that recorded the review decision."
           },
           "collections": {
             "anyOf": [
@@ -4994,7 +5074,8 @@
                 "type": "null"
               }
             ],
-            "title": "Collections"
+            "title": "Collections",
+            "description": "Persisted repeated extraction collections."
           },
           "validation": {
             "anyOf": [
@@ -5006,7 +5087,8 @@
                 "type": "null"
               }
             ],
-            "title": "Validation"
+            "title": "Validation",
+            "description": "Persisted scalar and collection validation metadata."
           },
           "error": {
             "anyOf": [
@@ -5018,12 +5100,14 @@
                 "type": "null"
               }
             ],
-            "title": "Error"
+            "title": "Error",
+            "description": "Safe structured processing failure metadata."
           },
           "updated_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Updated At"
+            "title": "Updated At",
+            "description": "UTC timestamp of the most recent persisted update."
           }
         },
         "additionalProperties": false,
@@ -5046,11 +5130,19 @@
           "id": {
             "type": "string",
             "format": "uuid",
-            "title": "Id"
+            "title": "Id",
+            "description": "Unique processing run identifier.",
+            "examples": [
+              "00000000-0000-4000-8000-000000000001"
+            ]
           },
           "document_type": {
             "type": "string",
-            "title": "Document Type"
+            "title": "Document Type",
+            "description": "Configured document type used for extraction.",
+            "examples": [
+              "invoice"
+            ]
           },
           "profile": {
             "anyOf": [
@@ -5061,23 +5153,43 @@
                 "type": "null"
               }
             ],
-            "title": "Profile"
+            "title": "Profile",
+            "description": "Resolved supplier profile, when applicable.",
+            "examples": [
+              "telecom_a1"
+            ]
           },
           "filename": {
             "type": "string",
-            "title": "Filename"
+            "title": "Filename",
+            "description": "Original uploaded filename.",
+            "examples": [
+              "synthetic-invoice.pdf"
+            ]
           },
           "input_format": {
             "type": "string",
-            "title": "Input Format"
+            "title": "Input Format",
+            "description": "Normalized uploaded file format.",
+            "examples": [
+              "pdf"
+            ]
           },
           "processing_status": {
             "type": "string",
-            "title": "Processing Status"
+            "title": "Processing Status",
+            "description": "Current or final lifecycle status, such as processing, accepted, review, invalid, or failed.",
+            "examples": [
+              "accepted"
+            ]
           },
           "requires_review": {
             "type": "boolean",
-            "title": "Requires Review"
+            "title": "Requires Review",
+            "description": "Whether the run requires human review.",
+            "examples": [
+              false
+            ]
           },
           "review_status": {
             "anyOf": [
@@ -5088,12 +5200,17 @@
                 "type": "null"
               }
             ],
-            "title": "Review Status"
+            "title": "Review Status",
+            "description": "Review workflow state: pending, approved, corrected, or rejected. Null when review does not apply.",
+            "examples": [
+              "pending"
+            ]
           },
           "started_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Started At"
+            "title": "Started At",
+            "description": "UTC timestamp when processing started."
           },
           "completed_at": {
             "anyOf": [
@@ -5105,7 +5222,8 @@
                 "type": "null"
               }
             ],
-            "title": "Completed At"
+            "title": "Completed At",
+            "description": "UTC timestamp when processing completed. Null while the run is still processing."
           },
           "duration_ms": {
             "anyOf": [
@@ -5117,12 +5235,17 @@
                 "type": "null"
               }
             ],
-            "title": "Duration Ms"
+            "title": "Duration Ms",
+            "description": "Total processing duration in milliseconds. Null until processing completes.",
+            "examples": [
+              1250
+            ]
           },
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "description": "UTC timestamp when the processing run was created."
           }
         },
         "additionalProperties": false,
@@ -5146,23 +5269,36 @@
               "$ref": "#/components/schemas/ProcessingRunListItemModel"
             },
             "type": "array",
-            "title": "Items"
+            "title": "Items",
+            "description": "Processing runs in the requested page."
           },
           "total": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Total"
+            "title": "Total",
+            "description": "Total number of matching tenant-owned runs.",
+            "examples": [
+              42
+            ]
           },
           "offset": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Offset"
+            "title": "Offset",
+            "description": "Number of matching runs skipped before this page.",
+            "examples": [
+              0
+            ]
           },
           "limit": {
             "type": "integer",
             "maximum": 100.0,
             "minimum": 1.0,
-            "title": "Limit"
+            "title": "Limit",
+            "description": "Maximum number of runs requested for this page.",
+            "examples": [
+              20
+            ]
           }
         },
         "additionalProperties": false,

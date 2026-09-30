@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Annotated, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi.responses import Response, StreamingResponse
 
 from extraction_models import ApiErrorResponseModel
@@ -344,6 +344,14 @@ def get_processing_run_universal_invoice(
 
 @router.get(
     "/{run_id}",
+    summary="Get processing run details",
+    description=(
+        "Returns the tenant-owned processing run identified by run_id, "
+        "including persisted extraction, validation, review, timing, "
+        "configuration, and safe failure metadata. Authenticated requests "
+        "require the processing-runs:read scope."
+    ),
+    response_description="Detailed processing run metadata.",
     response_model=ProcessingRunDetailModel,
     responses={
         status.HTTP_404_NOT_FOUND: {
@@ -353,7 +361,12 @@ def get_processing_run_universal_invoice(
     },
 )
 def get_processing_run(
-    run_id: UUID,
+    run_id: Annotated[
+        UUID,
+        Path(
+            description="Unique identifier of the processing run to retrieve."
+        ),
+    ],
     processing_run_service: ProcessingRunServiceDependency,
     principal: OptionalApiKeyPrincipal,
 ):
@@ -379,16 +392,24 @@ def get_processing_run(
 
 @router.get(
     "",
+    summary="List processing runs",
+    description=(
+        "Returns a bounded offset-based page of processing runs owned by "
+        "the authenticated tenant. Optional filters are combined with AND "
+        "semantics. List items intentionally omit extracted document values. "
+        "Authenticated requests require the processing-runs:read scope."
+    ),
+    response_description="Paginated processing run summaries.",
     response_model=ProcessingRunListResponseModel,
 )
 def list_processing_runs(
     processing_run_service: ProcessingRunServiceDependency,
     principal: OptionalApiKeyPrincipal,
-    offset: Annotated[int, Query(ge=0)] = 0,
-    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    offset: Annotated[int, Query(ge=0, description="Number of matching runs to skip.")] = 0,
+    limit: Annotated[int, Query(ge=1, le=100, description="Maximum page size from 1 to 100.")] = 20,
     document_type: Annotated[
         str | None,
-        Query(min_length=1, max_length=100),
+        Query(min_length=1, max_length=100, description="Filter by configured document type."),
     ] = None,
     processing_status: Annotated[
         Literal[
@@ -399,7 +420,7 @@ def list_processing_runs(
             "failed",
         ]
         | None,
-        Query(),
+        Query(description="Filter by processing lifecycle status."),
     ] = None,
     profile: Annotated[
         str | None,
@@ -407,9 +428,13 @@ def list_processing_runs(
             min_length=1,
             max_length=100,
             pattern=r"^[a-z][a-z0-9_]*$",
+            description="Filter by resolved supplier profile.",
         ),
     ] = None,
-    requires_review: bool | None = None,
+    requires_review: Annotated[
+        bool | None,
+        Query(description="Filter by human-review requirement."),
+    ] = None,
     review_status: Annotated[
         Literal[
             "pending",
@@ -418,7 +443,7 @@ def list_processing_runs(
             "rejected",
         ]
         | None,
-        Query(),
+        Query(description="Filter by review workflow state."),
     ] = None,
     invoice_shadow_validation_status: Annotated[
         Literal[
@@ -427,7 +452,7 @@ def list_processing_runs(
             "not_applicable",
         ]
         | None,
-        Query(),
+        Query(description="Filter by Universal Invoice shadow-validation status."),
     ] = None,
     invoice_schema_version: Annotated[
         str | None,
@@ -435,6 +460,7 @@ def list_processing_runs(
             min_length=1,
             max_length=20,
             pattern=r"^[A-Za-z0-9._-]+$",
+            description="Filter by Universal Invoice schema version.",
         ),
     ] = None,
 ):

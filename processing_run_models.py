@@ -11,56 +11,174 @@ class ProcessingRunListItemModel(BaseModel):
         from_attributes=True,
     )
 
-    id: UUID
-    document_type: str
-    profile: str | None = None
-    filename: str
-    input_format: str
-    processing_status: str
-    requires_review: bool
-    review_status: str | None = None
-    started_at: datetime
-    completed_at: datetime | None = None
-    duration_ms: int | None = Field(default=None, ge=0)
-    created_at: datetime
+    id: UUID = Field(
+        description="Unique processing run identifier.",
+        examples=["00000000-0000-4000-8000-000000000001"],
+    )
+    document_type: str = Field(
+        description="Configured document type used for extraction.",
+        examples=["invoice"],
+    )
+    profile: str | None = Field(
+        default=None,
+        description="Resolved supplier profile, when applicable.",
+        examples=["telecom_a1"],
+    )
+    filename: str = Field(
+        description="Original uploaded filename.",
+        examples=["synthetic-invoice.pdf"],
+    )
+    input_format: str = Field(
+        description="Normalized uploaded file format.",
+        examples=["pdf"],
+    )
+    processing_status: str = Field(
+        description=(
+            "Current or final lifecycle status, such as processing, "
+            "accepted, review, invalid, or failed."
+        ),
+        examples=["accepted"],
+    )
+    requires_review: bool = Field(
+        description="Whether the run requires human review.",
+        examples=[False],
+    )
+    review_status: str | None = Field(
+        default=None,
+        description=(
+            "Review workflow state: pending, approved, corrected, "
+            "or rejected. Null when review does not apply."
+        ),
+        examples=["pending"],
+    )
+    started_at: datetime = Field(
+        description="UTC timestamp when processing started."
+    )
+    completed_at: datetime | None = Field(
+        default=None,
+        description=(
+            "UTC timestamp when processing completed. Null while the "
+            "run is still processing."
+        ),
+    )
+    duration_ms: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Total processing duration in milliseconds. Null until "
+            "processing completes."
+        ),
+        examples=[1250],
+    )
+    created_at: datetime = Field(
+        description="UTC timestamp when the processing run was created."
+    )
 
 
 class ProcessingRunDetailModel(ProcessingRunListItemModel):
-    step_timings: dict[str, int] | None = None
-    quality: dict[str, Any] | None = None
-    final_values: dict[str, Any] | None = None
-    corrected_values: dict[str, Any] | None = None
-    configuration_hash: str | None = None
-    configuration_snapshot: dict[str, Any] | None = None
-    configuration_schema_version: str | None = None
-    invoice_schema_version: str | None = None
+    step_timings: dict[str, int] | None = Field(
+        default=None,
+        description="Pipeline step durations in milliseconds.",
+        examples=[{"document_input_ms": 120}],
+    )
+    quality: dict[str, Any] | None = Field(
+        default=None,
+        description="Persisted input-quality result and warnings."
+    )
+    final_values: dict[str, Any] | None = Field(
+        default=None,
+        description="Persisted final scalar extraction values."
+    )
+    corrected_values: dict[str, Any] | None = Field(
+        default=None,
+        description="Reviewer-supplied corrected values, when present."
+    )
+    configuration_hash: str | None = Field(
+        default=None,
+        description="SHA-256 identifier of the resolved configuration snapshot."
+    )
+    configuration_snapshot: dict[str, Any] | None = Field(
+        default=None,
+        description="Resolved extraction configuration used by this run."
+    )
+    configuration_schema_version: str | None = Field(
+        default=None,
+        description="Schema version of the persisted configuration snapshot."
+    )
+    invoice_schema_version: str | None = Field(
+        default=None,
+        description="Universal Invoice schema version used for invoice shadow validation."
+    )
     invoice_shadow_validation_status: Literal[
         "succeeded",
         "failed",
         "not_applicable",
-    ] | None = None
+    ] | None = Field(
+        default=None,
+        description="Universal Invoice shadow-validation outcome."
+    )
     invoice_shadow_validation_reason: Literal[
         "validation_error",
         "mapper_error",
-    ] | None = None
-    review_comment: str | None = None
-    reviewed_at: datetime | None = None
-    reviewed_by_type: str | None = None
-    reviewed_by_subject: str | None = None
-    collections: dict[str, Any] | None = None
-    validation: dict[str, Any] | None = None
-    error: dict[str, Any] | None = None
-    updated_at: datetime
+    ] | None = Field(
+        default=None,
+        description="Safe failure reason code when shadow validation failed."
+    )
+    review_comment: str | None = Field(
+        default=None,
+        description="Optional human-review comment."
+    )
+    reviewed_at: datetime | None = Field(
+        default=None,
+        description="UTC timestamp of the recorded review decision."
+    )
+    reviewed_by_type: str | None = Field(
+        default=None,
+        description="Principal type that recorded the review decision."
+    )
+    reviewed_by_subject: str | None = Field(
+        default=None,
+        description="Authenticated subject that recorded the review decision."
+    )
+    collections: dict[str, Any] | None = Field(
+        default=None,
+        description="Persisted repeated extraction collections."
+    )
+    validation: dict[str, Any] | None = Field(
+        default=None,
+        description="Persisted scalar and collection validation metadata."
+    )
+    error: dict[str, Any] | None = Field(
+        default=None,
+        description="Safe structured processing failure metadata."
+    )
+    updated_at: datetime = Field(
+        description="UTC timestamp of the most recent persisted update."
+    )
 
 
 class ProcessingRunListResponseModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    items: list[ProcessingRunListItemModel]
-    total: int = Field(ge=0)
-    offset: int = Field(ge=0)
-    limit: int = Field(ge=1, le=100)
-
+    items: list[ProcessingRunListItemModel] = Field(
+        description="Processing runs in the requested page."
+    )
+    total: int = Field(
+        ge=0,
+        description="Total number of matching tenant-owned runs.",
+        examples=[42],
+    )
+    offset: int = Field(
+        ge=0,
+        description="Number of matching runs skipped before this page.",
+        examples=[0],
+    )
+    limit: int = Field(
+        ge=1,
+        le=100,
+        description="Maximum number of runs requested for this page.",
+        examples=[20],
+    )
 
 class InvoiceShadowSchemaVersionSummaryModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
