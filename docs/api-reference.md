@@ -104,66 +104,73 @@ Authentication can be supplied through an API key or OIDC bearer token where req
 
 ### GET `/api/v1/config/document-types`
 
-**Purpose:** Get Document Types.
+**Purpose:** Return all stored document-type configurations together with resolved default-profile fields and readiness metadata.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:read` through `ApiKeyAuth` or `BearerAuth`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:** None documented.
+**Successful response:** `ConfigResponse`.
 
-**Request body:** None.
-
-**Responses:**
-
-- `200`: Successful Response Response: `application/json`: `ConfigResponse`.
+- `document_types`: Stored legacy or profile-based configurations keyed by document type.
+- `resolved_document_types`: Effective default-profile fields keyed by document type.
+- `document_type_metadata`: Readiness metadata keyed by document type.
+- `profile`: Default profile used to resolve effective fields, or `null` when profiles do not apply.
+- `fields`: Effective extraction fields after profile resolution.
+- `status`: Configuration lifecycle state, `draft` or `ready`.
+- `ready`: Whether usable extraction fields are available.
+- `field_count`: Number of resolved extraction fields.
 
 ### POST `/api/v1/config/document-types`
 
-**Purpose:** Create Document Type.
+**Purpose:** Create an empty legacy or profile-based document-type configuration.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:** None documented.
+**Request body:** `CreateDocumentTypeRequest`.
 
-**Request body:** `application/json`: `CreateDocumentTypeRequest`
+- `document_type` (required): Unique configuration key matching `^[a-z][a-z0-9_]*$`, with length `1..100`.
+- `configuration_mode` (optional, default `legacy`): `legacy` creates an empty `fields` list; `profile` creates empty `common_fields`, `profiles`, and `collections` structures.
 
-**Responses:**
+**Successful response:** `201` with `OperationResponse` containing `status: ok` and a human-readable `message`.
 
-- `201`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+**Error responses:**
+
+- `409`: The document-type key already exists.
+- `422`: The key or configuration mode violates request validation.
 
 ### GET `/api/v1/config/document-types/{document_type}`
 
-**Purpose:** Get Document Type.
+**Purpose:** Return one stored legacy or profile-based document-type configuration.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:read`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameter:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
+- `document_type` (required): Existing document-type configuration key.
 
-**Request body:** None.
+**Successful response:** `DocumentTypeModel` with fields that match the stored configuration shape.
 
-**Responses:**
+**Error responses:**
 
-- `200`: Successful Response Response: `application/json`: `DocumentTypeModel`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+- `404`: The document type does not exist.
+- `422`: The path value violates request validation.
 
 ### DELETE `/api/v1/config/document-types/{document_type}`
 
-**Purpose:** Delete Document Type.
+**Purpose:** Delete one document-type configuration while preserving the invariant that at least one document type remains.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameter:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
+- `document_type` (required): Existing document-type configuration key to delete.
 
-**Request body:** None.
+**Successful response:** `204` with no response body.
 
-**Responses:**
+**Error responses:**
 
-- `204`: Successful Response Response: No response body documented.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+- `404`: The document type does not exist.
+- `409`: The requested document type is the last remaining document type.
+- `422`: The path value violates request validation.
 
 ### POST `/api/v1/config/document-types/{document_type}/collections/{collection_name}`
 
@@ -591,20 +598,27 @@ Authentication can be supplied through an API key or OIDC bearer token where req
 
 ### PUT `/api/v1/config/document-types/{document_type}/rename`
 
-**Purpose:** Rename Document Type.
+**Purpose:** Rename an existing document-type key while preserving the complete configuration.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameter:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
+- `document_type` (required): Existing document-type configuration key.
 
-**Request body:** `application/json`: `RenameDocumentTypeRequest`
+**Request body:** `RenameDocumentTypeRequest`.
 
-**Responses:**
+- `new_document_type` (required): Replacement key matching `^[a-z][a-z0-9_]*$`, with length `1..100`.
 
-- `200`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+Renaming to the current key is an idempotent successful operation.
+
+**Successful response:** `OperationResponse` containing `status: ok` and a human-readable `message`.
+
+**Error responses:**
+
+- `404`: The source document type does not exist.
+- `409`: The replacement key already exists.
+- `422`: The path or replacement key violates request validation.
 
 ### GET `/api/v1/processing-runs`
 

@@ -193,9 +193,19 @@ class DocumentTypeModel(BaseModel):
 class DocumentTypeMetadataModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    status: DocumentStatusType
-    ready: bool
-    field_count: int = Field(ge=0)
+    status: DocumentStatusType = Field(
+        description="Configuration lifecycle status: draft or ready.",
+        examples=["ready"],
+    )
+    ready: bool = Field(
+        description="Whether the document type has usable extraction fields.",
+        examples=[True],
+    )
+    field_count: int = Field(
+        ge=0,
+        description="Number of resolved extraction fields.",
+        examples=[5],
+    )
 
 
 class CreateDocumentTypeRequest(BaseModel):
@@ -205,8 +215,17 @@ class CreateDocumentTypeRequest(BaseModel):
         min_length=1,
         max_length=100,
         pattern=r"^[a-z][a-z0-9_]*$",
+        description="New document-type configuration key.",
+        examples=["synthetic_contract"],
     )
-    configuration_mode: ConfigurationModeType = "legacy"
+    configuration_mode: ConfigurationModeType = Field(
+        default="legacy",
+        description=(
+            "Initial configuration shape: legacy creates a fields list; "
+            "profile creates common fields, profiles, and collections."
+        ),
+        examples=["profile"],
+    )
 
 
 class AddProfileRequest(BaseModel):
@@ -222,6 +241,8 @@ class RenameDocumentTypeRequest(BaseModel):
         min_length=1,
         max_length=100,
         pattern=r"^[a-z][a-z0-9_]*$",
+        description="Replacement document-type configuration key.",
+        examples=["synthetic_agreement"],
     )
 
 
@@ -252,26 +273,46 @@ class UpdateCollectionRequest(BaseModel):
 class ResolvedDocumentTypeModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    profile: str | None = None
-    fields: list[DocumentFieldModel] = Field(default_factory=list)
+    profile: str | None = Field(
+        default=None,
+        description="Default profile used to resolve the effective fields."
+    )
+    fields: list[DocumentFieldModel] = Field(
+        default_factory=list,
+        description="Effective extraction fields after profile resolution."
+    )
 
 
 class ConfigResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    document_types: dict[str, DocumentTypeModel]
+    document_types: dict[str, DocumentTypeModel] = Field(
+        description="Stored document-type configurations keyed by name."
+    )
     resolved_document_types: dict[
         str,
         ResolvedDocumentTypeModel,
-    ] = Field(default_factory=dict)
+    ] = Field(
+        default_factory=dict,
+        description="Effective default-profile fields keyed by document type."
+    )
     document_type_metadata: dict[
         str,
         DocumentTypeMetadataModel,
-    ] = Field(default_factory=dict)
+    ] = Field(
+        default_factory=dict,
+        description="Readiness metadata keyed by document type."
+    )
 
 
 class OperationResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    status: Literal["ok"]
-    message: str
+    status: Literal["ok"] = Field(
+        description="Successful configuration operation status.",
+        examples=["ok"],
+    )
+    message: str = Field(
+        description="Human-readable result of the configuration operation.",
+        examples=["Document type 'synthetic_contract' created"],
+    )

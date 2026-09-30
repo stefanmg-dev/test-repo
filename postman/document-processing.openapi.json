@@ -1123,11 +1123,12 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Get Document Types",
+        "summary": "List document type configurations",
+        "description": "Returns stored document-type configurations, resolved default-profile fields, and readiness metadata. Authenticated requests require the config:read scope.",
         "operationId": "get_document_types_api_v1_config_document_types_get",
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Document type configurations and readiness metadata.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1150,7 +1151,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Create Document Type",
+        "summary": "Create a document type configuration",
+        "description": "Creates an empty legacy or profile-based document type. The new key must be unique. Authenticated requests require the config:write scope.",
         "operationId": "create_document_type_api_v1_config_document_types_post",
         "requestBody": {
           "content": {
@@ -1164,7 +1166,7 @@
         },
         "responses": {
           "201": {
-            "description": "Successful Response",
+            "description": "Document type creation result.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1199,7 +1201,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Get Document Type",
+        "summary": "Get a document type configuration",
+        "description": "Returns one stored legacy or profile-based document-type configuration. Authenticated requests require the config:read scope.",
         "operationId": "get_document_type_api_v1_config_document_types__document_type__get",
         "security": [
           {
@@ -1216,13 +1219,15 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Document-type configuration key, for example invoice.",
               "title": "Document Type"
-            }
+            },
+            "description": "Document-type configuration key, for example invoice."
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Stored document type configuration.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1247,7 +1252,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Delete Document Type",
+        "summary": "Delete a document type configuration",
+        "description": "Deletes one existing document type. The last remaining document type cannot be deleted. Authenticated requests require the config:write scope.",
         "operationId": "delete_document_type_api_v1_config_document_types__document_type__delete",
         "security": [
           {
@@ -1264,8 +1270,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Document-type configuration key to delete.",
               "title": "Document Type"
-            }
+            },
+            "description": "Document-type configuration key to delete."
           }
         ],
         "responses": {
@@ -1290,7 +1298,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Rename Document Type",
+        "summary": "Rename a document type configuration",
+        "description": "Renames one existing document-type key while preserving its complete configuration. Authenticated requests require the config:write scope.",
         "operationId": "rename_document_type_api_v1_config_document_types__document_type__rename_put",
         "security": [
           {
@@ -1307,8 +1316,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Existing document-type configuration key.",
               "title": "Document Type"
-            }
+            },
+            "description": "Existing document-type configuration key."
           }
         ],
         "requestBody": {
@@ -1323,7 +1334,7 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Document type rename result.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3437,21 +3448,24 @@
               "$ref": "#/components/schemas/DocumentTypeModel"
             },
             "type": "object",
-            "title": "Document Types"
+            "title": "Document Types",
+            "description": "Stored document-type configurations keyed by name."
           },
           "resolved_document_types": {
             "additionalProperties": {
               "$ref": "#/components/schemas/ResolvedDocumentTypeModel"
             },
             "type": "object",
-            "title": "Resolved Document Types"
+            "title": "Resolved Document Types",
+            "description": "Effective default-profile fields keyed by document type."
           },
           "document_type_metadata": {
             "additionalProperties": {
               "$ref": "#/components/schemas/DocumentTypeMetadataModel"
             },
             "type": "object",
-            "title": "Document Type Metadata"
+            "title": "Document Type Metadata",
+            "description": "Readiness metadata keyed by document type."
           }
         },
         "additionalProperties": false,
@@ -3468,7 +3482,11 @@
             "maxLength": 100,
             "minLength": 1,
             "pattern": "^[a-z][a-z0-9_]*$",
-            "title": "Document Type"
+            "title": "Document Type",
+            "description": "New document-type configuration key.",
+            "examples": [
+              "synthetic_contract"
+            ]
           },
           "configuration_mode": {
             "type": "string",
@@ -3477,7 +3495,11 @@
               "profile"
             ],
             "title": "Configuration Mode",
-            "default": "legacy"
+            "description": "Initial configuration shape: legacy creates a fields list; profile creates common fields, profiles, and collections.",
+            "default": "legacy",
+            "examples": [
+              "profile"
+            ]
           }
         },
         "additionalProperties": false,
@@ -3740,16 +3762,28 @@
               "draft",
               "ready"
             ],
-            "title": "Status"
+            "title": "Status",
+            "description": "Configuration lifecycle status: draft or ready.",
+            "examples": [
+              "ready"
+            ]
           },
           "ready": {
             "type": "boolean",
-            "title": "Ready"
+            "title": "Ready",
+            "description": "Whether the document type has usable extraction fields.",
+            "examples": [
+              true
+            ]
           },
           "field_count": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Field Count"
+            "title": "Field Count",
+            "description": "Number of resolved extraction fields.",
+            "examples": [
+              5
+            ]
           }
         },
         "additionalProperties": false,
@@ -4798,11 +4832,19 @@
           "status": {
             "type": "string",
             "const": "ok",
-            "title": "Status"
+            "title": "Status",
+            "description": "Successful configuration operation status.",
+            "examples": [
+              "ok"
+            ]
           },
           "message": {
             "type": "string",
-            "title": "Message"
+            "title": "Message",
+            "description": "Human-readable result of the configuration operation.",
+            "examples": [
+              "Document type 'synthetic_contract' created"
+            ]
           }
         },
         "additionalProperties": false,
@@ -5964,7 +6006,11 @@
             "maxLength": 100,
             "minLength": 1,
             "pattern": "^[a-z][a-z0-9_]*$",
-            "title": "New Document Type"
+            "title": "New Document Type",
+            "description": "Replacement document-type configuration key.",
+            "examples": [
+              "synthetic_agreement"
+            ]
           }
         },
         "additionalProperties": false,
@@ -6069,14 +6115,16 @@
                 "type": "null"
               }
             ],
-            "title": "Profile"
+            "title": "Profile",
+            "description": "Default profile used to resolve the effective fields."
           },
           "fields": {
             "items": {
               "$ref": "#/components/schemas/DocumentFieldModel"
             },
             "type": "array",
-            "title": "Fields"
+            "title": "Fields",
+            "description": "Effective extraction fields after profile resolution."
           }
         },
         "additionalProperties": false,

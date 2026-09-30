@@ -67,6 +67,13 @@ def build_resolved_document_types(
 
 @router.get(
     "/document-types",
+    summary="List document type configurations",
+    description=(
+        "Returns stored document-type configurations, resolved default-profile "
+        "fields, and readiness metadata. Authenticated requests require the "
+        "config:read scope."
+    ),
+    response_description="Document type configurations and readiness metadata.",
     response_model=ConfigResponse,
     response_model_exclude_none=True,
 )
@@ -94,10 +101,21 @@ def get_document_types():
 
 @router.get(
     "/document-types/{document_type}",
+    summary="Get a document type configuration",
+    description=(
+        "Returns one stored legacy or profile-based document-type "
+        "configuration. Authenticated requests require the config:read scope."
+    ),
+    response_description="Stored document type configuration.",
     response_model=DocumentTypeModel,
     response_model_exclude_none=True,
 )
-def get_document_type(document_type: str):
+def get_document_type(
+    document_type: str = Path(
+        ...,
+        description="Document-type configuration key, for example invoice.",
+    ),
+):
     config = load_config()
 
     return get_document_type_or_404(
@@ -108,6 +126,12 @@ def get_document_type(document_type: str):
 
 @router.post(
     "/document-types",
+    summary="Create a document type configuration",
+    description=(
+        "Creates an empty legacy or profile-based document type. The new key "
+        "must be unique. Authenticated requests require the config:write scope."
+    ),
+    response_description="Document type creation result.",
     response_model=OperationResponse,
     status_code=status.HTTP_201_CREATED,
 )
@@ -152,11 +176,20 @@ def create_document_type(
 
 @router.put(
     "/document-types/{document_type}/rename",
+    summary="Rename a document type configuration",
+    description=(
+        "Renames one existing document-type key while preserving its complete "
+        "configuration. Authenticated requests require the config:write scope."
+    ),
+    response_description="Document type rename result.",
     response_model=OperationResponse,
 )
 def rename_document_type(
-    document_type: str,
     request: RenameDocumentTypeRequest,
+    document_type: str = Path(
+        ...,
+        description="Existing document-type configuration key.",
+    ),
 ):
     config = load_config()
 
@@ -206,10 +239,19 @@ def rename_document_type(
 
 @router.delete(
     "/document-types/{document_type}",
+    summary="Delete a document type configuration",
+    description=(
+        "Deletes one existing document type. The last remaining document type "
+        "cannot be deleted. Authenticated requests require the config:write "
+        "scope."
+    ),
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def delete_document_type(
-    document_type: str,
+    document_type: str = Path(
+        ...,
+        description="Document-type configuration key to delete.",
+    ),
 ):
     config = load_config()
 
