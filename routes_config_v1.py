@@ -282,12 +282,21 @@ def delete_document_type(
 
 @router.post(
     "/document-types/{document_type}/fields",
+    summary="Add a legacy extraction field",
+    description=(
+        "Adds one uniquely named extraction field to a legacy document-type "
+        "configuration. Authenticated requests require the config:write scope."
+    ),
+    response_description="Legacy field creation result.",
     response_model=OperationResponse,
     status_code=status.HTTP_201_CREATED,
 )
 def add_field(
-    document_type: str,
     request: AddFieldRequest,
+    document_type: str = Path(
+        ...,
+        description="Legacy document-type configuration key.",
+    ),
 ):
     config = load_config()
 
@@ -338,12 +347,25 @@ def add_field(
 
 @router.put(
     "/document-types/{document_type}/fields/{field_name}",
+    summary="Replace a legacy extraction field",
+    description=(
+        "Replaces one existing legacy extraction field. The replacement may "
+        "rename the field when the new name is unique. Authenticated requests "
+        "require the config:write scope."
+    ),
+    response_description="Legacy field update result.",
     response_model=OperationResponse,
 )
 def update_field(
-    document_type: str,
-    field_name: str,
     request: UpdateFieldRequest,
+    document_type: str = Path(
+        ...,
+        description="Legacy document-type configuration key.",
+    ),
+    field_name: str = Path(
+        ...,
+        description="Existing extraction field name to replace.",
+    ),
 ):
     config = load_config()
 
@@ -412,11 +434,23 @@ def update_field(
 
 @router.delete(
     "/document-types/{document_type}/fields/{field_name}",
+    summary="Delete a legacy extraction field",
+    description=(
+        "Deletes one existing extraction field from a legacy document-type "
+        "configuration. Authenticated requests require the config:write scope."
+    ),
+    response_description="Legacy field deletion result.",
     response_model=OperationResponse,
 )
 def delete_field(
-    document_type: str,
-    field_name: str,
+    document_type: str = Path(
+        ...,
+        description="Legacy document-type configuration key.",
+    ),
+    field_name: str = Path(
+        ...,
+        description="Existing extraction field name to delete.",
+    ),
 ):
     config = load_config()
 

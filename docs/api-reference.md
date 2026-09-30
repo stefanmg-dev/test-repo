@@ -337,56 +337,78 @@ Authentication can be supplied through an API key or OIDC bearer token where req
 
 ### POST `/api/v1/config/document-types/{document_type}/fields`
 
-**Purpose:** Add Field.
+**Purpose:** Add one uniquely named extraction field to a legacy document-type configuration.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameter:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
+- `document_type` (required): Existing legacy document-type configuration key.
 
-**Request body:** `application/json`: `AddFieldRequest`
+**Request body:** `AddFieldRequest` containing `field: DocumentFieldModel`.
 
-**Responses:**
+Field configuration supports:
 
-- `201`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+- `name`: Unique field name within the document type, length `1..100`.
+- `type`: `constant`, `regex`, `regex_list`, `nearby`, or `llm`.
+- `label`: Optional localized display labels keyed by language code.
+- `value`: Constant value for the `constant` strategy.
+- `rule`: Single extraction rule for `regex` or `nearby` strategies.
+- `rules`: Ordered rules for the `regex_list` strategy.
+- `anchor`, `pattern`, `direction`, `window_size`: Nearby extraction controls. `window_size` must be from `1` to `10000`.
+- `occurrence`: `first` or `last` matching occurrence.
+- `validation`: Field validation rules.
+
+Validation rules support `required`, `regex`, `date`, and `decimal`, with optional `message`, `pattern`, `format`, `minimum`, and `maximum` properties as applicable.
+
+**Successful response:** `201` with `OperationResponse`.
+
+**Error responses:**
+
+- `404`: The document type does not exist.
+- `409`: A field with the requested name already exists.
+- `422`: The extraction field or validation rule violates request validation.
 
 ### PUT `/api/v1/config/document-types/{document_type}/fields/{field_name}`
 
-**Purpose:** Update Field.
+**Purpose:** Completely replace one existing legacy extraction field, optionally renaming it.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `field_name` (path, required): Name of the configured extraction field.
+- `document_type` (required): Existing legacy document-type configuration key.
+- `field_name` (required): Existing extraction field name to replace.
 
-**Request body:** `application/json`: `UpdateFieldRequest`
+**Request body:** `UpdateFieldRequest` containing the complete replacement `field: DocumentFieldModel`.
 
-**Responses:**
+The field is renamed when the replacement `field.name` differs from `field_name`.
 
-- `200`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+**Successful response:** `OperationResponse`.
+
+**Error responses:**
+
+- `404`: The document type or addressed field does not exist.
+- `409`: The replacement field name conflicts with another existing field.
+- `422`: The path or replacement field configuration violates request validation.
 
 ### DELETE `/api/v1/config/document-types/{document_type}/fields/{field_name}`
 
-**Purpose:** Delete Field.
+**Purpose:** Delete one existing extraction field from a legacy document-type configuration.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `field_name` (path, required): Name of the configured extraction field.
+- `document_type` (required): Existing legacy document-type configuration key.
+- `field_name` (required): Existing extraction field name to delete.
 
-**Request body:** None.
+**Successful response:** `OperationResponse`.
 
-**Responses:**
+**Error responses:**
 
-- `200`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+- `404`: The document type or addressed field does not exist.
+- `422`: A path value violates request validation.
 
 ### POST `/api/v1/config/document-types/{document_type}/profiles/{profile_name}`
 

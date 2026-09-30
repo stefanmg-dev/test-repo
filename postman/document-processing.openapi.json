@@ -1361,7 +1361,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Add Field",
+        "summary": "Add a legacy extraction field",
+        "description": "Adds one uniquely named extraction field to a legacy document-type configuration. Authenticated requests require the config:write scope.",
         "operationId": "add_field_api_v1_config_document_types__document_type__fields_post",
         "security": [
           {
@@ -1378,8 +1379,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Legacy document-type configuration key.",
               "title": "Document Type"
-            }
+            },
+            "description": "Legacy document-type configuration key."
           }
         ],
         "requestBody": {
@@ -1394,7 +1397,7 @@
         },
         "responses": {
           "201": {
-            "description": "Successful Response",
+            "description": "Legacy field creation result.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1421,7 +1424,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Update Field",
+        "summary": "Replace a legacy extraction field",
+        "description": "Replaces one existing legacy extraction field. The replacement may rename the field when the new name is unique. Authenticated requests require the config:write scope.",
         "operationId": "update_field_api_v1_config_document_types__document_type__fields__field_name__put",
         "security": [
           {
@@ -1438,8 +1442,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Legacy document-type configuration key.",
               "title": "Document Type"
-            }
+            },
+            "description": "Legacy document-type configuration key."
           },
           {
             "name": "field_name",
@@ -1447,8 +1453,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Existing extraction field name to replace.",
               "title": "Field Name"
-            }
+            },
+            "description": "Existing extraction field name to replace."
           }
         ],
         "requestBody": {
@@ -1463,7 +1471,7 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Legacy field update result.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1488,7 +1496,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Delete Field",
+        "summary": "Delete a legacy extraction field",
+        "description": "Deletes one existing extraction field from a legacy document-type configuration. Authenticated requests require the config:write scope.",
         "operationId": "delete_field_api_v1_config_document_types__document_type__fields__field_name__delete",
         "security": [
           {
@@ -1505,8 +1514,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Legacy document-type configuration key.",
               "title": "Document Type"
-            }
+            },
+            "description": "Legacy document-type configuration key."
           },
           {
             "name": "field_name",
@@ -1514,13 +1525,15 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Existing extraction field name to delete.",
               "title": "Field Name"
-            }
+            },
+            "description": "Existing extraction field name to delete."
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Legacy field deletion result.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2993,7 +3006,8 @@
       "AddFieldRequest": {
         "properties": {
           "field": {
-            "$ref": "#/components/schemas/DocumentFieldModel"
+            "$ref": "#/components/schemas/DocumentFieldModel",
+            "description": "Extraction field configuration to add."
           }
         },
         "additionalProperties": false,
@@ -3557,7 +3571,11 @@
             "type": "string",
             "maxLength": 100,
             "minLength": 1,
-            "title": "Name"
+            "title": "Name",
+            "description": "Unique extraction field name within its configuration scope.",
+            "examples": [
+              "synthetic_invoice_number"
+            ]
           },
           "type": {
             "type": "string",
@@ -3568,7 +3586,11 @@
               "nearby",
               "llm"
             ],
-            "title": "Type"
+            "title": "Type",
+            "description": "Extraction strategy: constant, regex, regex_list, nearby, or llm.",
+            "examples": [
+              "regex"
+            ]
           },
           "label": {
             "anyOf": [
@@ -3582,7 +3604,13 @@
                 "type": "null"
               }
             ],
-            "title": "Label"
+            "title": "Label",
+            "description": "Optional localized display labels keyed by language code.",
+            "examples": [
+              {
+                "en": "Synthetic invoice number"
+              }
+            ]
           },
           "value": {
             "anyOf": [
@@ -3591,7 +3619,11 @@
                 "type": "null"
               }
             ],
-            "title": "Value"
+            "title": "Value",
+            "description": "Constant value used when type is constant.",
+            "examples": [
+              "synthetic"
+            ]
           },
           "rule": {
             "anyOf": [
@@ -3602,7 +3634,11 @@
                 "type": "null"
               }
             ],
-            "title": "Rule"
+            "title": "Rule",
+            "description": "Single extraction rule used by regex or nearby strategies.",
+            "examples": [
+              "Invoice\\s+(INV-SYNTH-[0-9]+)"
+            ]
           },
           "rules": {
             "anyOf": [
@@ -3616,7 +3652,13 @@
                 "type": "null"
               }
             ],
-            "title": "Rules"
+            "title": "Rules",
+            "description": "Ordered extraction rules used by the regex_list strategy.",
+            "examples": [
+              [
+                "Invoice\\s+(INV-SYNTH-[0-9]+)"
+              ]
+            ]
           },
           "anchor": {
             "anyOf": [
@@ -3627,7 +3669,11 @@
                 "type": "null"
               }
             ],
-            "title": "Anchor"
+            "title": "Anchor",
+            "description": "Anchor text used by the nearby extraction strategy.",
+            "examples": [
+              "Synthetic invoice"
+            ]
           },
           "pattern": {
             "anyOf": [
@@ -3638,7 +3684,11 @@
                 "type": "null"
               }
             ],
-            "title": "Pattern"
+            "title": "Pattern",
+            "description": "Pattern applied within the nearby extraction window.",
+            "examples": [
+              "INV-SYNTH-[0-9]+"
+            ]
           },
           "occurrence": {
             "anyOf": [
@@ -3653,7 +3703,11 @@
                 "type": "null"
               }
             ],
-            "title": "Occurrence"
+            "title": "Occurrence",
+            "description": "Selects the first or last matching occurrence.",
+            "examples": [
+              "last"
+            ]
           },
           "direction": {
             "anyOf": [
@@ -3669,7 +3723,11 @@
                 "type": "null"
               }
             ],
-            "title": "Direction"
+            "title": "Direction",
+            "description": "Nearby search direction: before, after, or both.",
+            "examples": [
+              "after"
+            ]
           },
           "window_size": {
             "anyOf": [
@@ -3682,14 +3740,19 @@
                 "type": "null"
               }
             ],
-            "title": "Window Size"
+            "title": "Window Size",
+            "description": "Maximum nearby search window size in characters.",
+            "examples": [
+              250
+            ]
           },
           "validation": {
             "items": {
               "$ref": "#/components/schemas/ValidationRuleModel"
             },
             "type": "array",
-            "title": "Validation"
+            "title": "Validation",
+            "description": "Validation rules applied to the extracted field value."
           }
         },
         "additionalProperties": false,
@@ -6433,7 +6496,8 @@
       "UpdateFieldRequest": {
         "properties": {
           "field": {
-            "$ref": "#/components/schemas/DocumentFieldModel"
+            "$ref": "#/components/schemas/DocumentFieldModel",
+            "description": "Complete replacement extraction field configuration."
           }
         },
         "additionalProperties": false,
@@ -6493,7 +6557,11 @@
               "date",
               "decimal"
             ],
-            "title": "Type"
+            "title": "Type",
+            "description": "Validation rule type: required, regex, date, or decimal.",
+            "examples": [
+              "required"
+            ]
           },
           "message": {
             "anyOf": [
@@ -6504,7 +6572,11 @@
                 "type": "null"
               }
             ],
-            "title": "Message"
+            "title": "Message",
+            "description": "Optional human-readable validation failure message.",
+            "examples": [
+              "Synthetic invoice number is required"
+            ]
           },
           "pattern": {
             "anyOf": [
@@ -6515,7 +6587,11 @@
                 "type": "null"
               }
             ],
-            "title": "Pattern"
+            "title": "Pattern",
+            "description": "Regular expression used by a regex validation rule.",
+            "examples": [
+              "^INV-SYNTH-[0-9]+$"
+            ]
           },
           "format": {
             "anyOf": [
@@ -6526,7 +6602,11 @@
                 "type": "null"
               }
             ],
-            "title": "Format"
+            "title": "Format",
+            "description": "Expected date format used by a date validation rule.",
+            "examples": [
+              "%Y-%m-%d"
+            ]
           },
           "minimum": {
             "anyOf": [
@@ -6543,7 +6623,11 @@
                 "type": "null"
               }
             ],
-            "title": "Minimum"
+            "title": "Minimum",
+            "description": "Inclusive minimum used by a decimal validation rule.",
+            "examples": [
+              "0.01"
+            ]
           },
           "maximum": {
             "anyOf": [
@@ -6560,7 +6644,11 @@
                 "type": "null"
               }
             ],
-            "title": "Maximum"
+            "title": "Maximum",
+            "description": "Inclusive maximum used by a decimal validation rule.",
+            "examples": [
+              "999999.99"
+            ]
           }
         },
         "additionalProperties": false,

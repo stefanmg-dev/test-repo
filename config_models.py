@@ -26,30 +26,103 @@ CollectionCardinalityType = Literal[
 class ValidationRuleModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    type: ValidationType
-    message: str | None = None
-    pattern: str | None = None
-    format: str | None = None
-    minimum: str | int | float | None = None
-    maximum: str | int | float | None = None
+    type: ValidationType = Field(
+        description="Validation rule type: required, regex, date, or decimal.",
+        examples=["required"],
+    )
+    message: str | None = Field(
+        default=None,
+        description="Optional human-readable validation failure message.",
+        examples=["Synthetic invoice number is required"],
+    )
+    pattern: str | None = Field(
+        default=None,
+        description="Regular expression used by a regex validation rule.",
+        examples=[r"^INV-SYNTH-[0-9]+$"],
+    )
+    format: str | None = Field(
+        default=None,
+        description="Expected date format used by a date validation rule.",
+        examples=["%Y-%m-%d"],
+    )
+    minimum: str | int | float | None = Field(
+        default=None,
+        description="Inclusive minimum used by a decimal validation rule.",
+        examples=["0.01"],
+    )
+    maximum: str | int | float | None = Field(
+        default=None,
+        description="Inclusive maximum used by a decimal validation rule.",
+        examples=["999999.99"],
+    )
 
 
 class DocumentFieldModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    name: str = Field(min_length=1, max_length=100)
-    type: FieldType
-    label: dict[str, str] | None = None
-    value: Any | None = None
-    rule: str | None = None
-    rules: list[str] | None = None
-    anchor: str | None = None
-    pattern: str | None = None
-    occurrence: OccurrenceType | None = None
-    direction: DirectionType | None = None
-    window_size: int | None = Field(default=None, gt=0, le=10000)
-    validation: list[ValidationRuleModel] = Field(default_factory=list)
-
+    name: str = Field(
+        min_length=1,
+        max_length=100,
+        description="Unique extraction field name within its configuration scope.",
+        examples=["synthetic_invoice_number"],
+    )
+    type: FieldType = Field(
+        description=(
+            "Extraction strategy: constant, regex, regex_list, nearby, or llm."
+        ),
+        examples=["regex"],
+    )
+    label: dict[str, str] | None = Field(
+        default=None,
+        description="Optional localized display labels keyed by language code.",
+        examples=[{"en": "Synthetic invoice number"}],
+    )
+    value: Any | None = Field(
+        default=None,
+        description="Constant value used when type is constant.",
+        examples=["synthetic"],
+    )
+    rule: str | None = Field(
+        default=None,
+        description="Single extraction rule used by regex or nearby strategies.",
+        examples=[r"Invoice\s+(INV-SYNTH-[0-9]+)"],
+    )
+    rules: list[str] | None = Field(
+        default=None,
+        description="Ordered extraction rules used by the regex_list strategy.",
+        examples=[[r"Invoice\s+(INV-SYNTH-[0-9]+)"]],
+    )
+    anchor: str | None = Field(
+        default=None,
+        description="Anchor text used by the nearby extraction strategy.",
+        examples=["Synthetic invoice"],
+    )
+    pattern: str | None = Field(
+        default=None,
+        description="Pattern applied within the nearby extraction window.",
+        examples=[r"INV-SYNTH-[0-9]+"],
+    )
+    occurrence: OccurrenceType | None = Field(
+        default=None,
+        description="Selects the first or last matching occurrence.",
+        examples=["last"],
+    )
+    direction: DirectionType | None = Field(
+        default=None,
+        description="Nearby search direction: before, after, or both.",
+        examples=["after"],
+    )
+    window_size: int | None = Field(
+        default=None,
+        gt=0,
+        le=10000,
+        description="Maximum nearby search window size in characters.",
+        examples=[250],
+    )
+    validation: list[ValidationRuleModel] = Field(
+        default_factory=list,
+        description="Validation rules applied to the extracted field value."
+    )
 
 class CollectionItemValidationModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -249,13 +322,17 @@ class RenameDocumentTypeRequest(BaseModel):
 class AddFieldRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    field: DocumentFieldModel
+    field: DocumentFieldModel = Field(
+        description="Extraction field configuration to add."
+    )
 
 
 class UpdateFieldRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    field: DocumentFieldModel
+    field: DocumentFieldModel = Field(
+        description="Complete replacement extraction field configuration."
+    )
 
 
 class AddCollectionRequest(BaseModel):
