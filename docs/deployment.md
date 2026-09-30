@@ -51,7 +51,7 @@ The container runs as UID and GID `10001`. `/tmp` is used for temporary uploaded
 
 ## Security boundary
 
-The image excludes local environment files, invoices, uploaded documents, local databases, test caches, AI model directories, Postman assets, and Git metadata. Authentication, authorization, upload limits, rate limiting, and production HTTP hardening are separate planned security packages.
+The image excludes local environment files, invoices, uploaded documents, local databases, test caches, AI model directories, Postman assets, and Git metadata. The runtime includes API-key and OIDC authentication, scope-based authorization, tenant-aware access control, upload validation and resource limits, configurable rate limiting, trusted-host enforcement, explicit CORS configuration, proxy trust settings, security audit logging, retention controls, and production API documentation exposure settings. Production deployments must configure these controls explicitly through the deployment secret and environment mechanism.
 
 ## Network and API boundary
 

@@ -4,13 +4,21 @@
 
 The extraction boundary enforces configured limits for upload size, filename length, PDF page count, image dimensions, and image pixel count. Supported file extensions are allowlisted and checked against file signatures. Temporary files are removed after processing or validation failure.
 
-## Planned phases
+## Implemented security controls
 
-- Authentication and object/function-level authorization
-- Rate limiting, concurrency limits, and request timeouts
-- Trusted hosts, explicit CORS, proxy trust, and production documentation exposure
-- Retention, privacy, audit trail, backup protection, and deletion workflows
-- Dependency scanning and security regression automation
+- API-key and OIDC bearer authentication with scope-based authorization
+- Tenant-aware processing history, review, retention, feedback export, and configuration operations
+- Configurable rate limiting for extraction, API-key management, and read endpoints
+- Trusted hosts, explicit CORS, proxy trust, and production documentation exposure settings
+- Upload size, filename, PDF page, image dimension, pixel-count, extension, and signature validation
+- Secret-safe security audit logging, bounded retention execution, and backup/restore helpers
+- CI security regression coverage, Python/npm vulnerability audits, dependency review for pull requests, and SPDX SBOM generation
+
+## Remaining operational decisions
+
+- Select production-specific rate-limit storage, concurrency, and request-timeout policies from measured workload requirements.
+- Complete deployment-specific monitoring, alert thresholds, incident response ownership, and disaster-recovery exercises.
+- Keep asynchronous processing, retry guarantees, idempotency, and webhook security outside the current synchronous runtime contract until external integration requirements are concrete.
 
 ## Network and API hardening
 
