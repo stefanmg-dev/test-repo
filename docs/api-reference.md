@@ -692,32 +692,50 @@ The operation returns aggregate review-derived metrics and does not return docum
 
 ### POST `/api/v1/processing-runs/retention-execute`
 
-**Purpose:** Execute Processing Run Retention.
+**Purpose:** Atomically delete a bounded number of tenant-owned completed processing runs older than the configured retention cutoff.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Requires authentication and the internal `admin` scope through `ApiKeyAuth` or `BearerAuth`. Browser delegated scopes do not grant `admin`. Tenant isolation is derived from the authenticated principal.
 
-**Parameters:** None documented.
+**Request body:** `ProcessingRunRetentionExecuteRequestModel`.
 
-**Request body:** `application/json`: `ProcessingRunRetentionExecuteRequestModel`
+- `confirmation` (required): Exact value `DELETE`. Other values are rejected.
+- `limit` (optional, default `100`, range `1..1000`): Maximum eligible runs to delete in this execution.
 
-**Responses:**
+**Successful response:** `ProcessingRunRetentionExecuteModel`.
 
-- `200`: Successful Response Response: `application/json`: `ProcessingRunRetentionExecuteModel`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+- `retention_days`: Configured completed-run retention period in days.
+- `cutoff`: UTC completion-time cutoff used by the execution.
+- `limit`: Maximum deletion count requested.
+- `deleted_count`: Number of tenant-owned runs deleted atomically.
+
+Execution is irreversible and records secret-safe security audit metadata.
+
+**Error responses:**
+
+- `401`: Authentication is missing or invalid.
+- `403`: The authenticated principal does not have the internal `admin` scope.
+- `422`: Confirmation is not exactly `DELETE`, or `limit` is outside `1..1000`.
 
 ### GET `/api/v1/processing-runs/retention-preview`
 
-**Purpose:** Get Processing Run Retention Preview.
+**Purpose:** Preview tenant-owned completed processing runs eligible for retention deletion without changing persisted state.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Requires authentication and the internal `admin` scope through `ApiKeyAuth` or `BearerAuth`. Tenant isolation is derived from the authenticated principal.
 
-**Parameters:** None documented.
+**Successful response:** `ProcessingRunRetentionPreviewModel`.
 
-**Request body:** None.
+- `retention_days`: Configured completed-run retention period in days.
+- `cutoff`: UTC completion-time cutoff. Older completed runs are eligible.
+- `candidate_count`: Number of tenant-owned eligible runs.
+- `oldest_candidate_completed_at`: Oldest eligible completion timestamp, or `null` when there are no candidates.
+- `newest_candidate_completed_at`: Newest eligible completion timestamp, or `null` when there are no candidates.
 
-**Responses:**
+Call preview before execution to inspect the current deletion boundary and candidate count.
 
-- `200`: Successful Response Response: `application/json`: `ProcessingRunRetentionPreviewModel`.
+**Error responses:**
+
+- `401`: Authentication is missing or invalid.
+- `403`: The authenticated principal does not have the internal `admin` scope.
 
 ### GET `/api/v1/processing-runs/review-summary`
 

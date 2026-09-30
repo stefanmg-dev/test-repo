@@ -504,11 +504,12 @@
         "tags": [
           "processing-runs"
         ],
-        "summary": "Get Processing Run Retention Preview",
+        "summary": "Preview processing run retention",
+        "description": "Returns the tenant-owned completed runs eligible for retention deletion under the configured cutoff. This read-only operation requires authentication and the internal admin scope.",
         "operationId": "get_processing_run_retention_preview_api_v1_processing_runs_retention_preview_get",
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Tenant-scoped retention eligibility preview.",
             "content": {
               "application/json": {
                 "schema": {
@@ -533,7 +534,8 @@
         "tags": [
           "processing-runs"
         ],
-        "summary": "Execute Processing Run Retention",
+        "summary": "Execute processing run retention",
+        "description": "Atomically deletes a bounded number of tenant-owned completed runs older than the configured cutoff. Requires authentication, the internal admin scope, and exact DELETE confirmation.",
         "operationId": "execute_processing_run_retention_api_v1_processing_runs_retention_execute_post",
         "requestBody": {
           "content": {
@@ -547,7 +549,7 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Retention cutoff and atomic deletion result.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5444,23 +5446,36 @@
             "type": "integer",
             "maximum": 3650.0,
             "minimum": 30.0,
-            "title": "Retention Days"
+            "title": "Retention Days",
+            "description": "Configured completed-run retention period in days.",
+            "examples": [
+              365
+            ]
           },
           "cutoff": {
             "type": "string",
             "format": "date-time",
-            "title": "Cutoff"
+            "title": "Cutoff",
+            "description": "UTC completion-time cutoff used by this execution."
           },
           "limit": {
             "type": "integer",
             "maximum": 1000.0,
             "minimum": 1.0,
-            "title": "Limit"
+            "title": "Limit",
+            "description": "Maximum deletion count requested for this execution.",
+            "examples": [
+              100
+            ]
           },
           "deleted_count": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Deleted Count"
+            "title": "Deleted Count",
+            "description": "Tenant-owned processing runs deleted atomically.",
+            "examples": [
+              2
+            ]
           }
         },
         "additionalProperties": false,
@@ -5478,14 +5493,22 @@
           "confirmation": {
             "type": "string",
             "const": "DELETE",
-            "title": "Confirmation"
+            "title": "Confirmation",
+            "description": "Exact irreversible-operation confirmation. The only accepted value is DELETE.",
+            "examples": [
+              "DELETE"
+            ]
           },
           "limit": {
             "type": "integer",
             "maximum": 1000.0,
             "minimum": 1.0,
             "title": "Limit",
-            "default": 100
+            "description": "Maximum eligible runs to delete in this execution.",
+            "default": 100,
+            "examples": [
+              100
+            ]
           }
         },
         "additionalProperties": false,
@@ -5501,17 +5524,26 @@
             "type": "integer",
             "maximum": 3650.0,
             "minimum": 30.0,
-            "title": "Retention Days"
+            "title": "Retention Days",
+            "description": "Configured completed-run retention period in days.",
+            "examples": [
+              365
+            ]
           },
           "cutoff": {
             "type": "string",
             "format": "date-time",
-            "title": "Cutoff"
+            "title": "Cutoff",
+            "description": "UTC completion-time cutoff. Completed runs older than this timestamp are eligible for deletion."
           },
           "candidate_count": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Candidate Count"
+            "title": "Candidate Count",
+            "description": "Tenant-owned completed runs currently eligible for deletion.",
+            "examples": [
+              2
+            ]
           },
           "oldest_candidate_completed_at": {
             "anyOf": [
@@ -5523,7 +5555,8 @@
                 "type": "null"
               }
             ],
-            "title": "Oldest Candidate Completed At"
+            "title": "Oldest Candidate Completed At",
+            "description": "Oldest eligible completion timestamp, or null when there are no candidates."
           },
           "newest_candidate_completed_at": {
             "anyOf": [
@@ -5535,7 +5568,8 @@
                 "type": "null"
               }
             ],
-            "title": "Newest Candidate Completed At"
+            "title": "Newest Candidate Completed At",
+            "description": "Newest eligible completion timestamp, or null when there are no candidates."
           }
         },
         "additionalProperties": false,

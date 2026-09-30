@@ -276,6 +276,13 @@ def get_processing_run_review_summary(
 
 @router.get(
     "/retention-preview",
+    summary="Preview processing run retention",
+    description=(
+        "Returns the tenant-owned completed runs eligible for retention "
+        "deletion under the configured cutoff. This read-only operation "
+        "requires authentication and the internal admin scope."
+    ),
+    response_description="Tenant-scoped retention eligibility preview.",
     response_model=ProcessingRunRetentionPreviewModel,
 )
 def get_processing_run_retention_preview(
@@ -292,6 +299,13 @@ def get_processing_run_retention_preview(
 
 @router.post(
     "/retention-execute",
+    summary="Execute processing run retention",
+    description=(
+        "Atomically deletes a bounded number of tenant-owned completed runs "
+        "older than the configured cutoff. Requires authentication, the "
+        "internal admin scope, and exact DELETE confirmation."
+    ),
+    response_description="Retention cutoff and atomic deletion result.",
     response_model=ProcessingRunRetentionExecuteModel,
 )
 def execute_processing_run_retention(

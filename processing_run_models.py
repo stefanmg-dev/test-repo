@@ -265,26 +265,82 @@ class InvoiceShadowSummaryModel(BaseModel):
 
 class ProcessingRunRetentionPreviewModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    retention_days: int = Field(ge=30, le=3650)
-    cutoff: datetime
-    candidate_count: int = Field(ge=0)
-    oldest_candidate_completed_at: datetime | None = None
-    newest_candidate_completed_at: datetime | None = None
+
+    retention_days: int = Field(
+        ge=30,
+        le=3650,
+        description="Configured completed-run retention period in days.",
+        examples=[365],
+    )
+    cutoff: datetime = Field(
+        description=(
+            "UTC completion-time cutoff. Completed runs older than this "
+            "timestamp are eligible for deletion."
+        )
+    )
+    candidate_count: int = Field(
+        ge=0,
+        description="Tenant-owned completed runs currently eligible for deletion.",
+        examples=[2],
+    )
+    oldest_candidate_completed_at: datetime | None = Field(
+        default=None,
+        description=(
+            "Oldest eligible completion timestamp, or null when there are "
+            "no candidates."
+        ),
+    )
+    newest_candidate_completed_at: datetime | None = Field(
+        default=None,
+        description=(
+            "Newest eligible completion timestamp, or null when there are "
+            "no candidates."
+        ),
+    )
 
 
 class ProcessingRunRetentionExecuteRequestModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    confirmation: Literal["DELETE"]
-    limit: int = Field(default=100, ge=1, le=1000)
+
+    confirmation: Literal["DELETE"] = Field(
+        description=(
+            "Exact irreversible-operation confirmation. The only accepted "
+            "value is DELETE."
+        ),
+        examples=["DELETE"],
+    )
+    limit: int = Field(
+        default=100,
+        ge=1,
+        le=1000,
+        description="Maximum eligible runs to delete in this execution.",
+        examples=[100],
+    )
 
 
 class ProcessingRunRetentionExecuteModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    retention_days: int = Field(ge=30, le=3650)
-    cutoff: datetime
-    limit: int = Field(ge=1, le=1000)
-    deleted_count: int = Field(ge=0)
 
+    retention_days: int = Field(
+        ge=30,
+        le=3650,
+        description="Configured completed-run retention period in days.",
+        examples=[365],
+    )
+    cutoff: datetime = Field(
+        description="UTC completion-time cutoff used by this execution."
+    )
+    limit: int = Field(
+        ge=1,
+        le=1000,
+        description="Maximum deletion count requested for this execution.",
+        examples=[100],
+    )
+    deleted_count: int = Field(
+        ge=0,
+        description="Tenant-owned processing runs deleted atomically.",
+        examples=[2],
+    )
 
 class ProcessingRunReviewRequestModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
