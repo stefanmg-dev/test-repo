@@ -216,20 +216,33 @@ class DocumentCollectionModel(BaseModel):
 class CollectionSummaryValidationModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    type: Literal["collection_sum_equals_field"]
+    type: Literal["collection_sum_equals_field"] = Field(
+        description="Collection summary validation type.",
+        examples=["collection_sum_equals_field"],
+    )
     collection: str = Field(
         min_length=1,
         max_length=100,
+        description="Collection whose item values are summed.",
+        examples=["synthetic_services"],
     )
     item_field: str = Field(
         min_length=1,
         max_length=100,
+        description="Numeric collection item field included in the sum.",
+        examples=["amount"],
     )
     target_field: str = Field(
         min_length=1,
         max_length=100,
+        description="Document field expected to equal the collection sum.",
+        examples=["synthetic_total_amount"],
     )
-    message: str | None = None
+    message: str | None = Field(
+        default=None,
+        description="Optional validation failure message.",
+        examples=["Synthetic service sum does not match the total"],
+    )
 
 
 class DocumentProfileModel(BaseModel):
@@ -257,19 +270,33 @@ class DocumentProfileModel(BaseModel):
 class DocumentTypeModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    fields: list[DocumentFieldModel] | None = None
+    fields: list[DocumentFieldModel] | None = Field(
+        default=None,
+        description="Legacy-mode extraction fields."
+    )
     default_profile: str | None = Field(
         default=None,
         min_length=1,
         max_length=100,
         pattern=r"^[a-z][a-z0-9_]*$",
+        description="Default profile used to resolve effective fields.",
+        examples=["synthetic_provider"],
     )
-    common_fields: list[DocumentFieldModel] | None = None
-    profiles: dict[str, DocumentProfileModel] | None = None
+    common_fields: list[DocumentFieldModel] | None = Field(
+        default=None,
+        description="Fields shared by every profile."
+    )
+    profiles: dict[str, DocumentProfileModel] | None = Field(
+        default=None,
+        description="Profile configurations keyed by profile name."
+    )
     collections: dict[
         str,
         DocumentCollectionModel,
-    ] | None = None
+    ] | None = Field(
+        default=None,
+        description="Document-level collections keyed by collection name."
+    )
 
     @model_validator(mode="after")
     def validate_configuration_shape(self):

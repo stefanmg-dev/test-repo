@@ -3557,25 +3557,41 @@
           "type": {
             "type": "string",
             "const": "collection_sum_equals_field",
-            "title": "Type"
+            "title": "Type",
+            "description": "Collection summary validation type.",
+            "examples": [
+              "collection_sum_equals_field"
+            ]
           },
           "collection": {
             "type": "string",
             "maxLength": 100,
             "minLength": 1,
-            "title": "Collection"
+            "title": "Collection",
+            "description": "Collection whose item values are summed.",
+            "examples": [
+              "synthetic_services"
+            ]
           },
           "item_field": {
             "type": "string",
             "maxLength": 100,
             "minLength": 1,
-            "title": "Item Field"
+            "title": "Item Field",
+            "description": "Numeric collection item field included in the sum.",
+            "examples": [
+              "amount"
+            ]
           },
           "target_field": {
             "type": "string",
             "maxLength": 100,
             "minLength": 1,
-            "title": "Target Field"
+            "title": "Target Field",
+            "description": "Document field expected to equal the collection sum.",
+            "examples": [
+              "synthetic_total_amount"
+            ]
           },
           "message": {
             "anyOf": [
@@ -3586,7 +3602,11 @@
                 "type": "null"
               }
             ],
-            "title": "Message"
+            "title": "Message",
+            "description": "Optional validation failure message.",
+            "examples": [
+              "Synthetic service sum does not match the total"
+            ]
           }
         },
         "additionalProperties": false,
@@ -4029,7 +4049,8 @@
                 "type": "null"
               }
             ],
-            "title": "Fields"
+            "title": "Fields",
+            "description": "Legacy-mode extraction fields."
           },
           "default_profile": {
             "anyOf": [
@@ -4043,7 +4064,11 @@
                 "type": "null"
               }
             ],
-            "title": "Default Profile"
+            "title": "Default Profile",
+            "description": "Default profile used to resolve effective fields.",
+            "examples": [
+              "synthetic_provider"
+            ]
           },
           "common_fields": {
             "anyOf": [
@@ -4057,7 +4082,8 @@
                 "type": "null"
               }
             ],
-            "title": "Common Fields"
+            "title": "Common Fields",
+            "description": "Fields shared by every profile."
           },
           "profiles": {
             "anyOf": [
@@ -4071,7 +4097,8 @@
                 "type": "null"
               }
             ],
-            "title": "Profiles"
+            "title": "Profiles",
+            "description": "Profile configurations keyed by profile name."
           },
           "collections": {
             "anyOf": [
@@ -4085,7 +4112,8 @@
                 "type": "null"
               }
             ],
-            "title": "Collections"
+            "title": "Collections",
+            "description": "Document-level collections keyed by collection name."
           }
         },
         "additionalProperties": false,
