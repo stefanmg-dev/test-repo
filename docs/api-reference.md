@@ -488,119 +488,135 @@ The operation does not change `default_profile`. A newly added profile must be s
 
 ### POST `/api/v1/config/document-types/{document_type}/profiles/{profile_name}/collections/{collection_name}`
 
-**Purpose:** Add Profile Collection.
+**Purpose:** Add one uniquely named repeating collection to an existing profile.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `profile_name` (path, required): Name of the supplier-specific profile or generic fallback profile.
-- `collection_name` (path, required): Name of the repeating structured collection within the document configuration.
+- `document_type` (required): Existing profile-based document-type configuration key.
+- `profile_name` (required): Existing profile name.
+- `collection_name` (required): New profile collection name.
 
-**Request body:** `application/json`: `AddCollectionRequest`
+**Request body:** `AddCollectionRequest` containing `collection`: `DocumentCollectionModel`.
 
-**Responses:**
+The collection supports cardinality, item start pattern, collection fields, and per-item validations as documented for document-level collections.
 
-- `201`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+**Successful response:** `201` with `OperationResponse`.
+
+**Error responses:**
+
+- `404`: The document type or profile does not exist.
+- `409`: The document type uses legacy configuration, or the collection name already exists in the profile.
+- `422`: A path value or collection configuration violates request validation.
 
 ### PUT `/api/v1/config/document-types/{document_type}/profiles/{profile_name}/collections/{collection_name}`
 
-**Purpose:** Update Profile Collection.
+**Purpose:** Completely replace one existing profile collection.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `profile_name` (path, required): Name of the supplier-specific profile or generic fallback profile.
-- `collection_name` (path, required): Name of the repeating structured collection within the document configuration.
+- `document_type` (required): Existing profile-based document-type configuration key.
+- `profile_name` (required): Existing profile name.
+- `collection_name` (required): Existing profile collection name.
 
-**Request body:** `application/json`: `UpdateCollectionRequest`
+**Request body:** `UpdateCollectionRequest` containing the complete replacement `collection`: `DocumentCollectionModel`.
 
-**Responses:**
+**Successful response:** `OperationResponse`.
 
-- `200`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+**Error responses:**
+
+- `404`: The document type, profile, or collection does not exist.
+- `409`: The document type uses legacy configuration.
+- `422`: A path value or replacement collection violates request validation.
 
 ### DELETE `/api/v1/config/document-types/{document_type}/profiles/{profile_name}/collections/{collection_name}`
 
-**Purpose:** Delete Profile Collection.
+**Purpose:** Delete one existing collection from an existing profile.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `profile_name` (path, required): Name of the supplier-specific profile or generic fallback profile.
-- `collection_name` (path, required): Name of the repeating structured collection within the document configuration.
+- `document_type` (required): Existing profile-based document-type configuration key.
+- `profile_name` (required): Existing profile name.
+- `collection_name` (required): Existing profile collection name to delete.
 
-**Request body:** None.
+**Successful response:** `OperationResponse`.
 
-**Responses:**
+**Error responses:**
 
-- `200`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+- `404`: The document type, profile, or collection does not exist.
+- `409`: The document type uses legacy configuration.
+- `422`: A path value violates request validation.
 
 ### POST `/api/v1/config/document-types/{document_type}/profiles/{profile_name}/collections/{collection_name}/fields`
 
-**Purpose:** Add Profile Collection Field.
+**Purpose:** Add one uniquely named extraction field to an existing profile collection.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `profile_name` (path, required): Name of the supplier-specific profile or generic fallback profile.
-- `collection_name` (path, required): Name of the repeating structured collection within the document configuration.
+- `document_type` (required): Existing profile-based document-type configuration key.
+- `profile_name` (required): Existing profile name.
+- `collection_name` (required): Existing profile collection name.
 
-**Request body:** `application/json`: `AddFieldRequest`
+**Request body:** `AddFieldRequest` containing `field`: `DocumentFieldModel`.
 
-**Responses:**
+**Successful response:** `201` with `OperationResponse`.
 
-- `201`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+**Error responses:**
+
+- `404`: The document type, profile, or collection does not exist.
+- `409`: The document type uses legacy configuration, or the field name already exists in the collection.
+- `422`: A path value or field configuration violates request validation.
 
 ### PUT `/api/v1/config/document-types/{document_type}/profiles/{profile_name}/collections/{collection_name}/fields/{field_name}`
 
-**Purpose:** Update Profile Collection Field.
+**Purpose:** Completely replace one existing profile collection field, optionally renaming it.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `profile_name` (path, required): Name of the supplier-specific profile or generic fallback profile.
-- `collection_name` (path, required): Name of the repeating structured collection within the document configuration.
-- `field_name` (path, required): Name of the configured extraction field.
+- `document_type` (required): Existing profile-based document-type configuration key.
+- `profile_name` (required): Existing profile name.
+- `collection_name` (required): Existing profile collection name.
+- `field_name` (required): Existing profile collection field name to replace.
 
-**Request body:** `application/json`: `UpdateFieldRequest`
+**Request body:** `UpdateFieldRequest` containing the complete replacement `field`: `DocumentFieldModel`.
 
-**Responses:**
+**Successful response:** `OperationResponse`.
 
-- `200`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+**Error responses:**
+
+- `404`: The document type, profile, collection, or addressed field does not exist.
+- `409`: The document type uses legacy configuration, or the replacement field name already exists in the collection.
+- `422`: A path value or field configuration violates request validation, including item validations that reference missing fields after replacement.
 
 ### DELETE `/api/v1/config/document-types/{document_type}/profiles/{profile_name}/collections/{collection_name}/fields/{field_name}`
 
-**Purpose:** Delete Profile Collection Field.
+**Purpose:** Delete one existing field from an existing profile collection.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `profile_name` (path, required): Name of the supplier-specific profile or generic fallback profile.
-- `collection_name` (path, required): Name of the repeating structured collection within the document configuration.
-- `field_name` (path, required): Name of the configured extraction field.
+- `document_type` (required): Existing profile-based document-type configuration key.
+- `profile_name` (required): Existing profile name.
+- `collection_name` (required): Existing profile collection name.
+- `field_name` (required): Existing profile collection field name to delete.
 
-**Request body:** None.
+**Successful response:** `OperationResponse`.
 
-**Responses:**
+**Error responses:**
 
-- `200`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+- `404`: The document type, profile, collection, or addressed field does not exist.
+- `409`: The document type uses legacy configuration, or the field is referenced by a collection item validation.
+- `422`: A path value violates request validation.
 
 ### POST `/api/v1/config/document-types/{document_type}/profiles/{profile_name}/fields`
 

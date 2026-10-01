@@ -225,14 +225,20 @@ def delete_collection_field(
 @router.post(
     "/document-types/{document_type}/profiles/{profile_name}/"
     "collections/{collection_name}",
+    summary="Add a profile collection",
+    description=(
+        "Adds one uniquely named repeating collection to an existing profile. "
+        "Authenticated requests require the config:write scope."
+    ),
+    response_description="Profile collection creation result.",
     response_model=OperationResponse,
     status_code=status.HTTP_201_CREATED,
 )
 def add_profile_collection(
-    document_type: str,
-    profile_name: str,
-    collection_name: str,
     request: AddCollectionRequest,
+    document_type: str = Path(..., description="Profile-based document-type key."),
+    profile_name: str = Path(..., description="Existing profile name."),
+    collection_name: str = Path(..., description="New profile collection name."),
 ):
     config = load_config()
     collection_data = request.collection.model_dump(
@@ -255,13 +261,19 @@ def add_profile_collection(
 @router.put(
     "/document-types/{document_type}/profiles/{profile_name}/"
     "collections/{collection_name}",
+    summary="Replace a profile collection",
+    description=(
+        "Completely replaces one existing profile collection. Authenticated "
+        "requests require the config:write scope."
+    ),
+    response_description="Profile collection update result.",
     response_model=OperationResponse,
 )
 def update_profile_collection(
-    document_type: str,
-    profile_name: str,
-    collection_name: str,
     request: UpdateCollectionRequest,
+    document_type: str = Path(..., description="Profile-based document-type key."),
+    profile_name: str = Path(..., description="Existing profile name."),
+    collection_name: str = Path(..., description="Existing profile collection name."),
 ):
     config = load_config()
     collection_data = request.collection.model_dump(
@@ -284,12 +296,18 @@ def update_profile_collection(
 @router.delete(
     "/document-types/{document_type}/profiles/{profile_name}/"
     "collections/{collection_name}",
+    summary="Delete a profile collection",
+    description=(
+        "Deletes one existing collection from an existing profile. "
+        "Authenticated requests require the config:write scope."
+    ),
+    response_description="Profile collection deletion result.",
     response_model=OperationResponse,
 )
 def delete_profile_collection(
-    document_type: str,
-    profile_name: str,
-    collection_name: str,
+    document_type: str = Path(..., description="Profile-based document-type key."),
+    profile_name: str = Path(..., description="Existing profile name."),
+    collection_name: str = Path(..., description="Existing profile collection name."),
 ):
     config = load_config()
     delete_profile_collection_mutation(
@@ -308,14 +326,20 @@ def delete_profile_collection(
 @router.post(
     "/document-types/{document_type}/profiles/{profile_name}/"
     "collections/{collection_name}/fields",
+    summary="Add a profile collection field",
+    description=(
+        "Adds one uniquely named extraction field to an existing profile "
+        "collection. Authenticated requests require the config:write scope."
+    ),
+    response_description="Profile collection field creation result.",
     response_model=OperationResponse,
     status_code=status.HTTP_201_CREATED,
 )
 def add_profile_collection_field(
-    document_type: str,
-    profile_name: str,
-    collection_name: str,
     request: AddFieldRequest,
+    document_type: str = Path(..., description="Profile-based document-type key."),
+    profile_name: str = Path(..., description="Existing profile name."),
+    collection_name: str = Path(..., description="Existing profile collection name."),
 ):
     config = load_config()
     field_data = request.field.model_dump(exclude_none=True)
@@ -337,14 +361,21 @@ def add_profile_collection_field(
 @router.put(
     "/document-types/{document_type}/profiles/{profile_name}/"
     "collections/{collection_name}/fields/{field_name}",
+    summary="Replace a profile collection field",
+    description=(
+        "Completely replaces one existing profile collection field and may "
+        "rename it when the new name is unique. Authenticated requests "
+        "require the config:write scope."
+    ),
+    response_description="Profile collection field update result.",
     response_model=OperationResponse,
 )
 def update_profile_collection_field(
-    document_type: str,
-    profile_name: str,
-    collection_name: str,
-    field_name: str,
     request: UpdateFieldRequest,
+    document_type: str = Path(..., description="Profile-based document-type key."),
+    profile_name: str = Path(..., description="Existing profile name."),
+    collection_name: str = Path(..., description="Existing profile collection name."),
+    field_name: str = Path(..., description="Existing profile collection field name."),
 ):
     config = load_config()
     field_data = request.field.model_dump(exclude_none=True)
@@ -366,13 +397,19 @@ def update_profile_collection_field(
 @router.delete(
     "/document-types/{document_type}/profiles/{profile_name}/"
     "collections/{collection_name}/fields/{field_name}",
+    summary="Delete a profile collection field",
+    description=(
+        "Deletes one existing field from an existing profile collection. "
+        "Authenticated requests require the config:write scope."
+    ),
+    response_description="Profile collection field deletion result.",
     response_model=OperationResponse,
 )
 def delete_profile_collection_field(
-    document_type: str,
-    profile_name: str,
-    collection_name: str,
-    field_name: str,
+    document_type: str = Path(..., description="Profile-based document-type key."),
+    profile_name: str = Path(..., description="Existing profile name."),
+    collection_name: str = Path(..., description="Existing profile collection name."),
+    field_name: str = Path(..., description="Existing profile collection field name."),
 ):
     config = load_config()
     delete_profile_field(
