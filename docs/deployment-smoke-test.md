@@ -124,3 +124,10 @@ Record only:
 - rollback decision and incident reference when applicable.
 
 Do not record API keys, bearer tokens, document values, filenames, raw OCR, tenant secrets, or complete processing-run payloads.
+
+## Related operational documentation
+
+- [System architecture](architecture.md)
+- [Production deployment](deployment.md)
+- [Security plan](security.md)
+- [PostgreSQL backup and restore runbook](backup-restore.md)

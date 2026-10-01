@@ -107,3 +107,10 @@ Do not use document values in screenshots, tickets, or routine restore logs.
 ## Automation gate
 
 Do not schedule automated retention solely because backup creation succeeds. First demonstrate a complete restore, application startup validation, representative data checks, tenant-isolation checks, and documented ownership for recurring recovery tests.
+
+## Related operational documentation
+
+- [System architecture](architecture.md)
+- [Production deployment](deployment.md)
+- [Security plan](security.md)
+- [Production deployment smoke test](deployment-smoke-test.md)

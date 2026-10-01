@@ -116,3 +116,10 @@ Use the endpoints in this order:
 Execution permanently deletes at most the requested number of the oldest eligible processing runs. Runs still processing and runs with pending review are excluded. Execution is atomic and emits security audit metadata containing the tenant identity, cutoff, limit, and deleted count, without document values.
 
 Do not schedule retention automatically until operational monitoring, backup, and restore procedures have been validated.
+
+## Related operational documentation
+
+- [System architecture](architecture.md)
+- [Security plan](security.md)
+- [PostgreSQL backup and restore runbook](backup-restore.md)
+- [Production deployment smoke test](deployment-smoke-test.md)

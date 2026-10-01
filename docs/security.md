@@ -48,3 +48,10 @@ Unknown delegated scopes are ignored. The internal `admin` permission is not gra
 ## Authentication cutover gate
 
 Do not disable legacy anonymous access until the production SPA redirect URI, delegated permissions, admin consent, token claims, and authenticated API calls have been verified. Roll back by restoring `LEGACY_ANONYMOUS_ACCESS_ENABLED=true`; do not weaken issuer, audience, signature, or scope validation.
+
+## Related operational documentation
+
+- [System architecture](architecture.md)
+- [Production deployment](deployment.md)
+- [PostgreSQL backup and restore runbook](backup-restore.md)
+- [Production deployment smoke test](deployment-smoke-test.md)

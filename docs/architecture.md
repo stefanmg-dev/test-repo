@@ -6,6 +6,15 @@ This system processes business documents through a synchronous API pipeline. It 
 
 The current user interface is primarily an administrative, testing, monitoring, and human-review workspace. It is not the primary production ingestion channel.
 
+
+## Operational documentation map
+
+- [Production deployment](deployment.md) defines the container runtime, migration order, environment configuration, Microsoft Entra cutover, and retention operation.
+- [Security plan](security.md) separates implemented application controls from deployment-specific operational decisions.
+- [Backup and restore](backup-restore.md) defines logical backup creation, isolated restore verification, and the recovery-readiness gate.
+- [Deployment smoke test](deployment-smoke-test.md) defines the read-only post-deployment go/no-go checks and rollback criteria.
+- [Development quick reference](development-quick-reference.md) contains the local environment, test, migration, OpenAPI, and Uvicorn commands.
+
 ## Technology baseline
 
 | Component | Technology | Version / source of truth | Purpose |
@@ -113,6 +122,14 @@ The production image runs one non-root Uvicorn process as UID/GID 10001. EasyOCR
 
 Readiness requires database connectivity and Alembic revision parity. Liveness does not query PostgreSQL.
 
+## Production-readiness boundary
+
+Implemented runtime controls include authentication and authorization, tenant isolation, upload protection, rate limiting, trusted-host and CORS enforcement, security audit logging, retention safeguards, readiness checks, migration parity, backup/restore helpers, deployment smoke automation, vulnerability audits, and SBOM generation.
+
+Production readiness still depends on deployment-specific decisions that cannot be selected safely in application code alone: infrastructure sizing, shared rate-limit storage, concurrency and timeout values, monitoring and alert thresholds, incident ownership, backup schedules, recovery objectives, recurring restore exercises, and rollback procedures. The deployment owner must approve and validate these items before production cutover.
+
+The future asynchronous model remains outside the current runtime contract. Queue technology, retries, delivery guarantees, idempotency, and webhook security must be designed only when concrete external integration requirements are available.
+
 ## Current boundaries and limitations
 
 - Document processing is synchronous.
@@ -142,4 +159,3 @@ The principal runtime dependency chain is:
 10. Structured logging, security audit, and request context emit safe operational metadata.
 
 A failure stops dependent downstream steps. Persistence records a safe failed lifecycle where the request has progressed far enough to create a processing run. Universal Invoice shadow failure does not turn an otherwise successful extraction into a failed extraction.
-
