@@ -1901,7 +1901,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Add Profile Field",
+        "summary": "Add a profile extraction field",
+        "description": "Adds one field to an existing profile. The name must be unique across all common and profile fields in the resolved document configuration. Authenticated requests require the config:write scope.",
         "operationId": "add_profile_field_api_v1_config_document_types__document_type__profiles__profile_name__fields_post",
         "security": [
           {
@@ -1918,8 +1919,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Profile-based document-type configuration key.",
               "title": "Document Type"
-            }
+            },
+            "description": "Profile-based document-type configuration key."
           },
           {
             "name": "profile_name",
@@ -1927,8 +1930,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Existing profile that receives the field.",
               "title": "Profile Name"
-            }
+            },
+            "description": "Existing profile that receives the field."
           }
         ],
         "requestBody": {
@@ -1943,7 +1948,7 @@
         },
         "responses": {
           "201": {
-            "description": "Successful Response",
+            "description": "Profile field creation result.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1970,7 +1975,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Update Profile Field",
+        "summary": "Replace a profile extraction field",
+        "description": "Replaces one existing profile field and may rename it when the new name remains unique across the resolved document configuration. Authenticated requests require the config:write scope.",
         "operationId": "update_profile_field_api_v1_config_document_types__document_type__profiles__profile_name__fields__field_name__put",
         "security": [
           {
@@ -1987,8 +1993,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Profile-based document-type configuration key.",
               "title": "Document Type"
-            }
+            },
+            "description": "Profile-based document-type configuration key."
           },
           {
             "name": "profile_name",
@@ -1996,8 +2004,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Existing profile containing the field.",
               "title": "Profile Name"
-            }
+            },
+            "description": "Existing profile containing the field."
           },
           {
             "name": "field_name",
@@ -2005,8 +2015,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Existing profile field name to replace.",
               "title": "Field Name"
-            }
+            },
+            "description": "Existing profile field name to replace."
           }
         ],
         "requestBody": {
@@ -2021,7 +2033,7 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Profile field update result.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2046,7 +2058,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Delete Profile Field",
+        "summary": "Delete a profile extraction field",
+        "description": "Deletes one existing field from an existing profile. Authenticated requests require the config:write scope.",
         "operationId": "delete_profile_field_api_v1_config_document_types__document_type__profiles__profile_name__fields__field_name__delete",
         "security": [
           {
@@ -2063,8 +2076,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Profile-based document-type configuration key.",
               "title": "Document Type"
-            }
+            },
+            "description": "Profile-based document-type configuration key."
           },
           {
             "name": "profile_name",
@@ -2072,8 +2087,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Existing profile containing the field.",
               "title": "Profile Name"
-            }
+            },
+            "description": "Existing profile containing the field."
           },
           {
             "name": "field_name",
@@ -2081,13 +2098,15 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Existing profile field name to delete.",
               "title": "Field Name"
-            }
+            },
+            "description": "Existing profile field name to delete."
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Profile field deletion result.",
             "content": {
               "application/json": {
                 "schema": {

@@ -585,59 +585,70 @@ The operation does not change `default_profile`. A newly added profile must be s
 
 ### POST `/api/v1/config/document-types/{document_type}/profiles/{profile_name}/fields`
 
-**Purpose:** Add Profile Field.
+**Purpose:** Add one extraction field to an existing profile of a profile-based document type.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `profile_name` (path, required): Name of the supplier-specific profile or generic fallback profile.
+- `document_type` (required): Existing profile-based document-type configuration key.
+- `profile_name` (required): Existing profile that receives the field.
 
-**Request body:** `application/json`: `AddFieldRequest`
+**Request body:** `AddFieldRequest` containing `field`: `DocumentFieldModel`.
 
-**Responses:**
+The new field name must be unique across every common field and every profile field in the resolved document configuration.
 
-- `201`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+**Successful response:** `201` with `OperationResponse`.
+
+**Error responses:**
+
+- `404`: The document type or profile does not exist.
+- `409`: The document type uses legacy configuration, or the field name conflicts with an existing common or profile field.
+- `422`: A path value or field configuration violates request validation.
 
 ### PUT `/api/v1/config/document-types/{document_type}/profiles/{profile_name}/fields/{field_name}`
 
-**Purpose:** Update Profile Field.
+**Purpose:** Completely replace one existing profile field, optionally renaming it.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `profile_name` (path, required): Name of the supplier-specific profile or generic fallback profile.
-- `field_name` (path, required): Name of the configured extraction field.
+- `document_type` (required): Existing profile-based document-type configuration key.
+- `profile_name` (required): Existing profile containing the field.
+- `field_name` (required): Existing profile field name to replace.
 
-**Request body:** `application/json`: `UpdateFieldRequest`
+**Request body:** `UpdateFieldRequest` containing the complete replacement `field`: `DocumentFieldModel`.
 
-**Responses:**
+The replacement name must remain unique across the resolved common and profile fields. The addressed field name is ignored during its own uniqueness check.
 
-- `200`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+**Successful response:** `OperationResponse`.
+
+**Error responses:**
+
+- `404`: The document type, profile, or addressed field does not exist.
+- `409`: The document type uses legacy configuration, or the replacement name conflicts with another common or profile field.
+- `422`: A path value or field configuration violates request validation.
 
 ### DELETE `/api/v1/config/document-types/{document_type}/profiles/{profile_name}/fields/{field_name}`
 
-**Purpose:** Delete Profile Field.
+**Purpose:** Delete one existing extraction field from an existing profile.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `profile_name` (path, required): Name of the supplier-specific profile or generic fallback profile.
-- `field_name` (path, required): Name of the configured extraction field.
+- `document_type` (required): Existing profile-based document-type configuration key.
+- `profile_name` (required): Existing profile containing the field.
+- `field_name` (required): Existing profile field name to delete.
 
-**Request body:** None.
+**Successful response:** `OperationResponse`.
 
-**Responses:**
+**Error responses:**
 
-- `200`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+- `404`: The document type, profile, or addressed field does not exist.
+- `409`: The document type uses legacy configuration.
+- `422`: A path value violates request validation.
 
 ### PUT `/api/v1/config/document-types/{document_type}/rename`
 

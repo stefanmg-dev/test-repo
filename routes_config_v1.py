@@ -770,13 +770,26 @@ def delete_common_field(
 
 @router.post(
     "/document-types/{document_type}/profiles/{profile_name}/fields",
+    summary="Add a profile extraction field",
+    description=(
+        "Adds one field to an existing profile. The name must be unique across "
+        "all common and profile fields in the resolved document configuration. "
+        "Authenticated requests require the config:write scope."
+    ),
+    response_description="Profile field creation result.",
     response_model=OperationResponse,
     status_code=status.HTTP_201_CREATED,
 )
 def add_profile_field(
-    document_type: str,
-    profile_name: str,
     request: AddFieldRequest,
+    document_type: str = Path(
+        ...,
+        description="Profile-based document-type configuration key.",
+    ),
+    profile_name: str = Path(
+        ...,
+        description="Existing profile that receives the field.",
+    ),
 ):
     config = load_config()
     document_config = get_document_type_or_404(config, document_type)
@@ -801,13 +814,29 @@ def add_profile_field(
 
 @router.put(
     "/document-types/{document_type}/profiles/{profile_name}/fields/{field_name}",
+    summary="Replace a profile extraction field",
+    description=(
+        "Replaces one existing profile field and may rename it when the new "
+        "name remains unique across the resolved document configuration. "
+        "Authenticated requests require the config:write scope."
+    ),
+    response_description="Profile field update result.",
     response_model=OperationResponse,
 )
 def update_profile_field(
-    document_type: str,
-    profile_name: str,
-    field_name: str,
     request: UpdateFieldRequest,
+    document_type: str = Path(
+        ...,
+        description="Profile-based document-type configuration key.",
+    ),
+    profile_name: str = Path(
+        ...,
+        description="Existing profile containing the field.",
+    ),
+    field_name: str = Path(
+        ...,
+        description="Existing profile field name to replace.",
+    ),
 ):
     config = load_config()
     document_config = get_document_type_or_404(config, document_type)
@@ -846,12 +875,27 @@ def update_profile_field(
 
 @router.delete(
     "/document-types/{document_type}/profiles/{profile_name}/fields/{field_name}",
+    summary="Delete a profile extraction field",
+    description=(
+        "Deletes one existing field from an existing profile. Authenticated "
+        "requests require the config:write scope."
+    ),
+    response_description="Profile field deletion result.",
     response_model=OperationResponse,
 )
 def delete_profile_field(
-    document_type: str,
-    profile_name: str,
-    field_name: str,
+    document_type: str = Path(
+        ...,
+        description="Profile-based document-type configuration key.",
+    ),
+    profile_name: str = Path(
+        ...,
+        description="Existing profile containing the field.",
+    ),
+    field_name: str = Path(
+        ...,
+        description="Existing profile field name to delete.",
+    ),
 ):
     config = load_config()
     document_config = get_document_type_or_404(config, document_type)
