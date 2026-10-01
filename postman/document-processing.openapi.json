@@ -2133,7 +2133,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Add Collection",
+        "summary": "Add a document collection",
+        "description": "Adds one uniquely named repeating collection to a document type. Authenticated requests require the config:write scope.",
         "operationId": "add_collection_api_v1_config_document_types__document_type__collections__collection_name__post",
         "security": [
           {
@@ -2150,8 +2151,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Document-type configuration key.",
               "title": "Document Type"
-            }
+            },
+            "description": "Document-type configuration key."
           },
           {
             "name": "collection_name",
@@ -2159,8 +2162,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "New collection name.",
               "title": "Collection Name"
-            }
+            },
+            "description": "New collection name."
           }
         ],
         "requestBody": {
@@ -2175,7 +2180,7 @@
         },
         "responses": {
           "201": {
-            "description": "Successful Response",
+            "description": "Collection creation result.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2200,7 +2205,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Update Collection",
+        "summary": "Replace a document collection",
+        "description": "Completely replaces one existing document-level collection. Authenticated requests require the config:write scope.",
         "operationId": "update_collection_api_v1_config_document_types__document_type__collections__collection_name__put",
         "security": [
           {
@@ -2217,8 +2223,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Document-type configuration key.",
               "title": "Document Type"
-            }
+            },
+            "description": "Document-type configuration key."
           },
           {
             "name": "collection_name",
@@ -2226,8 +2234,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Existing collection name.",
               "title": "Collection Name"
-            }
+            },
+            "description": "Existing collection name."
           }
         ],
         "requestBody": {
@@ -2242,7 +2252,7 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Collection update result.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2267,7 +2277,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Delete Collection",
+        "summary": "Delete a document collection",
+        "description": "Deletes one existing document-level collection. Authenticated requests require the config:write scope.",
         "operationId": "delete_collection_api_v1_config_document_types__document_type__collections__collection_name__delete",
         "security": [
           {
@@ -2284,8 +2295,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Document-type configuration key.",
               "title": "Document Type"
-            }
+            },
+            "description": "Document-type configuration key."
           },
           {
             "name": "collection_name",
@@ -2293,13 +2306,15 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Existing collection name.",
               "title": "Collection Name"
-            }
+            },
+            "description": "Existing collection name."
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Collection deletion result.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2326,7 +2341,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Add Collection Field",
+        "summary": "Add a document collection field",
+        "description": "Adds one uniquely named extraction field to an existing document collection. Authenticated requests require the config:write scope.",
         "operationId": "add_collection_field_api_v1_config_document_types__document_type__collections__collection_name__fields_post",
         "security": [
           {
@@ -2343,8 +2359,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Document-type configuration key.",
               "title": "Document Type"
-            }
+            },
+            "description": "Document-type configuration key."
           },
           {
             "name": "collection_name",
@@ -2352,8 +2370,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Existing collection name.",
               "title": "Collection Name"
-            }
+            },
+            "description": "Existing collection name."
           }
         ],
         "requestBody": {
@@ -2368,7 +2388,7 @@
         },
         "responses": {
           "201": {
-            "description": "Successful Response",
+            "description": "Collection field creation result.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2395,7 +2415,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Update Collection Field",
+        "summary": "Replace a document collection field",
+        "description": "Completely replaces one existing collection field and may rename it when the new name is unique. Authenticated requests require the config:write scope.",
         "operationId": "update_collection_field_api_v1_config_document_types__document_type__collections__collection_name__fields__field_name__put",
         "security": [
           {
@@ -2412,8 +2433,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Document-type configuration key.",
               "title": "Document Type"
-            }
+            },
+            "description": "Document-type configuration key."
           },
           {
             "name": "collection_name",
@@ -2421,8 +2444,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Existing collection name.",
               "title": "Collection Name"
-            }
+            },
+            "description": "Existing collection name."
           },
           {
             "name": "field_name",
@@ -2430,8 +2455,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Existing collection field name.",
               "title": "Field Name"
-            }
+            },
+            "description": "Existing collection field name."
           }
         ],
         "requestBody": {
@@ -2446,7 +2473,7 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Collection field update result.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2471,7 +2498,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Delete Collection Field",
+        "summary": "Delete a document collection field",
+        "description": "Deletes one existing field from an existing document collection. Authenticated requests require the config:write scope.",
         "operationId": "delete_collection_field_api_v1_config_document_types__document_type__collections__collection_name__fields__field_name__delete",
         "security": [
           {
@@ -2488,8 +2516,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Document-type configuration key.",
               "title": "Document Type"
-            }
+            },
+            "description": "Document-type configuration key."
           },
           {
             "name": "collection_name",
@@ -2497,8 +2527,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Existing collection name.",
               "title": "Collection Name"
-            }
+            },
+            "description": "Existing collection name."
           },
           {
             "name": "field_name",
@@ -2506,13 +2538,15 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Existing collection field name.",
               "title": "Field Name"
-            }
+            },
+            "description": "Existing collection field name."
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Collection field deletion result.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3035,7 +3069,8 @@
       "AddCollectionRequest": {
         "properties": {
           "collection": {
-            "$ref": "#/components/schemas/DocumentCollectionModel"
+            "$ref": "#/components/schemas/DocumentCollectionModel",
+            "description": "Complete collection configuration to add."
           }
         },
         "additionalProperties": false,
@@ -3409,25 +3444,41 @@
           "type": {
             "type": "string",
             "const": "difference_equals",
-            "title": "Type"
+            "title": "Type",
+            "description": "Collection item validation type.",
+            "examples": [
+              "difference_equals"
+            ]
           },
           "minuend": {
             "type": "string",
             "maxLength": 100,
             "minLength": 1,
-            "title": "Minuend"
+            "title": "Minuend",
+            "description": "Field subtracted from when checking the difference.",
+            "examples": [
+              "current_reading"
+            ]
           },
           "subtrahend": {
             "type": "string",
             "maxLength": 100,
             "minLength": 1,
-            "title": "Subtrahend"
+            "title": "Subtrahend",
+            "description": "Field subtracted from the minuend.",
+            "examples": [
+              "previous_reading"
+            ]
           },
           "result": {
             "type": "string",
             "maxLength": 100,
             "minLength": 1,
-            "title": "Result"
+            "title": "Result",
+            "description": "Field expected to equal minuend minus subtrahend.",
+            "examples": [
+              "difference"
+            ]
           },
           "message": {
             "anyOf": [
@@ -3438,7 +3489,11 @@
                 "type": "null"
               }
             ],
-            "title": "Message"
+            "title": "Message",
+            "description": "Optional validation failure message.",
+            "examples": [
+              "Synthetic reading difference is invalid"
+            ]
           }
         },
         "additionalProperties": false,
@@ -3576,7 +3631,11 @@
               "exactly_one"
             ],
             "title": "Cardinality",
-            "default": "zero_or_more"
+            "description": "Required item count: zero_or_more, one_or_more, or exactly_one.",
+            "default": "zero_or_more",
+            "examples": [
+              "one_or_more"
+            ]
           },
           "start_pattern": {
             "anyOf": [
@@ -3587,21 +3646,27 @@
                 "type": "null"
               }
             ],
-            "title": "Start Pattern"
+            "title": "Start Pattern",
+            "description": "Optional pattern marking the start of each collection item.",
+            "examples": [
+              "^Synthetic meter"
+            ]
           },
           "fields": {
             "items": {
               "$ref": "#/components/schemas/DocumentFieldModel"
             },
             "type": "array",
-            "title": "Fields"
+            "title": "Fields",
+            "description": "Extraction fields evaluated for every collection item."
           },
           "item_validations": {
             "items": {
               "$ref": "#/components/schemas/CollectionItemValidationModel"
             },
             "type": "array",
-            "title": "Item Validations"
+            "title": "Item Validations",
+            "description": "Validations evaluated within each collection item."
           }
         },
         "additionalProperties": false,
@@ -6529,7 +6594,8 @@
       "UpdateCollectionRequest": {
         "properties": {
           "collection": {
-            "$ref": "#/components/schemas/DocumentCollectionModel"
+            "$ref": "#/components/schemas/DocumentCollectionModel",
+            "description": "Complete replacement collection configuration."
           }
         },
         "additionalProperties": false,

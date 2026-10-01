@@ -127,22 +127,60 @@ class DocumentFieldModel(BaseModel):
 class CollectionItemValidationModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    type: Literal["difference_equals"]
-    minuend: str = Field(min_length=1, max_length=100)
-    subtrahend: str = Field(min_length=1, max_length=100)
-    result: str = Field(min_length=1, max_length=100)
-    message: str | None = None
+    type: Literal["difference_equals"] = Field(
+        description="Collection item validation type.",
+        examples=["difference_equals"],
+    )
+    minuend: str = Field(
+        min_length=1,
+        max_length=100,
+        description="Field subtracted from when checking the difference.",
+        examples=["current_reading"],
+    )
+    subtrahend: str = Field(
+        min_length=1,
+        max_length=100,
+        description="Field subtracted from the minuend.",
+        examples=["previous_reading"],
+    )
+    result: str = Field(
+        min_length=1,
+        max_length=100,
+        description="Field expected to equal minuend minus subtrahend.",
+        examples=["difference"],
+    )
+    message: str | None = Field(
+        default=None,
+        description="Optional validation failure message.",
+        examples=["Synthetic reading difference is invalid"],
+    )
 
 
 class DocumentCollectionModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    cardinality: CollectionCardinalityType = "zero_or_more"
-    start_pattern: str | None = None
-    fields: list[DocumentFieldModel] = Field(default_factory=list)
+    cardinality: CollectionCardinalityType = Field(
+        default="zero_or_more",
+        description=(
+            "Required item count: zero_or_more, one_or_more, or exactly_one."
+        ),
+        examples=["one_or_more"],
+    )
+    start_pattern: str | None = Field(
+        default=None,
+        description="Optional pattern marking the start of each collection item.",
+        examples=[r"^Synthetic meter"],
+    )
+    fields: list[DocumentFieldModel] = Field(
+        default_factory=list,
+        description="Extraction fields evaluated for every collection item."
+    )
     item_validations: list[
         CollectionItemValidationModel
-    ] = Field(default_factory=list)
+    ] = Field(
+        default_factory=list,
+        description="Validations evaluated within each collection item."
+    )
 
     @model_validator(mode="after")
     def validate_unique_field_names(self):
@@ -174,7 +212,6 @@ class DocumentCollectionModel(BaseModel):
                 )
 
         return self
-
 
 class CollectionSummaryValidationModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -349,13 +386,17 @@ class UpdateFieldRequest(BaseModel):
 class AddCollectionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    collection: DocumentCollectionModel
+    collection: DocumentCollectionModel = Field(
+        description="Complete collection configuration to add."
+    )
 
 
 class UpdateCollectionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    collection: DocumentCollectionModel
+    collection: DocumentCollectionModel = Field(
+        description="Complete replacement collection configuration."
+    )
 
 
 class ResolvedDocumentTypeModel(BaseModel):

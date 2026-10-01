@@ -1,5 +1,5 @@
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 
 from config_models import (
     AddCollectionRequest,
@@ -35,13 +35,19 @@ router = APIRouter(
 
 @router.post(
     "/document-types/{document_type}/collections/{collection_name}",
+    summary="Add a document collection",
+    description=(
+        "Adds one uniquely named repeating collection to a document type. "
+        "Authenticated requests require the config:write scope."
+    ),
+    response_description="Collection creation result.",
     response_model=OperationResponse,
     status_code=status.HTTP_201_CREATED,
 )
 def add_collection(
-    document_type: str,
-    collection_name: str,
     request: AddCollectionRequest,
+    document_type: str = Path(..., description="Document-type configuration key."),
+    collection_name: str = Path(..., description="New collection name."),
 ):
     config = load_config()
     collection_data = request.collection.model_dump(
@@ -62,12 +68,18 @@ def add_collection(
     }
 @router.put(
     "/document-types/{document_type}/collections/{collection_name}",
+    summary="Replace a document collection",
+    description=(
+        "Completely replaces one existing document-level collection. "
+        "Authenticated requests require the config:write scope."
+    ),
+    response_description="Collection update result.",
     response_model=OperationResponse,
 )
 def update_collection(
-    document_type: str,
-    collection_name: str,
     request: UpdateCollectionRequest,
+    document_type: str = Path(..., description="Document-type configuration key."),
+    collection_name: str = Path(..., description="Existing collection name."),
 ):
     config = load_config()
     collection_data = request.collection.model_dump(
@@ -88,11 +100,17 @@ def update_collection(
     }
 @router.delete(
     "/document-types/{document_type}/collections/{collection_name}",
+    summary="Delete a document collection",
+    description=(
+        "Deletes one existing document-level collection. Authenticated "
+        "requests require the config:write scope."
+    ),
+    response_description="Collection deletion result.",
     response_model=OperationResponse,
 )
 def delete_collection(
-    document_type: str,
-    collection_name: str,
+    document_type: str = Path(..., description="Document-type configuration key."),
+    collection_name: str = Path(..., description="Existing collection name."),
 ):
     config = load_config()
     delete_document_collection(
@@ -110,13 +128,19 @@ def delete_collection(
 @router.post(
     "/document-types/{document_type}/collections/"
     "{collection_name}/fields",
+    summary="Add a document collection field",
+    description=(
+        "Adds one uniquely named extraction field to an existing document "
+        "collection. Authenticated requests require the config:write scope."
+    ),
+    response_description="Collection field creation result.",
     response_model=OperationResponse,
     status_code=status.HTTP_201_CREATED,
 )
 def add_collection_field(
-    document_type: str,
-    collection_name: str,
     request: AddFieldRequest,
+    document_type: str = Path(..., description="Document-type configuration key."),
+    collection_name: str = Path(..., description="Existing collection name."),
 ):
     config = load_config()
     field_data = request.field.model_dump(exclude_none=True)
@@ -137,13 +161,20 @@ def add_collection_field(
 @router.put(
     "/document-types/{document_type}/collections/"
     "{collection_name}/fields/{field_name}",
+    summary="Replace a document collection field",
+    description=(
+        "Completely replaces one existing collection field and may rename it "
+        "when the new name is unique. Authenticated requests require the "
+        "config:write scope."
+    ),
+    response_description="Collection field update result.",
     response_model=OperationResponse,
 )
 def update_collection_field(
-    document_type: str,
-    collection_name: str,
-    field_name: str,
     request: UpdateFieldRequest,
+    document_type: str = Path(..., description="Document-type configuration key."),
+    collection_name: str = Path(..., description="Existing collection name."),
+    field_name: str = Path(..., description="Existing collection field name."),
 ):
     config = load_config()
     field_data = request.field.model_dump(exclude_none=True)
@@ -164,12 +195,18 @@ def update_collection_field(
 @router.delete(
     "/document-types/{document_type}/collections/"
     "{collection_name}/fields/{field_name}",
+    summary="Delete a document collection field",
+    description=(
+        "Deletes one existing field from an existing document collection. "
+        "Authenticated requests require the config:write scope."
+    ),
+    response_description="Collection field deletion result.",
     response_model=OperationResponse,
 )
 def delete_collection_field(
-    document_type: str,
-    collection_name: str,
-    field_name: str,
+    document_type: str = Path(..., description="Document-type configuration key."),
+    collection_name: str = Path(..., description="Existing collection name."),
+    field_name: str = Path(..., description="Existing collection field name."),
 ):
     config = load_config()
     delete_document_field(

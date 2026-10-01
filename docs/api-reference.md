@@ -174,113 +174,132 @@ Authentication can be supplied through an API key or OIDC bearer token where req
 
 ### POST `/api/v1/config/document-types/{document_type}/collections/{collection_name}`
 
-**Purpose:** Add Collection.
+**Purpose:** Add one uniquely named repeating collection to a document-type configuration.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `collection_name` (path, required): Name of the repeating structured collection within the document configuration.
+- `document_type` (required): Existing document-type configuration key.
+- `collection_name` (required): New collection name.
 
-**Request body:** `application/json`: `AddCollectionRequest`
+**Request body:** `AddCollectionRequest` containing `collection`: `DocumentCollectionModel`.
 
-**Responses:**
+Collection configuration supports:
 
-- `201`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+- `cardinality`: `zero_or_more`, `one_or_more`, or `exactly_one`; default `zero_or_more`.
+- `start_pattern`: Optional pattern marking the start of each repeated item.
+- `fields`: Extraction fields evaluated for each collection item. Field names must be unique within the collection.
+- `item_validations`: Per-item validations. `difference_equals` verifies that `result` equals `minuend` minus `subtrahend`; all referenced fields must exist in the collection.
+
+**Successful response:** `201` with `OperationResponse`.
+
+**Error responses:**
+
+- `404`: The document type does not exist.
+- `409`: The collection name already exists.
+- `422`: The collection shape, cardinality, fields, or item validations violate request validation.
 
 ### PUT `/api/v1/config/document-types/{document_type}/collections/{collection_name}`
 
-**Purpose:** Update Collection.
+**Purpose:** Completely replace one existing document-level collection.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `collection_name` (path, required): Name of the repeating structured collection within the document configuration.
+- `document_type` (required): Existing document-type configuration key.
+- `collection_name` (required): Existing collection name.
 
-**Request body:** `application/json`: `UpdateCollectionRequest`
+**Request body:** `UpdateCollectionRequest` containing the complete replacement `collection`: `DocumentCollectionModel`.
 
-**Responses:**
+**Successful response:** `OperationResponse`.
 
-- `200`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+**Error responses:**
+
+- `404`: The document type or collection does not exist.
+- `422`: A path value or replacement collection violates request validation.
 
 ### DELETE `/api/v1/config/document-types/{document_type}/collections/{collection_name}`
 
-**Purpose:** Delete Collection.
+**Purpose:** Delete one existing document-level collection.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `collection_name` (path, required): Name of the repeating structured collection within the document configuration.
+- `document_type` (required): Existing document-type configuration key.
+- `collection_name` (required): Existing collection name to delete.
 
-**Request body:** None.
+**Successful response:** `OperationResponse`.
 
-**Responses:**
+**Error responses:**
 
-- `200`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+- `404`: The document type or collection does not exist.
+- `422`: A path value violates request validation.
 
 ### POST `/api/v1/config/document-types/{document_type}/collections/{collection_name}/fields`
 
-**Purpose:** Add Collection Field.
+**Purpose:** Add one uniquely named extraction field to an existing document-level collection.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `collection_name` (path, required): Name of the repeating structured collection within the document configuration.
+- `document_type` (required): Existing document-type configuration key.
+- `collection_name` (required): Existing collection name.
 
-**Request body:** `application/json`: `AddFieldRequest`
+**Request body:** `AddFieldRequest` containing `field`: `DocumentFieldModel`.
 
-**Responses:**
+**Successful response:** `201` with `OperationResponse`.
 
-- `201`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+**Error responses:**
+
+- `404`: The document type or collection does not exist.
+- `409`: The field name already exists in the collection.
+- `422`: A path value or field configuration violates request validation.
 
 ### PUT `/api/v1/config/document-types/{document_type}/collections/{collection_name}/fields/{field_name}`
 
-**Purpose:** Update Collection Field.
+**Purpose:** Completely replace one existing collection field, optionally renaming it.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `collection_name` (path, required): Name of the repeating structured collection within the document configuration.
-- `field_name` (path, required): Name of the configured extraction field.
+- `document_type` (required): Existing document-type configuration key.
+- `collection_name` (required): Existing collection name.
+- `field_name` (required): Existing collection field name to replace.
 
-**Request body:** `application/json`: `UpdateFieldRequest`
+**Request body:** `UpdateFieldRequest` containing the complete replacement `field`: `DocumentFieldModel`.
 
-**Responses:**
+**Successful response:** `OperationResponse`.
 
-- `200`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+**Error responses:**
+
+- `404`: The document type, collection, or addressed field does not exist.
+- `409`: The replacement field name already exists in the collection.
+- `422`: A path value or field configuration violates request validation, including item validations that reference missing fields after replacement.
 
 ### DELETE `/api/v1/config/document-types/{document_type}/collections/{collection_name}/fields/{field_name}`
 
-**Purpose:** Delete Collection Field.
+**Purpose:** Delete one existing field from an existing document-level collection.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `collection_name` (path, required): Name of the repeating structured collection within the document configuration.
-- `field_name` (path, required): Name of the configured extraction field.
+- `document_type` (required): Existing document-type configuration key.
+- `collection_name` (required): Existing collection name.
+- `field_name` (required): Existing collection field name to delete.
 
-**Request body:** None.
+**Successful response:** `OperationResponse`.
 
-**Responses:**
+**Error responses:**
 
-- `200`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+- `404`: The document type, collection, or addressed field does not exist.
+- `409`: The field is referenced by a collection item validation and cannot be deleted.
+- `422`: A path value violates request validation.
 
 ### POST `/api/v1/config/document-types/{document_type}/common-fields`
 
