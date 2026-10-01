@@ -638,12 +638,22 @@ def ensure_field_name_available(
 
 @router.post(
     "/document-types/{document_type}/common-fields",
+    summary="Add a common extraction field",
+    description=(
+        "Adds one field shared by every profile of a profile-based document "
+        "type. The name must be unique across common and profile fields. "
+        "Authenticated requests require the config:write scope."
+    ),
+    response_description="Common field creation result.",
     response_model=OperationResponse,
     status_code=status.HTTP_201_CREATED,
 )
 def add_common_field(
-    document_type: str,
     request: AddFieldRequest,
+    document_type: str = Path(
+        ...,
+        description="Profile-based document-type configuration key.",
+    ),
 ):
     config = load_config()
     document_config = get_document_type_or_404(config, document_type)
@@ -667,12 +677,25 @@ def add_common_field(
 
 @router.put(
     "/document-types/{document_type}/common-fields/{field_name}",
+    summary="Replace a common extraction field",
+    description=(
+        "Replaces one common field and may rename it when the new name remains "
+        "unique across the resolved document configuration. Authenticated "
+        "requests require the config:write scope."
+    ),
+    response_description="Common field update result.",
     response_model=OperationResponse,
 )
 def update_common_field(
-    document_type: str,
-    field_name: str,
     request: UpdateFieldRequest,
+    document_type: str = Path(
+        ...,
+        description="Profile-based document-type configuration key.",
+    ),
+    field_name: str = Path(
+        ...,
+        description="Existing common field name to replace.",
+    ),
 ):
     config = load_config()
     document_config = get_document_type_or_404(config, document_type)
@@ -705,11 +728,23 @@ def update_common_field(
 
 @router.delete(
     "/document-types/{document_type}/common-fields/{field_name}",
+    summary="Delete a common extraction field",
+    description=(
+        "Deletes one existing common field from a profile-based document type. "
+        "Authenticated requests require the config:write scope."
+    ),
+    response_description="Common field deletion result.",
     response_model=OperationResponse,
 )
 def delete_common_field(
-    document_type: str,
-    field_name: str,
+    document_type: str = Path(
+        ...,
+        description="Profile-based document-type configuration key.",
+    ),
+    field_name: str = Path(
+        ...,
+        description="Existing common field name to delete.",
+    ),
 ):
     config = load_config()
     document_config = get_document_type_or_404(config, document_type)

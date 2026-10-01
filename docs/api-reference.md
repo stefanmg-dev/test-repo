@@ -284,56 +284,67 @@ Authentication can be supplied through an API key or OIDC bearer token where req
 
 ### POST `/api/v1/config/document-types/{document_type}/common-fields`
 
-**Purpose:** Add Common Field.
+**Purpose:** Add one field shared by every profile of a profile-based document type.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameter:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
+- `document_type` (required): Existing profile-based document-type configuration key.
 
-**Request body:** `application/json`: `AddFieldRequest`
+**Request body:** `AddFieldRequest` containing `field`: `DocumentFieldModel`.
 
-**Responses:**
+The new field name must be unique across all common fields and all profile fields in the resolved document configuration. The operation does not require a `default_profile`.
 
-- `201`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+**Successful response:** `201` with `OperationResponse`.
+
+**Error responses:**
+
+- `404`: The document type does not exist.
+- `409`: The document type uses legacy configuration, or the field name already exists in a common or profile field.
+- `422`: The field configuration violates request validation.
 
 ### PUT `/api/v1/config/document-types/{document_type}/common-fields/{field_name}`
 
-**Purpose:** Update Common Field.
+**Purpose:** Completely replace one existing common field, optionally renaming it.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `field_name` (path, required): Name of the configured extraction field.
+- `document_type` (required): Existing profile-based document-type configuration key.
+- `field_name` (required): Existing common field name to replace.
 
-**Request body:** `application/json`: `UpdateFieldRequest`
+**Request body:** `UpdateFieldRequest` containing the complete replacement `field`: `DocumentFieldModel`.
 
-**Responses:**
+The replacement name must remain unique across the resolved common and profile fields. The existing field name is ignored during its own uniqueness check.
 
-- `200`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+**Successful response:** `OperationResponse`.
+
+**Error responses:**
+
+- `404`: The document type or common field does not exist.
+- `409`: The document type uses legacy configuration, or the replacement name conflicts with another common or profile field.
+- `422`: A path value or field configuration violates request validation.
 
 ### DELETE `/api/v1/config/document-types/{document_type}/common-fields/{field_name}`
 
-**Purpose:** Delete Common Field.
+**Purpose:** Delete one existing common field from a profile-based document type.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
 
-**Parameters:**
+**Path parameters:**
 
-- `document_type` (path, required): Configuration key for the document category, for example `invoice`.
-- `field_name` (path, required): Name of the configured extraction field.
+- `document_type` (required): Existing profile-based document-type configuration key.
+- `field_name` (required): Existing common field name to delete.
 
-**Request body:** None.
+**Successful response:** `OperationResponse`.
 
-**Responses:**
+**Error responses:**
 
-- `200`: Successful Response Response: `application/json`: `OperationResponse`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+- `404`: The document type or common field does not exist.
+- `409`: The document type uses legacy configuration.
+- `422`: A path value violates request validation.
 
 ### POST `/api/v1/config/document-types/{document_type}/fields`
 

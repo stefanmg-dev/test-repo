@@ -1702,7 +1702,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Add Common Field",
+        "summary": "Add a common extraction field",
+        "description": "Adds one field shared by every profile of a profile-based document type. The name must be unique across common and profile fields. Authenticated requests require the config:write scope.",
         "operationId": "add_common_field_api_v1_config_document_types__document_type__common_fields_post",
         "security": [
           {
@@ -1719,8 +1720,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Profile-based document-type configuration key.",
               "title": "Document Type"
-            }
+            },
+            "description": "Profile-based document-type configuration key."
           }
         ],
         "requestBody": {
@@ -1735,7 +1738,7 @@
         },
         "responses": {
           "201": {
-            "description": "Successful Response",
+            "description": "Common field creation result.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1762,7 +1765,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Update Common Field",
+        "summary": "Replace a common extraction field",
+        "description": "Replaces one common field and may rename it when the new name remains unique across the resolved document configuration. Authenticated requests require the config:write scope.",
         "operationId": "update_common_field_api_v1_config_document_types__document_type__common_fields__field_name__put",
         "security": [
           {
@@ -1779,8 +1783,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Profile-based document-type configuration key.",
               "title": "Document Type"
-            }
+            },
+            "description": "Profile-based document-type configuration key."
           },
           {
             "name": "field_name",
@@ -1788,8 +1794,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Existing common field name to replace.",
               "title": "Field Name"
-            }
+            },
+            "description": "Existing common field name to replace."
           }
         ],
         "requestBody": {
@@ -1804,7 +1812,7 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Common field update result.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1829,7 +1837,8 @@
         "tags": [
           "Configuration API v1"
         ],
-        "summary": "Delete Common Field",
+        "summary": "Delete a common extraction field",
+        "description": "Deletes one existing common field from a profile-based document type. Authenticated requests require the config:write scope.",
         "operationId": "delete_common_field_api_v1_config_document_types__document_type__common_fields__field_name__delete",
         "security": [
           {
@@ -1846,8 +1855,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Profile-based document-type configuration key.",
               "title": "Document Type"
-            }
+            },
+            "description": "Profile-based document-type configuration key."
           },
           {
             "name": "field_name",
@@ -1855,13 +1866,15 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "Existing common field name to delete.",
               "title": "Field Name"
-            }
+            },
+            "description": "Existing common field name to delete."
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Common field deletion result.",
             "content": {
               "application/json": {
                 "schema": {
