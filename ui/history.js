@@ -684,6 +684,10 @@ async function loadDetail(runId) {
         appendDetail("Step timings", body.step_timings);
         appendDetail("Качество", body.quality);
         appendDetail("Извлечени стойности", body.final_values);
+        appendDetail(
+            "Evidence за полета",
+            body.field_evidence,
+        );
         appendDetail("Review статус", body.review_status);
         appendDetail("Коригирани стойности", body.corrected_values);
         appendDetail("Review коментар", body.review_comment);
@@ -691,6 +695,10 @@ async function loadDetail(runId) {
         appendDetail("Reviewer тип", body.reviewed_by_type);
         appendDetail("Reviewer", body.reviewed_by_subject);
         appendDetail("Колекции", body.collections);
+        appendDetail(
+            "Evidence за колекции",
+            body.collection_evidence,
+        );
         appendDetail("Валидация", body.validation);
         appendDetail("Грешка", body.error);
         appendReviewActions(runId, body);
