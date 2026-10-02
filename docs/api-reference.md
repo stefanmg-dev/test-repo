@@ -1063,6 +1063,7 @@ Important response fields:
 - `final_values`: Final normalized scalar values. Keys depend on the configured document type.
 - `field_evidence`: Per-field extraction metadata describing the configured method, whether a value matched, whether normalization changed it, applicable occurrence or nearby settings, the selected `regex_list` rule index, and a stable failure reason when extraction produced no value. It intentionally excludes raw document fragments, matched values, regex patterns, and anchor text.
 - `collections`: Repeated extracted structures grouped by collection name, such as services, meters, or consumption items.
+- `collection_evidence`: Per-item, per-field extraction metadata aligned with collection item indexes. It reports the extraction method, match outcome, normalization, occurrence, selected regex-list rule index, and stable failure reason without exposing raw text, matched values, patterns, or item fragments.
 - `validation`: Scalar-field validation result with messages grouped by field name.
 - `collection_validation`: Collection item and summary-rule validation result.
 

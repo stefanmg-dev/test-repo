@@ -82,6 +82,19 @@ def test_extracts_fields_and_resolved_collections():
                 {"meter_number": "1021015029"}
             ],
         },
+        "collection_evidence": {
+            "services": [],
+            "meters": [
+                {
+                    "meter_number": {
+                        "method": "regex",
+                        "matched": True,
+                        "normalized": False,
+                        "occurrence": "first",
+                    }
+                }
+            ],
+        },
         "collection_validation": {
             "valid": True,
             "errors": {},

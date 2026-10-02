@@ -479,6 +479,18 @@ class ExtractionResponseModel(BaseModel):
         examples=[{"services": []}],
     )
 
+    collection_evidence: dict[
+        str,
+        list[dict[str, FieldEvidenceModel]],
+    ] = Field(
+        default_factory=dict,
+        description=(
+            "Per-item, per-field extraction evidence for configured "
+            "collections, excluding raw text and matched values."
+        ),
+        examples=[{"services": []}],
+    )
+
     collection_validation: ExtractionValidationModel = Field(
         default_factory=lambda: ExtractionValidationModel(
             valid=True,

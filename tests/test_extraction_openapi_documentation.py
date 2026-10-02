@@ -74,3 +74,6 @@ def test_extraction_examples_are_synthetic():
             }
         }
     ]
+    assert response["collection_evidence"]["examples"] == [
+        {"services": []}
+    ]

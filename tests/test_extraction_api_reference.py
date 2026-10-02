@@ -37,6 +37,7 @@ def test_extraction_reference_explains_response_semantics():
         "final_values",
         "field_evidence",
         "collections",
+        "collection_evidence",
         "validation",
         "collection_validation",
     ):

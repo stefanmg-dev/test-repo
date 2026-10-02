@@ -432,6 +432,10 @@ async def extract_document(
                 {},
             ),
             "collections": engine_result["collections"],
+            "collection_evidence": engine_result.get(
+                "collection_evidence",
+                {},
+            ),
             "collection_validation": collection_validation,
             "validation": validation,
         }

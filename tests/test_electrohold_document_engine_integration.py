@@ -86,6 +86,7 @@ def test_engine_result_keeps_fields_and_collections_separate():
         "fields",
         "field_evidence",
         "collections",
+        "collection_evidence",
         "collection_validation",
     }
     assert "meters" not in result["fields"]

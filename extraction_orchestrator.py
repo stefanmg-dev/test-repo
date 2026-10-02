@@ -305,10 +305,13 @@ def extract_document_data(
     # Delayed import breaks the pre-existing dependency cycle:
     # collection_pipeline -> collection_extractor -> this module.
     from collection_pipeline import (
-        extract_collections_from_schemas,
+        extract_collections_from_schemas_with_evidence,
     )
 
-    extracted_collections = extract_collections_from_schemas(
+    (
+        extracted_collections,
+        collection_evidence,
+    ) = extract_collections_from_schemas_with_evidence(
         raw_text=raw_text,
         collections=collections,
     )
@@ -366,6 +369,7 @@ def extract_document_data(
         "fields": fields,
         "field_evidence": field_evidence,
         "collections": extracted_collections,
+        "collection_evidence": collection_evidence,
         "collection_validation": (
             combined_collection_validation
         ),
