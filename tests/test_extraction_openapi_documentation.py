@@ -64,3 +64,13 @@ def test_extraction_examples_are_synthetic():
     assert response["final_values"]["examples"] == [
         {"invoice_number": "INV-SYNTH-001"}
     ]
+    assert response["field_evidence"]["examples"] == [
+        {
+            "invoice_number": {
+                "method": "regex",
+                "matched": True,
+                "normalized": False,
+                "occurrence": "first",
+            }
+        }
+    ]

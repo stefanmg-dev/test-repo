@@ -1061,6 +1061,7 @@ Important response fields:
 - `raw_text`: Native and/or OCR text used by the pipeline. This field can contain sensitive document content.
 - `llm_values`: Values returned by the optional LLM stage before deterministic rule application.
 - `final_values`: Final normalized scalar values. Keys depend on the configured document type.
+- `field_evidence`: Per-field extraction metadata describing the configured method, whether a value matched, whether normalization changed it, applicable occurrence or nearby settings, the selected `regex_list` rule index, and a stable failure reason when extraction produced no value. It intentionally excludes raw document fragments, matched values, regex patterns, and anchor text.
 - `collections`: Repeated extracted structures grouped by collection name, such as services, meters, or consumption items.
 - `validation`: Scalar-field validation result with messages grouped by field name.
 - `collection_validation`: Collection item and summary-rule validation result.

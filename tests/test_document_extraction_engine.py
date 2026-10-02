@@ -68,6 +68,14 @@ def test_extracts_fields_and_resolved_collections():
         "fields": {
             "invoice_number": "0484935637",
         },
+        "field_evidence": {
+            "invoice_number": {
+                "method": "regex",
+                "matched": True,
+                "normalized": False,
+                "occurrence": "first",
+            },
+        },
         "collections": {
             "services": [],
             "meters": [

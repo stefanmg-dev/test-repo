@@ -236,6 +236,51 @@ class InputQualityModel(BaseModel):
     )
 
 
+class FieldEvidenceModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    method: str = Field(
+        min_length=1,
+        description="Configured extraction strategy used for the field.",
+        examples=["regex"],
+    )
+    matched: bool = Field(
+        description="Whether the configured strategy produced a value.",
+        examples=[True],
+    )
+    normalized: bool = Field(
+        description="Whether normalization changed the extracted value.",
+        examples=[False],
+    )
+    occurrence: Literal["first", "last"] | None = Field(
+        default=None,
+        description="Configured match occurrence when applicable.",
+    )
+    rule_index: int | None = Field(
+        default=None,
+        ge=0,
+        description="Zero-based matching rule index for regex_list fields.",
+    )
+    anchor_found: bool | None = Field(
+        default=None,
+        description="Whether the configured nearby anchor was found.",
+    )
+    direction: Literal["before", "after", "both"] | None = Field(
+        default=None,
+        description="Configured nearby search direction.",
+    )
+    window_size: int | None = Field(
+        default=None,
+        gt=0,
+        description="Configured nearby search window in characters.",
+    )
+    failure_reason: str | None = Field(
+        default=None,
+        description="Stable reason code when no value was produced.",
+        examples=["pattern_not_matched"],
+    )
+
+
 class ExtractionValidationModel(BaseModel):
     model_config = ConfigDict(
         extra="forbid"
@@ -403,6 +448,22 @@ class ExtractionResponseModel(BaseModel):
             "the configured document type."
         ),
         examples=[{"invoice_number": "INV-SYNTH-001"}],
+    )
+
+    field_evidence: dict[str, FieldEvidenceModel] = Field(
+        default_factory=dict,
+        description=(
+            "Per-field extraction evidence without raw document "
+            "fragments or matched sensitive values."
+        ),
+        examples=[{
+            "invoice_number": {
+                "method": "regex",
+                "matched": True,
+                "normalized": False,
+                "occurrence": "first",
+            }
+        }],
     )
 
     collections: dict[

@@ -427,6 +427,10 @@ async def extract_document(
             "raw_text": raw_text,
             "llm_values": llm_values,
             "final_values": final_values,
+            "field_evidence": engine_result.get(
+                "field_evidence",
+                {},
+            ),
             "collections": engine_result["collections"],
             "collection_validation": collection_validation,
             "validation": validation,

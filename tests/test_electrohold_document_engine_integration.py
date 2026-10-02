@@ -84,6 +84,7 @@ def test_engine_result_keeps_fields_and_collections_separate():
 
     assert set(result) == {
         "fields",
+        "field_evidence",
         "collections",
         "collection_validation",
     }

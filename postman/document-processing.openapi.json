@@ -4387,6 +4387,24 @@
               }
             ]
           },
+          "field_evidence": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldEvidenceModel"
+            },
+            "type": "object",
+            "title": "Field Evidence",
+            "description": "Per-field extraction evidence without raw document fragments or matched sensitive values.",
+            "examples": [
+              {
+                "invoice_number": {
+                  "matched": true,
+                  "method": "regex",
+                  "normalized": false,
+                  "occurrence": "first"
+                }
+              }
+            ]
+          },
           "collections": {
             "additionalProperties": {
               "items": {
@@ -4455,6 +4473,129 @@
           "valid"
         ],
         "title": "ExtractionValidationModel"
+      },
+      "FieldEvidenceModel": {
+        "properties": {
+          "method": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Method",
+            "description": "Configured extraction strategy used for the field.",
+            "examples": [
+              "regex"
+            ]
+          },
+          "matched": {
+            "type": "boolean",
+            "title": "Matched",
+            "description": "Whether the configured strategy produced a value.",
+            "examples": [
+              true
+            ]
+          },
+          "normalized": {
+            "type": "boolean",
+            "title": "Normalized",
+            "description": "Whether normalization changed the extracted value.",
+            "examples": [
+              false
+            ]
+          },
+          "occurrence": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "first",
+                  "last"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occurrence",
+            "description": "Configured match occurrence when applicable."
+          },
+          "rule_index": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule Index",
+            "description": "Zero-based matching rule index for regex_list fields."
+          },
+          "anchor_found": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Anchor Found",
+            "description": "Whether the configured nearby anchor was found."
+          },
+          "direction": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "before",
+                  "after",
+                  "both"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direction",
+            "description": "Configured nearby search direction."
+          },
+          "window_size": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Size",
+            "description": "Configured nearby search window in characters."
+          },
+          "failure_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Reason",
+            "description": "Stable reason code when no value was produced.",
+            "examples": [
+              "pattern_not_matched"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "method",
+          "matched",
+          "normalized"
+        ],
+        "title": "FieldEvidenceModel"
       },
       "HTTPValidationError": {
         "properties": {

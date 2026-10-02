@@ -35,6 +35,7 @@ def test_extraction_reference_explains_response_semantics():
         "raw_text",
         "llm_values",
         "final_values",
+        "field_evidence",
         "collections",
         "validation",
         "collection_validation",

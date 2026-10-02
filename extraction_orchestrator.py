@@ -127,6 +127,131 @@ def extract_nearby_value(
     )
 
 
+def apply_rules_with_evidence(
+    document_type: str,
+    config: dict,
+    raw_text: str,
+    llm_values: dict,
+    resolved_fields: list[dict] | None = None,
+) -> tuple[dict, dict]:
+    doc_cfg = config.get(document_type)
+
+    if not doc_cfg:
+        return (
+            {"error": f"Unknown document type: {document_type}"},
+            {},
+        )
+
+    fields = resolved_fields
+    if fields is None:
+        fields = resolve_document_fields(doc_cfg)
+
+    final_values = {}
+    field_evidence = {}
+
+    for field in fields:
+        field_name = field.get("name")
+        field_type = field.get("type")
+        if not field_name:
+            continue
+
+        evidence = {
+            "method": field_type or "unknown",
+            "matched": False,
+            "normalized": False,
+        }
+        value = None
+
+        if field_type == "llm":
+            value = llm_values.get(field_name)
+            evidence["matched"] = value is not None
+            if value is None:
+                evidence["failure_reason"] = "llm_value_missing"
+
+        elif field_type == "constant":
+            value = clean_value(field.get("value"))
+            evidence["matched"] = value is not None
+            if value is None:
+                evidence["failure_reason"] = "constant_value_missing"
+
+        elif field_type == "regex":
+            occurrence = field.get("occurrence", "last")
+            value = extract_regex_value(
+                text=raw_text,
+                pattern=field.get("rule", ""),
+                occurrence=occurrence,
+            )
+            evidence["occurrence"] = occurrence
+            evidence["matched"] = value is not None
+            if value is None:
+                evidence["failure_reason"] = "pattern_not_matched"
+
+        elif field_type == "regex_list":
+            occurrence = field.get("occurrence", "last")
+            evidence["occurrence"] = occurrence
+            for rule_index, pattern in enumerate(field.get("rules", [])):
+                candidate = extract_regex_value(
+                    text=raw_text,
+                    pattern=pattern,
+                    occurrence=occurrence,
+                )
+                if candidate is not None:
+                    value = candidate
+                    evidence["matched"] = True
+                    evidence["rule_index"] = rule_index
+                    break
+            if value is None:
+                evidence["failure_reason"] = "no_pattern_matched"
+
+        elif field_type == "nearby":
+            anchor = field.get("anchor", "")
+            occurrence = field.get("occurrence", "last")
+            direction = field.get("direction", "both")
+            window_size = field.get("window_size", 400)
+            anchor_found = bool(
+                anchor
+                and re.search(
+                    re.escape(anchor),
+                    raw_text,
+                    flags=re.IGNORECASE,
+                )
+            )
+            evidence.update(
+                {
+                    "anchor_found": anchor_found,
+                    "occurrence": occurrence,
+                    "direction": direction,
+                    "window_size": window_size,
+                }
+            )
+            value = extract_nearby_value(
+                raw_text=raw_text,
+                anchor=anchor,
+                pattern=field.get("pattern", ""),
+                occurrence=occurrence,
+                direction=direction,
+                window_size=window_size,
+            )
+            evidence["matched"] = value is not None
+            if not anchor_found:
+                evidence["failure_reason"] = "anchor_not_found"
+            elif value is None:
+                evidence["failure_reason"] = "pattern_not_matched"
+
+        else:
+            evidence["failure_reason"] = "unsupported_method"
+
+        normalized_value = normalize_field_value(
+            field=field,
+            value=value,
+        )
+        evidence["normalized"] = normalized_value != value
+        final_values[field_name] = normalized_value
+        field_evidence[field_name] = evidence
+
+    return final_values, field_evidence
+
+
 def apply_rules(
     document_type: str,
     config: dict,
@@ -134,86 +259,13 @@ def apply_rules(
     llm_values: dict,
     resolved_fields: list[dict] | None = None,
 ):
-    doc_cfg = config.get(document_type)
-
-    if not doc_cfg:
-        return {
-            "error": f"Unknown document type: {document_type}"
-        }
-
-    fields = resolved_fields
-
-    if fields is None:
-        fields = resolve_document_fields(
-            doc_cfg
-        )
-
-    final_values = {}
-
-    for field in fields:
-        field_name = field.get("name")
-        field_type = field.get("type")
-
-        if not field_name:
-            continue
-
-        if field_type == "llm":
-            final_values[field_name] = llm_values.get(field_name)
-
-        elif field_type == "constant":
-            final_values[field_name] = clean_value(
-                field.get("value")
-            )
-
-        elif field_type == "regex":
-            final_values[field_name] = extract_regex_value(
-                text=raw_text,
-                pattern=field.get("rule", ""),
-                occurrence=field.get("occurrence", "last")
-            )
-
-        elif field_type == "regex_list":
-            final_values[field_name] = None
-
-            for pattern in field.get("rules", []):
-                value = extract_regex_value(
-                    text=raw_text,
-                    pattern=pattern,
-                    occurrence=field.get("occurrence", "last")
-                )
-
-                if value is not None:
-                    final_values[field_name] = value
-                    break
-
-        elif field_type == "nearby":
-            final_values[field_name] = extract_nearby_value(
-                raw_text=raw_text,
-                anchor=field.get("anchor", ""),
-                pattern=field.get("pattern", ""),
-                occurrence=field.get("occurrence", "last"),
-                direction=field.get("direction", "both"),
-                window_size=field.get("window_size", 400)
-            )
-
-        else:
-            final_values[field_name] = None
-
-    for field in fields:
-        field_name = field.get("name")
-
-        if not field_name:
-            continue
-
-        final_values[field_name] = (
-            normalize_field_value(
-                field=field,
-                value=final_values.get(
-                    field_name
-                ),
-            )
-        )
-
+    final_values, _ = apply_rules_with_evidence(
+        document_type=document_type,
+        config=config,
+        raw_text=raw_text,
+        llm_values=llm_values,
+        resolved_fields=resolved_fields,
+    )
     return final_values
 
 
@@ -238,7 +290,7 @@ def extract_document_data(
             profile_name=profile_name,
         )
 
-    fields = apply_rules(
+    fields, field_evidence = apply_rules_with_evidence(
         document_type=document_type,
         config=config,
         raw_text=raw_text,
@@ -312,6 +364,7 @@ def extract_document_data(
 
     return {
         "fields": fields,
+        "field_evidence": field_evidence,
         "collections": extracted_collections,
         "collection_validation": (
             combined_collection_validation
