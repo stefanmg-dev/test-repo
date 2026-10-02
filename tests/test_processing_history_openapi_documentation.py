@@ -42,3 +42,16 @@ def test_processing_history_examples_are_synthetic():
     assert item["id"]["examples"] == [
         "00000000-0000-4000-8000-000000000001"
     ]
+
+
+def test_processing_run_detail_documents_extraction_evidence():
+    properties = app.openapi()["components"]["schemas"][
+        "ProcessingRunDetailModel"
+    ]["properties"]
+
+    assert properties["field_evidence"]["description"] == (
+        "Persisted safe scalar extraction evidence."
+    )
+    assert properties["collection_evidence"]["description"] == (
+        "Persisted safe collection extraction evidence."
+    )

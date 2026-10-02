@@ -928,6 +928,7 @@ The response contains all list-item fields plus:
 - `step_timings`: Pipeline-step durations in milliseconds.
 - `quality`: Persisted input-quality decision and warnings.
 - `final_values`: Persisted final scalar extraction values.
+- `field_evidence`: Persisted safe scalar extraction evidence, excluding raw document fragments, matched values, regex patterns, and anchor text.
 - `corrected_values`: Reviewer corrections, or `null` when none exist.
 - `configuration_hash`: SHA-256 identifier of the resolved configuration snapshot.
 - `configuration_snapshot`: Resolved extraction configuration used by the run.
@@ -937,6 +938,7 @@ The response contains all list-item fields plus:
 - `invoice_shadow_validation_reason`: Safe reason code `validation_error` or `mapper_error` when shadow validation failed.
 - `review_comment`, `reviewed_at`, `reviewed_by_type`, `reviewed_by_subject`: Review audit metadata, nullable before review.
 - `collections`: Persisted repeated extraction structures.
+- `collection_evidence`: Persisted safe per-item, per-field collection extraction evidence aligned with collection item indexes.
 - `validation`: Persisted scalar and collection validation metadata.
 - `error`: Safe structured failure metadata, nullable for runs without a processing failure.
 - `updated_at`: UTC timestamp of the most recent persisted update.
