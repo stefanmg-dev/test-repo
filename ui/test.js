@@ -466,7 +466,8 @@ function renderValidationErrors(errors) {
 function renderFields(
     documentType,
     values,
-    errors
+    errors,
+    evidence
 ) {
     elements.resultFields.replaceChildren();
 
@@ -533,6 +534,9 @@ function renderFields(
         const fieldErrors =
             errors?.[fieldName] || [];
 
+        const fieldEvidence =
+            evidence?.[fieldName];
+
         title.textContent = fieldLabel(
             documentType,
             fieldName
@@ -564,14 +568,60 @@ function renderFields(
             badge.style.color = "#15803d";
         }
 
+        const diagnosticMessages = [
+            ...fieldErrors,
+        ];
+
+        if (fieldEvidence) {
+            const evidenceParts = [
+                `Метод: ${fieldEvidence.method}`,
+                fieldEvidence.matched
+                    ? "Съвпадение: да"
+                    : "Съвпадение: не",
+            ];
+
+            if (fieldEvidence.normalized) {
+                evidenceParts.push("Нормализирано: да");
+            }
+            if (fieldEvidence.occurrence) {
+                evidenceParts.push(
+                    `Позиция: ${fieldEvidence.occurrence}`
+                );
+            }
+            if (fieldEvidence.rule_index !== undefined) {
+                evidenceParts.push(
+                    `Правило: ${fieldEvidence.rule_index + 1}`
+                );
+            }
+            if (fieldEvidence.anchor_found !== undefined) {
+                evidenceParts.push(
+                    fieldEvidence.anchor_found
+                        ? "Anchor: намерен"
+                        : "Anchor: липсва"
+                );
+            }
+            if (fieldEvidence.failure_reason) {
+                evidenceParts.push(
+                    `Причина: ${fieldEvidence.failure_reason}`
+                );
+            }
+
+            diagnosticMessages.push(
+                evidenceParts.join(" · ")
+            );
+        }
+
+        if (diagnosticMessages.length) {
+            errorContainer.textContent =
+                diagnosticMessages.join("; ");
+
+            errorContainer.style.color = fieldErrors.length
+                ? "#b91c1c"
+                : "#475569";
+        }
+
         if (fieldErrors.length) {
             card.style.borderColor = "#fecaca";
-
-            errorContainer.textContent =
-                fieldErrors.join("; ");
-
-            errorContainer.style.color =
-                "#b91c1c";
         }
 
         elements.resultFields.appendChild(
@@ -726,7 +776,8 @@ function renderResult(body) {
     renderFields(
         body.document_type,
         values,
-        validation.errors || {}
+        validation.errors || {},
+        body.field_evidence || {}
     );
 
     elements.diagnosticDocumentType.textContent =
