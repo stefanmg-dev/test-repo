@@ -176,7 +176,15 @@ class ProcessingRun(Base):
         JSONB,
         nullable=True,
     )
+    field_evidence: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB,
+        nullable=True,
+    )
     collections: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB,
+        nullable=True,
+    )
+    collection_evidence: Mapped[dict[str, Any] | None] = mapped_column(
         JSONB,
         nullable=True,
     )

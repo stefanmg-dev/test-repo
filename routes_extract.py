@@ -452,7 +452,15 @@ async def extract_document(
             step_timings=step_timings,
             quality=quality,
             final_values=final_values,
+            field_evidence=engine_result.get(
+                "field_evidence",
+                {},
+            ),
             collections=engine_result["collections"],
+            collection_evidence=engine_result.get(
+                "collection_evidence",
+                {},
+            ),
             validation={
                 "fields": validation,
                 "collections": collection_validation,

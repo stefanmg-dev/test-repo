@@ -74,6 +74,8 @@ class ProcessingRunService:
         final_values: dict[str, Any],
         collections: dict[str, Any],
         validation: dict[str, Any],
+        field_evidence: dict[str, Any] | None = None,
+        collection_evidence: dict[str, Any] | None = None,
         configuration_hash: str | None = None,
         configuration_snapshot: dict[str, Any] | None = None,
         configuration_schema_version: str | None = None,
@@ -93,7 +95,9 @@ class ProcessingRunService:
         processing_run.step_timings = step_timings
         processing_run.quality = quality
         processing_run.final_values = final_values
+        processing_run.field_evidence = field_evidence
         processing_run.collections = collections
+        processing_run.collection_evidence = collection_evidence
         processing_run.validation = validation
         processing_run.configuration_hash = configuration_hash
         processing_run.configuration_snapshot = (

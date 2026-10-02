@@ -5592,6 +5592,19 @@
             "title": "Final Values",
             "description": "Persisted final scalar extraction values."
           },
+          "field_evidence": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Evidence",
+            "description": "Persisted safe scalar extraction evidence."
+          },
           "corrected_values": {
             "anyOf": [
               {
@@ -5748,6 +5761,19 @@
             ],
             "title": "Collections",
             "description": "Persisted repeated extraction collections."
+          },
+          "collection_evidence": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collection Evidence",
+            "description": "Persisted safe collection extraction evidence."
           },
           "validation": {
             "anyOf": [

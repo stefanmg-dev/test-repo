@@ -89,6 +89,10 @@ class ProcessingRunDetailModel(ProcessingRunListItemModel):
         default=None,
         description="Persisted final scalar extraction values."
     )
+    field_evidence: dict[str, Any] | None = Field(
+        default=None,
+        description="Persisted safe scalar extraction evidence."
+    )
     corrected_values: dict[str, Any] | None = Field(
         default=None,
         description="Reviewer-supplied corrected values, when present."
@@ -143,6 +147,10 @@ class ProcessingRunDetailModel(ProcessingRunListItemModel):
     collections: dict[str, Any] | None = Field(
         default=None,
         description="Persisted repeated extraction collections."
+    )
+    collection_evidence: dict[str, Any] | None = Field(
+        default=None,
+        description="Persisted safe collection extraction evidence."
     )
     validation: dict[str, Any] | None = Field(
         default=None,
