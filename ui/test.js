@@ -82,6 +82,10 @@ const elements = {
         "resultFields"
     ),
 
+    resultCollections: document.getElementById(
+        "resultCollections"
+    ),
+
     diagnosticDocumentType: document.getElementById(
         "diagnosticDocumentType"
     ),
@@ -631,6 +635,115 @@ function renderFields(
 }
 
 
+function formatCollectionEvidence(evidence) {
+    if (!evidence) {
+        return "";
+    }
+
+    const parts = [
+        `Метод: ${evidence.method}`,
+        evidence.matched
+            ? "Съвпадение: да"
+            : "Съвпадение: не",
+    ];
+
+    if (evidence.normalized) {
+        parts.push("Нормализирано: да");
+    }
+    if (evidence.occurrence) {
+        parts.push(`Позиция: ${evidence.occurrence}`);
+    }
+    if (evidence.rule_index !== undefined) {
+        parts.push(`Правило: ${evidence.rule_index + 1}`);
+    }
+    if (evidence.failure_reason) {
+        parts.push(`Причина: ${evidence.failure_reason}`);
+    }
+
+    return parts.join(" · ");
+}
+
+
+function renderCollections(
+    collections,
+    collectionEvidence,
+    validationErrors
+) {
+    elements.resultCollections.replaceChildren();
+
+    for (const [collectionName, items] of Object.entries(
+        collections || {}
+    )) {
+        const section = document.createElement("section");
+        section.className = "field-card";
+
+        const heading = document.createElement("h3");
+        heading.className = "field-title";
+        heading.textContent = `${collectionName} (${items.length})`;
+        section.appendChild(heading);
+
+        if (!items.length) {
+            const empty = document.createElement("p");
+            empty.className = "field-name";
+            empty.textContent = "Няма извлечени записи.";
+            section.appendChild(empty);
+        }
+
+        items.forEach((item, itemIndex) => {
+            const itemBox = document.createElement("div");
+            itemBox.className = "field-details";
+
+            const itemTitle = document.createElement("strong");
+            itemTitle.textContent = `Запис ${itemIndex + 1}`;
+            itemBox.appendChild(itemTitle);
+
+            for (const [fieldName, value] of Object.entries(item)) {
+                const detail = document.createElement("div");
+                detail.className = "field-detail";
+
+                const label = document.createElement("span");
+                label.className = "field-detail-label";
+                label.textContent = fieldName;
+
+                const renderedValue = document.createElement("span");
+                renderedValue.className = "field-detail-value";
+                renderedValue.textContent = formatValue(value);
+
+                detail.append(label, renderedValue);
+                itemBox.appendChild(detail);
+
+                const evidence = collectionEvidence?.[collectionName]
+                    ?.[itemIndex]?.[fieldName];
+                const errorPath = (
+                    `${collectionName}[${itemIndex}].${fieldName}`
+                );
+                const messages = [
+                    ...(validationErrors?.[errorPath] || []),
+                ];
+                const evidenceText = formatCollectionEvidence(evidence);
+                if (evidenceText) {
+                    messages.push(evidenceText);
+                }
+
+                if (messages.length) {
+                    const diagnostics = document.createElement("div");
+                    diagnostics.className = "field-validation-errors";
+                    diagnostics.textContent = messages.join("; ");
+                    diagnostics.style.color = validationErrors?.[errorPath]
+                        ? "#b91c1c"
+                        : "#475569";
+                    itemBox.appendChild(diagnostics);
+                }
+            }
+
+            section.appendChild(itemBox);
+        });
+
+        elements.resultCollections.appendChild(section);
+    }
+}
+
+
 function addQualityDetail(label, value) {
     const detail = document.createElement("div");
     detail.className = "field-detail";
@@ -778,6 +891,12 @@ function renderResult(body) {
         values,
         validation.errors || {},
         body.field_evidence || {}
+    );
+
+    renderCollections(
+        body.collections || {},
+        body.collection_evidence || {},
+        body.collection_validation?.errors || {}
     );
 
     elements.diagnosticDocumentType.textContent =
