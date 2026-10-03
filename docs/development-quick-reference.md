@@ -1,5 +1,8 @@
 # Development Quick Reference
 
+For processing outcome semantics, see [Processing acceptance contract](processing-acceptance-contract.md).
+
+
 For real-document acceptance, see [Real-document fixture matrix and acceptance checklist](real-document-fixture-matrix.md).
 
 
