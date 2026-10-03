@@ -1,5 +1,8 @@
 # Development Quick Reference
 
+For the complete restart-safe start, status, and stop workflow, see [Local development start, status, and stop](local-development-runbook.md).
+
+
 ## Enter the project
 
 ```bash
