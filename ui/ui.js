@@ -269,11 +269,21 @@ function updateFieldScope(config) {
     el.fieldScope.append(commonOption, profileOption);
 }
 
-function buildFieldEndpoint(documentType, fieldName = null) {
+function buildFieldEndpoint(
+    documentType,
+    fieldName = null,
+    collectionName = null
+) {
     const encodedType = encodeURIComponent(documentType);
     let endpoint;
 
-    if (state.selectedFieldScope === "common") {
+    if (collectionName) {
+        endpoint = (
+            `/document-types/${encodedType}`
+            + `/collections/${encodeURIComponent(collectionName)}`
+            + "/fields"
+        );
+    } else if (state.selectedFieldScope === "common") {
         endpoint = `/document-types/${encodedType}/common-fields`;
     } else if (state.selectedFieldScope === "profile") {
         const config = state.documentTypes[documentType];
@@ -393,7 +403,60 @@ function renderCollections(config) {
             (collection.item_validations || []).length
         );
 
-        card.append(header, details);
+        const fieldSection = document.createElement("div");
+        fieldSection.className = "field-details";
+        const fieldHeading = document.createElement("strong");
+        fieldHeading.textContent = "Полетата в колекцията";
+        const addFieldButton = document.createElement("button");
+        addFieldButton.type = "button";
+        addFieldButton.className = "button button-secondary";
+        addFieldButton.textContent = "Добави поле в колекцията";
+        addFieldButton.addEventListener(
+            "click",
+            () => openFieldModal(null, name)
+        );
+        fieldSection.append(fieldHeading, addFieldButton);
+
+        const collectionFields = collection.fields || [];
+        if (!collectionFields.length) {
+            const emptyFields = document.createElement("div");
+            emptyFields.className = "form-help";
+            emptyFields.textContent = "Колекцията още няма полета.";
+            fieldSection.appendChild(emptyFields);
+        }
+
+        for (const field of collectionFields) {
+            const row = document.createElement("div");
+            row.className = "field-detail";
+
+            const summary = document.createElement("span");
+            summary.className = "field-detail-label";
+            summary.textContent = `${field.name} · ${field.type}`;
+
+            const fieldActions = document.createElement("span");
+            fieldActions.className = "field-actions";
+            const editFieldButton = document.createElement("button");
+            editFieldButton.type = "button";
+            editFieldButton.className = "button button-secondary";
+            editFieldButton.textContent = "Редактирай поле";
+            editFieldButton.addEventListener(
+                "click",
+                () => openFieldModal(field, name)
+            );
+            const deleteFieldButton = document.createElement("button");
+            deleteFieldButton.type = "button";
+            deleteFieldButton.className = "button button-danger-outline";
+            deleteFieldButton.textContent = "Изтрий поле";
+            deleteFieldButton.addEventListener(
+                "click",
+                () => confirmDeleteField(field, name)
+            );
+            fieldActions.append(editFieldButton, deleteFieldButton);
+            row.append(summary, fieldActions);
+            fieldSection.appendChild(row);
+        }
+
+        card.append(header, details, fieldSection);
         el.collectionList.appendChild(card);
     }
 }
@@ -979,7 +1042,10 @@ function buildFieldPayload(form, existingField) {
     return field;
 }
 
-function openFieldModal(existingField = null) {
+function openFieldModal(
+    existingField = null,
+    collectionName = null
+) {
     const isEditing = Boolean(existingField);
     const formElement = document.createElement("form");
     formElement.className = "form-grid";
@@ -1033,7 +1099,17 @@ function openFieldModal(existingField = null) {
     updateValidationVisibility(validation);
 
     openModal({
-        title: isEditing ? `Редакция на '${existingField.name}'` : "Добавяне на поле",
+        title: collectionName
+            ? (
+                isEditing
+                    ? `Редакция на '${existingField.name}' в '${collectionName}'`
+                    : `Добавяне на поле в '${collectionName}'`
+            )
+            : (
+                isEditing
+                    ? `Редакция на '${existingField.name}'`
+                    : "Добавяне на поле"
+            ),
         body: formElement,
         onConfirm: async () => {
             if (!formElement.reportValidity()) return;
@@ -1042,7 +1118,8 @@ function openFieldModal(existingField = null) {
 
             const endpoint = buildFieldEndpoint(
                 documentType,
-                isEditing ? existingField.name : null
+                isEditing ? existingField.name : null,
+                collectionName
             );
 
             await apiRequest(endpoint, {
@@ -1052,12 +1129,16 @@ function openFieldModal(existingField = null) {
 
             closeModal();
             await loadConfiguration();
-            showMessage(isEditing ? `Полето '${existingField.name}' е актуализирано.` : `Полето '${field.name}' е добавено.`);
+            showMessage(
+                isEditing
+                    ? `Полето '${existingField.name}' е актуализирано.`
+                    : `Полето '${field.name}' е добавено.`
+            );
         },
     });
 }
 
-function confirmDeleteField(field) {
+function confirmDeleteField(field, collectionName = null) {
     const body = document.createElement("div");
     body.textContent = `Изтриване на полето '${field.name}'?`;
 
@@ -1068,7 +1149,8 @@ function confirmDeleteField(field) {
         onConfirm: async () => {
             const endpoint = buildFieldEndpoint(
                 state.selectedDocumentType,
-                field.name
+                field.name,
+                collectionName
             );
             await apiRequest(endpoint, {
                 method: "DELETE",
