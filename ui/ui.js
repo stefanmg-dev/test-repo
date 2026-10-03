@@ -490,9 +490,248 @@ function renderCollections(config) {
             fieldSection.appendChild(row);
         }
 
-        card.append(header, details, fieldSection);
+
+        const validationSection = document.createElement("div");
+        validationSection.className = "field-details";
+        const validationHeading = document.createElement("strong");
+        validationHeading.textContent = "Item validations";
+        const addValidationButton = document.createElement("button");
+        addValidationButton.type = "button";
+        addValidationButton.className = "button button-secondary";
+        addValidationButton.textContent = "Добави item validation";
+        addValidationButton.addEventListener(
+            "click",
+            () => openItemValidationModal(
+                name,
+                collection,
+                profileName
+            )
+        );
+        validationSection.append(
+            validationHeading,
+            addValidationButton
+        );
+
+        const itemValidations = collection.item_validations || [];
+        if (!itemValidations.length) {
+            const emptyValidations = document.createElement("div");
+            emptyValidations.className = "form-help";
+            emptyValidations.textContent = (
+                "Колекцията още няма item validations."
+            );
+            validationSection.appendChild(emptyValidations);
+        }
+
+        itemValidations.forEach((validation, index) => {
+            const row = document.createElement("div");
+            row.className = "field-detail";
+            const summary = document.createElement("span");
+            summary.className = "field-detail-label";
+            summary.textContent = (
+                `${validation.result} = ${validation.minuend}`
+                + ` - ${validation.subtrahend}`
+            );
+            const validationActions = document.createElement("span");
+            validationActions.className = "field-actions";
+            const editValidationButton = document.createElement("button");
+            editValidationButton.type = "button";
+            editValidationButton.className = "button button-secondary";
+            editValidationButton.textContent = "Редактирай validation";
+            editValidationButton.addEventListener(
+                "click",
+                () => openItemValidationModal(
+                    name,
+                    collection,
+                    profileName,
+                    index
+                )
+            );
+            const deleteValidationButton = document.createElement("button");
+            deleteValidationButton.type = "button";
+            deleteValidationButton.className = (
+                "button button-danger-outline"
+            );
+            deleteValidationButton.textContent = "Изтрий validation";
+            deleteValidationButton.addEventListener(
+                "click",
+                () => confirmDeleteItemValidation(
+                    name,
+                    collection,
+                    profileName,
+                    index
+                )
+            );
+            validationActions.append(
+                editValidationButton,
+                deleteValidationButton
+            );
+            row.append(summary, validationActions);
+            validationSection.appendChild(row);
+        });
+
+        card.append(
+            header,
+            details,
+            fieldSection,
+            validationSection
+        );
         el.collectionList.appendChild(card);
     }
+}
+
+
+async function saveCollectionDefinition(
+    collectionName,
+    collection,
+    profileName
+) {
+    await apiRequest(
+        collectionEndpoint(
+            state.selectedDocumentType,
+            collectionName,
+            profileName
+        ),
+        {
+            method: "PUT",
+            body: JSON.stringify({ collection }),
+        }
+    );
+}
+
+function openItemValidationModal(
+    collectionName,
+    collection,
+    profileName = null,
+    validationIndex = null
+) {
+    const isEditing = validationIndex !== null;
+    const existingValidation = isEditing
+        ? collection.item_validations?.[validationIndex]
+        : null;
+    const fieldNames = (collection.fields || []).map(
+        (field) => field.name
+    );
+    if (!fieldNames.length) {
+        showMessage(
+            "Добавете поне едно поле преди item validation.",
+            "error"
+        );
+        return;
+    }
+
+    const formElement = document.createElement("form");
+    formElement.className = "form-grid";
+    const type = selectInput(
+        "itemValidationType",
+        "Validation тип",
+        existingValidation?.type || "difference_equals",
+        ["difference_equals"]
+    );
+    const minuend = selectInput(
+        "itemValidationMinuend",
+        "Minuend поле",
+        existingValidation?.minuend || fieldNames[0],
+        fieldNames
+    );
+    const subtrahend = selectInput(
+        "itemValidationSubtrahend",
+        "Subtrahend поле",
+        existingValidation?.subtrahend || fieldNames[0],
+        fieldNames
+    );
+    const result = selectInput(
+        "itemValidationResult",
+        "Result поле",
+        existingValidation?.result || fieldNames[0],
+        fieldNames
+    );
+    const message = textInput(
+        "itemValidationMessage",
+        "Съобщение при грешка",
+        existingValidation?.message || ""
+    );
+    formElement.append(
+        type.group,
+        minuend.group,
+        subtrahend.group,
+        result.group,
+        message.group
+    );
+
+    openModal({
+        title: isEditing
+            ? "Редакция на item validation"
+            : "Добавяне на item validation",
+        body: formElement,
+        onConfirm: async () => {
+            if (!formElement.reportValidity()) return;
+            const validation = {
+                type: type.select.value,
+                minuend: minuend.select.value,
+                subtrahend: subtrahend.select.value,
+                result: result.select.value,
+            };
+            const validationMessage = message.input.value.trim();
+            if (validationMessage) {
+                validation.message = validationMessage;
+            }
+            const updatedCollection = structuredClone(collection);
+            const validations = [
+                ...(updatedCollection.item_validations || []),
+            ];
+            if (isEditing) {
+                validations[validationIndex] = validation;
+            } else {
+                validations.push(validation);
+            }
+            updatedCollection.item_validations = validations;
+            await saveCollectionDefinition(
+                collectionName,
+                updatedCollection,
+                profileName
+            );
+            closeModal();
+            await loadConfiguration();
+            showMessage(
+                isEditing
+                    ? "Item validation е актуализирана."
+                    : "Item validation е добавена."
+            );
+        },
+    });
+}
+
+function confirmDeleteItemValidation(
+    collectionName,
+    collection,
+    profileName,
+    validationIndex
+) {
+    const body = document.createElement("div");
+    body.textContent = "Изтриване на item validation?";
+    openModal({
+        title: "Изтриване на item validation",
+        body,
+        confirmText: "Изтрий",
+        onConfirm: async () => {
+            const updatedCollection = structuredClone(collection);
+            updatedCollection.item_validations = [
+                ...(updatedCollection.item_validations || []),
+            ];
+            updatedCollection.item_validations.splice(
+                validationIndex,
+                1
+            );
+            await saveCollectionDefinition(
+                collectionName,
+                updatedCollection,
+                profileName
+            );
+            closeModal();
+            await loadConfiguration();
+            showMessage("Item validation е изтрита.");
+        },
+    });
 }
 
 function buildCollectionPayload(form, existingCollection) {
