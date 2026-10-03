@@ -1,5 +1,8 @@
 # Development Quick Reference
 
+For human-review semantics, see [Human review acceptance contract](human-review-acceptance-contract.md).
+
+
 For processing outcome semantics, see [Processing acceptance contract](processing-acceptance-contract.md).
 
 
