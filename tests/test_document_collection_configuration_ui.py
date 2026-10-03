@@ -42,7 +42,7 @@ def test_collection_editor_supports_schema_fields_and_preserves_children():
     assert "name.input.disabled = isEditing" in content
 
 
-def test_collection_editor_is_document_level_only_in_first_iteration():
+def test_collection_editor_supports_document_and_profile_scopes():
     content = JS.read_text(encoding="utf-8")
 
     collection_editor = content[
@@ -51,4 +51,5 @@ def test_collection_editor_is_document_level_only_in_first_iteration():
     ]
 
     assert "config.collections || {}" in collection_editor
-    assert "/profiles/${" not in collection_editor
+    assert "config.profiles?.[profileName]?.collections || {}" in collection_editor
+    assert "/profiles/${" in collection_editor

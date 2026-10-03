@@ -272,14 +272,19 @@ function updateFieldScope(config) {
 function buildFieldEndpoint(
     documentType,
     fieldName = null,
-    collectionName = null
+    collectionName = null,
+    collectionProfileName = null
 ) {
     const encodedType = encodeURIComponent(documentType);
     let endpoint;
 
     if (collectionName) {
+        const profilePath = collectionProfileName
+            ? `/profiles/${encodeURIComponent(collectionProfileName)}`
+            : "";
         endpoint = (
             `/document-types/${encodedType}`
+            + profilePath
             + `/collections/${encodeURIComponent(collectionName)}`
             + "/fields"
         );
@@ -326,16 +331,45 @@ function renderFields(config) {
     }
 }
 
-function collectionEndpoint(documentType, collectionName) {
-    return (
+function collectionEndpoint(
+    documentType,
+    collectionName,
+    profileName = null
+) {
+    const documentPath = (
         `/document-types/${encodeURIComponent(documentType)}`
+    );
+    const profilePath = profileName
+        ? `/profiles/${encodeURIComponent(profileName)}`
+        : "";
+    return (
+        documentPath
+        + profilePath
         + `/collections/${encodeURIComponent(collectionName)}`
     );
 }
 
+function getSelectedCollectionContext(config) {
+    if (state.selectedFieldScope === "profile") {
+        const profileName = getSelectedProfile(config);
+        return {
+            collections: (
+                config.profiles?.[profileName]?.collections || {}
+            ),
+            profileName,
+        };
+    }
+    return {
+        collections: config.collections || {},
+        profileName: null,
+    };
+}
+
 function renderCollections(config) {
     el.collectionList.replaceChildren();
-    const collections = config.collections || {};
+    const { collections, profileName } = (
+        getSelectedCollectionContext(config)
+    );
     const entries = Object.entries(collections).sort(
         ([left], [right]) => left.localeCompare(right)
     );
@@ -372,7 +406,7 @@ function renderCollections(config) {
         editButton.textContent = "Редактирай";
         editButton.addEventListener(
             "click",
-            () => openCollectionModal(name, collection)
+            () => openCollectionModal(name, collection, profileName)
         );
         const deleteButton = document.createElement("button");
         deleteButton.type = "button";
@@ -380,7 +414,7 @@ function renderCollections(config) {
         deleteButton.textContent = "Изтрий";
         deleteButton.addEventListener(
             "click",
-            () => confirmDeleteCollection(name)
+            () => confirmDeleteCollection(name, profileName)
         );
         actions.append(editButton, deleteButton);
         header.append(titleGroup, actions);
@@ -413,7 +447,7 @@ function renderCollections(config) {
         addFieldButton.textContent = "Добави поле в колекцията";
         addFieldButton.addEventListener(
             "click",
-            () => openFieldModal(null, name)
+            () => openFieldModal(null, name, profileName)
         );
         fieldSection.append(fieldHeading, addFieldButton);
 
@@ -441,7 +475,7 @@ function renderCollections(config) {
             editFieldButton.textContent = "Редактирай поле";
             editFieldButton.addEventListener(
                 "click",
-                () => openFieldModal(field, name)
+                () => openFieldModal(field, name, profileName)
             );
             const deleteFieldButton = document.createElement("button");
             deleteFieldButton.type = "button";
@@ -449,7 +483,7 @@ function renderCollections(config) {
             deleteFieldButton.textContent = "Изтрий поле";
             deleteFieldButton.addEventListener(
                 "click",
-                () => confirmDeleteField(field, name)
+                () => confirmDeleteField(field, name, profileName)
             );
             fieldActions.append(editFieldButton, deleteFieldButton);
             row.append(summary, fieldActions);
@@ -476,7 +510,8 @@ function buildCollectionPayload(form, existingCollection) {
 
 function openCollectionModal(
     existingName = null,
-    existingCollection = null
+    existingCollection = null,
+    profileName = null
 ) {
     const isEditing = Boolean(existingName);
     const formElement = document.createElement("form");
@@ -540,7 +575,8 @@ function openCollectionModal(
             await apiRequest(
                 collectionEndpoint(
                     state.selectedDocumentType,
-                    collectionName
+                    collectionName,
+                    profileName
                 ),
                 {
                     method: isEditing ? "PUT" : "POST",
@@ -558,7 +594,10 @@ function openCollectionModal(
     });
 }
 
-function confirmDeleteCollection(collectionName) {
+function confirmDeleteCollection(
+    collectionName,
+    profileName = null
+) {
     const body = document.createElement("div");
     body.textContent = (
         `Изтриване на колекцията '${collectionName}' `
@@ -572,7 +611,8 @@ function confirmDeleteCollection(collectionName) {
             await apiRequest(
                 collectionEndpoint(
                     state.selectedDocumentType,
-                    collectionName
+                    collectionName,
+                    profileName
                 ),
                 { method: "DELETE" }
             );
@@ -1044,7 +1084,8 @@ function buildFieldPayload(form, existingField) {
 
 function openFieldModal(
     existingField = null,
-    collectionName = null
+    collectionName = null,
+    collectionProfileName = null
 ) {
     const isEditing = Boolean(existingField);
     const formElement = document.createElement("form");
@@ -1119,7 +1160,8 @@ function openFieldModal(
             const endpoint = buildFieldEndpoint(
                 documentType,
                 isEditing ? existingField.name : null,
-                collectionName
+                collectionName,
+                collectionProfileName
             );
 
             await apiRequest(endpoint, {
@@ -1138,7 +1180,11 @@ function openFieldModal(
     });
 }
 
-function confirmDeleteField(field, collectionName = null) {
+function confirmDeleteField(
+    field,
+    collectionName = null,
+    collectionProfileName = null
+) {
     const body = document.createElement("div");
     body.textContent = `Изтриване на полето '${field.name}'?`;
 
@@ -1150,7 +1196,8 @@ function confirmDeleteField(field, collectionName = null) {
             const endpoint = buildFieldEndpoint(
                 state.selectedDocumentType,
                 field.name,
-                collectionName
+                collectionName,
+                collectionProfileName
             );
             await apiRequest(endpoint, {
                 method: "DELETE",
@@ -1164,7 +1211,13 @@ function confirmDeleteField(field, collectionName = null) {
 
 el.openAddCollectionButton.addEventListener(
     "click",
-    () => openCollectionModal()
+    () => {
+        const config = state.documentTypes[
+            state.selectedDocumentType
+        ];
+        const { profileName } = getSelectedCollectionContext(config);
+        openCollectionModal(null, null, profileName);
+    }
 );
 
 el.confirmModalButton.addEventListener("click", async () => {
@@ -1208,11 +1261,13 @@ el.profileSelector.addEventListener("change", () => {
     const config = state.documentTypes[state.selectedDocumentType];
     updateFieldScope(config);
     renderFields(config);
+    renderCollections(config);
 });
 el.fieldScope.addEventListener("change", () => {
     state.selectedFieldScope = el.fieldScope.value;
     const config = state.documentTypes[state.selectedDocumentType];
     renderFields(config);
+    renderCollections(config);
 });
 
 async function initializeApplication() {
