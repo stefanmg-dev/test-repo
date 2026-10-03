@@ -457,3 +457,95 @@ def delete_profile_collection_field(
         "collections"
     ][collection_name]["fields"][field_index]
     save_validated_config(updated_config)
+
+
+def resolve_profile_summary_validation_target(
+    config: dict,
+    document_type: str,
+    profile_name: str,
+) -> tuple[dict, dict, list]:
+    document_config = get_document_type_or_404(
+        config=config,
+        document_type=document_type,
+    )
+    ensure_profile_based_config(document_config)
+    profile_config = get_profile_or_404(
+        document_config=document_config,
+        profile_name=profile_name,
+    )
+    validations = profile_config.get("summary_validations", [])
+    return document_config, profile_config, validations
+
+
+def add_profile_summary_validation(
+    config: dict,
+    document_type: str,
+    profile_name: str,
+    validation_data: dict,
+) -> None:
+    resolve_profile_summary_validation_target(
+        config=config,
+        document_type=document_type,
+        profile_name=profile_name,
+    )
+    updated_config = deepcopy(config)
+    updated_config[document_type]["profiles"][profile_name].setdefault(
+        "summary_validations",
+        [],
+    ).append(validation_data)
+    save_validated_config(updated_config)
+
+
+def update_profile_summary_validation(
+    config: dict,
+    document_type: str,
+    profile_name: str,
+    validation_index: int,
+    validation_data: dict,
+) -> None:
+    _, _, validations = resolve_profile_summary_validation_target(
+        config=config,
+        document_type=document_type,
+        profile_name=profile_name,
+    )
+    if validation_index < 0 or validation_index >= len(validations):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                "Summary validation index "
+                f"'{validation_index}' was not found in profile "
+                f"'{profile_name}'"
+            ),
+        )
+    updated_config = deepcopy(config)
+    updated_config[document_type]["profiles"][profile_name][
+        "summary_validations"
+    ][validation_index] = validation_data
+    save_validated_config(updated_config)
+
+
+def delete_profile_summary_validation(
+    config: dict,
+    document_type: str,
+    profile_name: str,
+    validation_index: int,
+) -> None:
+    _, _, validations = resolve_profile_summary_validation_target(
+        config=config,
+        document_type=document_type,
+        profile_name=profile_name,
+    )
+    if validation_index < 0 or validation_index >= len(validations):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                "Summary validation index "
+                f"'{validation_index}' was not found in profile "
+                f"'{profile_name}'"
+            ),
+        )
+    updated_config = deepcopy(config)
+    del updated_config[document_type]["profiles"][profile_name][
+        "summary_validations"
+    ][validation_index]
+    save_validated_config(updated_config)

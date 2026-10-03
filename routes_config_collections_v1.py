@@ -4,23 +4,28 @@ from fastapi import APIRouter, Depends, HTTPException, Path, status
 from config_models import (
     AddCollectionRequest,
     AddFieldRequest,
+    AddSummaryValidationRequest,
     OperationResponse,
     UpdateCollectionRequest,
     UpdateFieldRequest,
+    UpdateSummaryValidationRequest,
 )
 from config_collection_service import (
     add_document_collection,
     add_document_collection_field as add_document_field,
     add_profile_collection_field as add_profile_field,
     add_profile_collection_mutation,
+    add_profile_summary_validation,
     delete_document_collection,
     delete_document_collection_field as delete_document_field,
     delete_profile_collection_field as delete_profile_field,
     delete_profile_collection_mutation,
+    delete_profile_summary_validation,
     update_document_collection,
     update_document_collection_field as update_document_field,
     update_profile_collection_field as update_profile_field,
     update_profile_collection_mutation,
+    update_profile_summary_validation,
 )
 from config_store import load_config
 from security_scopes import enforce_config_scope
@@ -424,5 +429,100 @@ def delete_profile_collection_field(
         "message": (
             f"Field '{field_name}' deleted from profile collection "
             f"'{collection_name}'"
+        ),
+    }
+
+@router.post(
+    "/document-types/{document_type}/profiles/{profile_name}/"
+    "summary-validations",
+    summary="Add a profile summary validation",
+    description=(
+        "Adds one collection summary validation to an existing profile. "
+        "Authenticated requests require the config:write scope."
+    ),
+    response_description="Summary validation creation result.",
+    response_model=OperationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_summary_validation(
+    request: AddSummaryValidationRequest,
+    document_type: str = Path(..., description="Profile-based document-type key."),
+    profile_name: str = Path(..., description="Existing profile name."),
+):
+    config = load_config()
+    add_profile_summary_validation(
+        config=config,
+        document_type=document_type,
+        profile_name=profile_name,
+        validation_data=request.validation.model_dump(exclude_none=True),
+    )
+    return {
+        "status": "ok",
+        "message": f"Summary validation added to profile '{profile_name}'",
+    }
+
+
+@router.put(
+    "/document-types/{document_type}/profiles/{profile_name}/"
+    "summary-validations/{validation_index}",
+    summary="Replace a profile summary validation",
+    description=(
+        "Completely replaces one profile summary validation by index. "
+        "Authenticated requests require the config:write scope."
+    ),
+    response_description="Summary validation update result.",
+    response_model=OperationResponse,
+)
+def update_summary_validation(
+    request: UpdateSummaryValidationRequest,
+    document_type: str = Path(..., description="Profile-based document-type key."),
+    profile_name: str = Path(..., description="Existing profile name."),
+    validation_index: int = Path(..., ge=0, description="Existing validation index."),
+):
+    config = load_config()
+    update_profile_summary_validation(
+        config=config,
+        document_type=document_type,
+        profile_name=profile_name,
+        validation_index=validation_index,
+        validation_data=request.validation.model_dump(exclude_none=True),
+    )
+    return {
+        "status": "ok",
+        "message": (
+            f"Summary validation '{validation_index}' updated in "
+            f"profile '{profile_name}'"
+        ),
+    }
+
+
+@router.delete(
+    "/document-types/{document_type}/profiles/{profile_name}/"
+    "summary-validations/{validation_index}",
+    summary="Delete a profile summary validation",
+    description=(
+        "Deletes one profile summary validation by index. Authenticated "
+        "requests require the config:write scope."
+    ),
+    response_description="Summary validation deletion result.",
+    response_model=OperationResponse,
+)
+def delete_summary_validation(
+    document_type: str = Path(..., description="Profile-based document-type key."),
+    profile_name: str = Path(..., description="Existing profile name."),
+    validation_index: int = Path(..., ge=0, description="Existing validation index."),
+):
+    config = load_config()
+    delete_profile_summary_validation(
+        config=config,
+        document_type=document_type,
+        profile_name=profile_name,
+        validation_index=validation_index,
+    )
+    return {
+        "status": "ok",
+        "message": (
+            f"Summary validation '{validation_index}' deleted from "
+            f"profile '{profile_name}'"
         ),
     }

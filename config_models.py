@@ -426,6 +426,24 @@ class UpdateCollectionRequest(BaseModel):
     )
 
 
+class AddSummaryValidationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    validation: CollectionSummaryValidationModel = Field(
+        description="Profile summary validation configuration to add."
+    )
+
+
+class UpdateSummaryValidationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    validation: CollectionSummaryValidationModel = Field(
+        description=(
+            "Complete replacement profile summary validation."
+        )
+    )
+
+
 class ResolvedDocumentTypeModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

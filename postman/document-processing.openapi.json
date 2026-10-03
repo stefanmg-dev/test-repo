@@ -3074,6 +3074,240 @@
         }
       }
     },
+    "/api/v1/config/document-types/{document_type}/profiles/{profile_name}/summary-validations": {
+      "post": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Add a profile summary validation",
+        "description": "Adds one collection summary validation to an existing profile. Authenticated requests require the config:write scope.",
+        "operationId": "add_summary_validation_api_v1_config_document_types__document_type__profiles__profile_name__summary_validations_post",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Profile-based document-type key.",
+              "title": "Document Type"
+            },
+            "description": "Profile-based document-type key."
+          },
+          {
+            "name": "profile_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Existing profile name.",
+              "title": "Profile Name"
+            },
+            "description": "Existing profile name."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddSummaryValidationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Summary validation creation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/document-types/{document_type}/profiles/{profile_name}/summary-validations/{validation_index}": {
+      "put": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Replace a profile summary validation",
+        "description": "Completely replaces one profile summary validation by index. Authenticated requests require the config:write scope.",
+        "operationId": "update_summary_validation_api_v1_config_document_types__document_type__profiles__profile_name__summary_validations__validation_index__put",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Profile-based document-type key.",
+              "title": "Document Type"
+            },
+            "description": "Profile-based document-type key."
+          },
+          {
+            "name": "profile_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Existing profile name.",
+              "title": "Profile Name"
+            },
+            "description": "Existing profile name."
+          },
+          {
+            "name": "validation_index",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Existing validation index.",
+              "title": "Validation Index"
+            },
+            "description": "Existing validation index."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSummaryValidationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Summary validation update result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Delete a profile summary validation",
+        "description": "Deletes one profile summary validation by index. Authenticated requests require the config:write scope.",
+        "operationId": "delete_summary_validation_api_v1_config_document_types__document_type__profiles__profile_name__summary_validations__validation_index__delete",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Profile-based document-type key.",
+              "title": "Document Type"
+            },
+            "description": "Profile-based document-type key."
+          },
+          {
+            "name": "profile_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Existing profile name.",
+              "title": "Profile Name"
+            },
+            "description": "Existing profile name."
+          },
+          {
+            "name": "validation_index",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Existing validation index.",
+              "title": "Validation Index"
+            },
+            "description": "Existing validation index."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Summary validation deletion result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health Check",
@@ -3153,6 +3387,20 @@
           "profile"
         ],
         "title": "AddProfileRequest"
+      },
+      "AddSummaryValidationRequest": {
+        "properties": {
+          "validation": {
+            "$ref": "#/components/schemas/CollectionSummaryValidationModel",
+            "description": "Profile summary validation configuration to add."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "validation"
+        ],
+        "title": "AddSummaryValidationRequest"
       },
       "ApiErrorResponseModel": {
         "properties": {
@@ -6878,6 +7126,20 @@
           "field"
         ],
         "title": "UpdateFieldRequest"
+      },
+      "UpdateSummaryValidationRequest": {
+        "properties": {
+          "validation": {
+            "$ref": "#/components/schemas/CollectionSummaryValidationModel",
+            "description": "Complete replacement profile summary validation."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "validation"
+        ],
+        "title": "UpdateSummaryValidationRequest"
       },
       "ValidationError": {
         "properties": {
