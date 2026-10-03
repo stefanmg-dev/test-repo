@@ -29,6 +29,7 @@ const el = {
     profileSelector: byId("profileSelector"),
     defaultProfileName: byId("defaultProfileName"),
     fieldList: byId("fieldList"),
+    collectionList: byId("collectionList"),
     messageArea: byId("messageArea"),
     modalBackdrop: byId("modalBackdrop"),
     configurationModal: byId("configurationModal"),
@@ -42,6 +43,7 @@ const el = {
     renameDocumentTypeButton: byId("renameDocumentTypeButton"),
     deleteDocumentTypeButton: byId("deleteDocumentTypeButton"),
     openAddFieldButton: byId("openAddFieldButton"),
+    openAddCollectionButton: byId("openAddCollectionButton"),
     fieldCardTemplate: byId("fieldCardTemplate"),
 };
 
@@ -314,6 +316,212 @@ function renderFields(config) {
     }
 }
 
+function collectionEndpoint(documentType, collectionName) {
+    return (
+        `/document-types/${encodeURIComponent(documentType)}`
+        + `/collections/${encodeURIComponent(collectionName)}`
+    );
+}
+
+function renderCollections(config) {
+    el.collectionList.replaceChildren();
+    const collections = config.collections || {};
+    const entries = Object.entries(collections).sort(
+        ([left], [right]) => left.localeCompare(right)
+    );
+
+    if (!entries.length) {
+        const empty = document.createElement("div");
+        empty.className = "loading-state";
+        empty.textContent = "Този тип документ още няма колекции.";
+        el.collectionList.appendChild(empty);
+        return;
+    }
+
+    for (const [name, collection] of entries) {
+        const card = document.createElement("article");
+        card.className = "field-card";
+
+        const header = document.createElement("div");
+        header.className = "field-header";
+
+        const titleGroup = document.createElement("div");
+        const title = document.createElement("h3");
+        title.className = "field-title";
+        title.textContent = name;
+        const badge = document.createElement("span");
+        badge.className = "field-type-badge";
+        badge.textContent = collection.cardinality || "zero_or_more";
+        titleGroup.append(title, badge);
+
+        const actions = document.createElement("div");
+        actions.className = "field-actions";
+        const editButton = document.createElement("button");
+        editButton.type = "button";
+        editButton.className = "button button-secondary";
+        editButton.textContent = "Редактирай";
+        editButton.addEventListener(
+            "click",
+            () => openCollectionModal(name, collection)
+        );
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "button button-danger-outline";
+        deleteButton.textContent = "Изтрий";
+        deleteButton.addEventListener(
+            "click",
+            () => confirmDeleteCollection(name)
+        );
+        actions.append(editButton, deleteButton);
+        header.append(titleGroup, actions);
+
+        const details = document.createElement("div");
+        details.className = "field-details";
+        addDetail(
+            details,
+            "start_pattern",
+            collection.start_pattern || "няма"
+        );
+        addDetail(
+            details,
+            "fields",
+            (collection.fields || []).length
+        );
+        addDetail(
+            details,
+            "item_validations",
+            (collection.item_validations || []).length
+        );
+
+        card.append(header, details);
+        el.collectionList.appendChild(card);
+    }
+}
+
+function buildCollectionPayload(form, existingCollection) {
+    const collection = {
+        cardinality: form.cardinality.select.value,
+        fields: structuredClone(existingCollection?.fields || []),
+        item_validations: structuredClone(
+            existingCollection?.item_validations || []
+        ),
+    };
+    const startPattern = form.startPattern.input.value.trim();
+    if (startPattern) collection.start_pattern = startPattern;
+    return collection;
+}
+
+function openCollectionModal(
+    existingName = null,
+    existingCollection = null
+) {
+    const isEditing = Boolean(existingName);
+    const formElement = document.createElement("form");
+    formElement.className = "form-grid";
+
+    const name = textInput(
+        "collectionName",
+        "Системно име",
+        existingName || "",
+        {
+            required: true,
+            pattern: "^[a-z][a-z0-9_]*$",
+            fullWidth: false,
+        }
+    );
+    name.input.disabled = isEditing;
+
+    const cardinality = selectInput(
+        "collectionCardinality",
+        "Кардиналност",
+        existingCollection?.cardinality || "zero_or_more",
+        ["zero_or_more", "one_or_more", "exactly_one"]
+    );
+    const startPattern = textInput(
+        "collectionStartPattern",
+        "Start pattern",
+        existingCollection?.start_pattern || "",
+        {
+            help: "Optional regex, marking the start of each item.",
+        }
+    );
+
+    const preserved = document.createElement("div");
+    preserved.className = "form-help form-group full-width";
+    preserved.textContent = isEditing
+        ? "Полетата и item validations се запазват непроменени."
+        : "Полетата и item validations се добавят в следващата стъпка.";
+
+    formElement.append(
+        name.group,
+        cardinality.group,
+        startPattern.group,
+        preserved
+    );
+
+    const form = { name, cardinality, startPattern };
+    openModal({
+        title: isEditing
+            ? `Редакция на колекция '${existingName}'`
+            : "Добавяне на колекция",
+        body: formElement,
+        onConfirm: async () => {
+            if (!formElement.reportValidity()) return;
+            const collectionName = isEditing
+                ? existingName
+                : name.input.value.trim();
+            const collection = buildCollectionPayload(
+                form,
+                existingCollection
+            );
+            await apiRequest(
+                collectionEndpoint(
+                    state.selectedDocumentType,
+                    collectionName
+                ),
+                {
+                    method: isEditing ? "PUT" : "POST",
+                    body: JSON.stringify({ collection }),
+                }
+            );
+            closeModal();
+            await loadConfiguration();
+            showMessage(
+                isEditing
+                    ? `Колекцията '${collectionName}' е актуализирана.`
+                    : `Колекцията '${collectionName}' е добавена.`
+            );
+        },
+    });
+}
+
+function confirmDeleteCollection(collectionName) {
+    const body = document.createElement("div");
+    body.textContent = (
+        `Изтриване на колекцията '${collectionName}' `
+        + "заедно с нейните полета и validations?"
+    );
+    openModal({
+        title: "Изтриване на колекция",
+        body,
+        confirmText: "Изтрий",
+        onConfirm: async () => {
+            await apiRequest(
+                collectionEndpoint(
+                    state.selectedDocumentType,
+                    collectionName
+                ),
+                { method: "DELETE" }
+            );
+            closeModal();
+            await loadConfiguration();
+            showMessage(
+                `Колекцията '${collectionName}' е изтрита.`
+            );
+        },
+    });
+}
+
 function selectDocumentType(name) {
     if (state.selectedDocumentType !== name) {
         state.selectedProfileName = null;
@@ -343,6 +551,7 @@ function selectDocumentType(name) {
         + `${metadata.field_count} конфигурирани полета`;
     updateFieldScope(config);
     renderFields(config);
+    renderCollections(config);
 }
 
 async function loadConfiguration(preserveSelection = true) {
@@ -870,6 +1079,11 @@ function confirmDeleteField(field) {
         },
     });
 }
+
+el.openAddCollectionButton.addEventListener(
+    "click",
+    () => openCollectionModal()
+);
 
 el.confirmModalButton.addEventListener("click", async () => {
     if (!state.modalConfirmHandler) return;
