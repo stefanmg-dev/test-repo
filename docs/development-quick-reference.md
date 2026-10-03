@@ -1,5 +1,8 @@
 # Development Quick Reference
 
+For real-document acceptance, see [Real-document fixture matrix and acceptance checklist](real-document-fixture-matrix.md).
+
+
 For the complete restart-safe start, status, and stop workflow, see [Local development start, status, and stop](local-development-runbook.md).
 
 
