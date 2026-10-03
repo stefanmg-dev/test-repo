@@ -30,6 +30,8 @@ const el = {
     defaultProfileName: byId("defaultProfileName"),
     fieldList: byId("fieldList"),
     collectionList: byId("collectionList"),
+    summaryValidationSection: byId("summaryValidationSection"),
+    summaryValidationList: byId("summaryValidationList"),
     messageArea: byId("messageArea"),
     modalBackdrop: byId("modalBackdrop"),
     configurationModal: byId("configurationModal"),
@@ -44,6 +46,7 @@ const el = {
     deleteDocumentTypeButton: byId("deleteDocumentTypeButton"),
     openAddFieldButton: byId("openAddFieldButton"),
     openAddCollectionButton: byId("openAddCollectionButton"),
+    openAddSummaryValidationButton: byId("openAddSummaryValidationButton"),
     fieldCardTemplate: byId("fieldCardTemplate"),
 };
 
@@ -864,6 +867,229 @@ function confirmDeleteCollection(
     });
 }
 
+
+function summaryValidationEndpoint(
+    documentType,
+    profileName,
+    validationIndex = null
+) {
+    const base = (
+        `/document-types/${encodeURIComponent(documentType)}`
+        + `/profiles/${encodeURIComponent(profileName)}`
+        + "/summary-validations"
+    );
+    return validationIndex === null
+        ? base
+        : `${base}/${validationIndex}`;
+}
+
+function getProfileScalarFieldNames(config, profileName) {
+    return [
+        ...(config.common_fields || []),
+        ...(config.profiles?.[profileName]?.fields || []),
+    ].map((field) => field.name);
+}
+
+function renderSummaryValidations(config) {
+    const profileName = getSelectedProfile(config);
+    const profileScope = (
+        state.selectedFieldScope === "profile" && profileName
+    );
+    el.summaryValidationSection.classList.toggle(
+        "hidden",
+        !profileScope
+    );
+    el.summaryValidationList.replaceChildren();
+    if (!profileScope) return;
+
+    const validations = (
+        config.profiles?.[profileName]?.summary_validations || []
+    );
+    if (!validations.length) {
+        const empty = document.createElement("div");
+        empty.className = "loading-state";
+        empty.textContent = "Профилът още няма summary validations.";
+        el.summaryValidationList.appendChild(empty);
+        return;
+    }
+
+    validations.forEach((validation, index) => {
+        const card = document.createElement("article");
+        card.className = "field-card";
+        const title = document.createElement("h3");
+        title.className = "field-title";
+        title.textContent = (
+            `${validation.collection}.${validation.item_field}`
+            + ` = ${validation.target_field}`
+        );
+        const details = document.createElement("div");
+        details.className = "field-details";
+        addDetail(details, "type", validation.type);
+        addDetail(details, "message", validation.message || "няма");
+        const actions = document.createElement("div");
+        actions.className = "field-actions";
+        const editButton = document.createElement("button");
+        editButton.type = "button";
+        editButton.className = "button button-secondary";
+        editButton.textContent = "Редактирай";
+        editButton.addEventListener(
+            "click",
+            () => openSummaryValidationModal(
+                config,
+                profileName,
+                index,
+                validation
+            )
+        );
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "button button-danger-outline";
+        deleteButton.textContent = "Изтрий";
+        deleteButton.addEventListener(
+            "click",
+            () => confirmDeleteSummaryValidation(profileName, index)
+        );
+        actions.append(editButton, deleteButton);
+        card.append(title, details, actions);
+        el.summaryValidationList.appendChild(card);
+    });
+}
+
+function openSummaryValidationModal(
+    config,
+    profileName,
+    validationIndex = null,
+    existingValidation = null
+) {
+    const profile = config.profiles?.[profileName] || {};
+    const collections = profile.collections || {};
+    const collectionNames = Object.keys(collections).sort();
+    const targetFields = getProfileScalarFieldNames(config, profileName);
+    if (!collectionNames.length || !targetFields.length) {
+        showMessage(
+            "Summary validation изисква profile collection и scalar target поле.",
+            "error"
+        );
+        return;
+    }
+
+    const form = document.createElement("form");
+    form.className = "form-grid";
+    const type = selectInput(
+        "summaryValidationType",
+        "Validation тип",
+        existingValidation?.type || "collection_sum_equals_field",
+        ["collection_sum_equals_field"]
+    );
+    const collection = selectInput(
+        "summaryValidationCollection",
+        "Колекция",
+        existingValidation?.collection || collectionNames[0],
+        collectionNames
+    );
+    const itemField = selectInput(
+        "summaryValidationItemField",
+        "Collection item поле",
+        existingValidation?.item_field || "",
+        []
+    );
+    const targetField = selectInput(
+        "summaryValidationTargetField",
+        "Target scalar поле",
+        existingValidation?.target_field || targetFields[0],
+        targetFields
+    );
+    const message = textInput(
+        "summaryValidationMessage",
+        "Съобщение при грешка",
+        existingValidation?.message || ""
+    );
+
+    function refreshItemFields() {
+        const fieldNames = (
+            collections[collection.select.value]?.fields || []
+        ).map((field) => field.name);
+        const preferred = itemField.select.value
+            || existingValidation?.item_field;
+        itemField.select.replaceChildren();
+        for (const name of fieldNames) {
+            const option = new Option(name, name);
+            option.selected = name === preferred;
+            itemField.select.append(option);
+        }
+        itemField.select.required = true;
+    }
+    collection.select.addEventListener("change", refreshItemFields);
+    refreshItemFields();
+    form.append(
+        type.group,
+        collection.group,
+        itemField.group,
+        targetField.group,
+        message.group
+    );
+
+    const isEditing = validationIndex !== null;
+    openModal({
+        title: isEditing
+            ? "Редакция на summary validation"
+            : "Добавяне на summary validation",
+        body: form,
+        onConfirm: async () => {
+            if (!form.reportValidity()) return;
+            const validation = {
+                type: type.select.value,
+                collection: collection.select.value,
+                item_field: itemField.select.value,
+                target_field: targetField.select.value,
+            };
+            const validationMessage = message.input.value.trim();
+            if (validationMessage) validation.message = validationMessage;
+            await apiRequest(
+                summaryValidationEndpoint(
+                    state.selectedDocumentType,
+                    profileName,
+                    validationIndex
+                ),
+                {
+                    method: isEditing ? "PUT" : "POST",
+                    body: JSON.stringify({ validation }),
+                }
+            );
+            closeModal();
+            await loadConfiguration();
+            showMessage(
+                isEditing
+                    ? "Summary validation е актуализирана."
+                    : "Summary validation е добавена."
+            );
+        },
+    });
+}
+
+function confirmDeleteSummaryValidation(profileName, validationIndex) {
+    const body = document.createElement("div");
+    body.textContent = "Изтриване на summary validation?";
+    openModal({
+        title: "Изтриване на summary validation",
+        body,
+        confirmText: "Изтрий",
+        onConfirm: async () => {
+            await apiRequest(
+                summaryValidationEndpoint(
+                    state.selectedDocumentType,
+                    profileName,
+                    validationIndex
+                ),
+                { method: "DELETE" }
+            );
+            closeModal();
+            await loadConfiguration();
+            showMessage("Summary validation е изтрита.");
+        },
+    });
+}
+
 function selectDocumentType(name) {
     if (state.selectedDocumentType !== name) {
         state.selectedProfileName = null;
@@ -894,6 +1120,7 @@ function selectDocumentType(name) {
     updateFieldScope(config);
     renderFields(config);
     renderCollections(config);
+    renderSummaryValidations(config);
 }
 
 async function loadConfiguration(preserveSelection = true) {
@@ -1448,6 +1675,17 @@ function confirmDeleteField(
     });
 }
 
+el.openAddSummaryValidationButton.addEventListener(
+    "click",
+    () => {
+        const config = state.documentTypes[
+            state.selectedDocumentType
+        ];
+        const profileName = getSelectedProfile(config);
+        openSummaryValidationModal(config, profileName);
+    }
+);
+
 el.openAddCollectionButton.addEventListener(
     "click",
     () => {
@@ -1501,12 +1739,14 @@ el.profileSelector.addEventListener("change", () => {
     updateFieldScope(config);
     renderFields(config);
     renderCollections(config);
+    renderSummaryValidations(config);
 });
 el.fieldScope.addEventListener("change", () => {
     state.selectedFieldScope = el.fieldScope.value;
     const config = state.documentTypes[state.selectedDocumentType];
     renderFields(config);
     renderCollections(config);
+    renderSummaryValidations(config);
 });
 
 async function initializeApplication() {
