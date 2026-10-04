@@ -1155,3 +1155,217 @@ def test_configuration_browser_adds_summary_validation(
         "telecom_a1"
     ]["summary_validations"] == []
     assert console_errors == []
+
+
+def test_configuration_browser_edits_profile_collection(
+    live_server_url,
+):
+    collection = {
+        "cardinality": "one_or_more",
+        "fields": [
+            {
+                "name": "amount",
+                "type": "regex",
+                "rule": "Amount: ([0-9.,]+)",
+                "occurrence": "first",
+                "validation": [],
+            },
+            {
+                "name": "tax",
+                "type": "regex",
+                "rule": "Tax: ([0-9.,]+)",
+                "occurrence": "first",
+                "validation": [],
+            },
+            {
+                "name": "total",
+                "type": "regex",
+                "rule": "Total: ([0-9.,]+)",
+                "occurrence": "first",
+                "validation": [],
+            },
+        ],
+        "item_validations": [
+            {
+                "type": "difference_equals",
+                "minuend": "total",
+                "subtrahend": "tax",
+                "result": "amount",
+                "message": "Amount must equal total minus tax",
+            }
+        ],
+        "start_pattern": "Service start",
+    }
+    config_body = {
+        "document_types": {
+            "invoice": {
+                "default_profile": "telecom_a1",
+                "common_fields": [],
+                "profiles": {
+                    "telecom_a1": {
+                        "fields": [],
+                        "collections": {},
+                        "summary_validations": [],
+                    },
+                    "electricity_electrohold": {
+                        "fields": [],
+                        "collections": {
+                            "services": collection,
+                        },
+                        "summary_validations": [],
+                    },
+                },
+                "collections": {},
+            }
+        },
+        "resolved_document_types": {},
+        "document_type_metadata": {
+            "invoice": {
+                "status": "ready",
+                "ready": True,
+                "field_count": 0,
+            }
+        },
+    }
+    mutation_requests = []
+    console_errors = []
+
+    with sync_playwright() as playwright:
+        executable = Path(playwright.chromium.executable_path)
+        if not executable.exists():
+            pytest.skip("Playwright Chromium is not installed")
+
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(
+            viewport={"width": 1280, "height": 1200}
+        )
+        page.on(
+            "console",
+            lambda message: (
+                console_errors.append(message.text)
+                if message.type == "error"
+                else None
+            ),
+        )
+        page.route(
+            "**/api/v1/auth/config",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"enabled": False}),
+            ),
+        )
+
+        def handle_config(route):
+            if route.request.method == "GET":
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps(config_body),
+                )
+                return
+
+            request_body = json.loads(route.request.post_data)
+            mutation_requests.append(
+                {
+                    "method": route.request.method,
+                    "url": route.request.url,
+                    "body": request_body,
+                }
+            )
+            config_body["document_types"]["invoice"]["profiles"][
+                "electricity_electrohold"
+            ]["collections"]["services"] = request_body["collection"]
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(
+                    {
+                        "status": "ok",
+                        "message": "Collection updated",
+                    }
+                ),
+            )
+
+        page.route(
+            "**/api/v1/config/document-types",
+            handle_config,
+        )
+        page.route(
+            "**/api/v1/config/document-types/**",
+            handle_config,
+        )
+        page.goto(
+            f"{live_server_url}/ui/index.html",
+            wait_until="networkidle",
+        )
+
+        page.locator("#profileSelector").select_option(
+            "electricity_electrohold"
+        )
+        page.locator("#fieldScope").select_option("profile")
+        collection_card = page.locator("#collectionList .field-card").filter(
+            has_text="services"
+        )
+        expect(collection_card).to_have_count(1)
+        expect(collection_card).to_contain_text("one_or_more")
+        expect(collection_card).to_contain_text("Service start")
+        expect(collection_card).to_contain_text("fields")
+        expect(collection_card).to_contain_text("3")
+        expect(collection_card).to_contain_text("item_validations")
+        expect(collection_card).to_contain_text("1")
+
+        collection_card.get_by_role(
+            "button",
+            name="Редактирай",
+            exact=True,
+        ).click()
+        expect(page.get_by_role("dialog")).to_be_visible()
+        expect(page.locator("#collectionName")).to_be_disabled()
+        expect(page.locator("#collectionName")).to_have_value("services")
+        page.locator("#collectionCardinality").select_option(
+            "exactly_one"
+        )
+        page.locator("#collectionStartPattern").fill(
+            "Updated service start"
+        )
+        page.locator("#confirmModalButton").click()
+
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        collection_card = page.locator("#collectionList .field-card").filter(
+            has_text="services"
+        )
+        expect(collection_card).to_have_count(1)
+        expect(collection_card).to_contain_text("exactly_one")
+        expect(collection_card).to_contain_text("Updated service start")
+        expect(collection_card).not_to_contain_text("Service start")
+        expect(collection_card).to_contain_text("amount · regex")
+        expect(collection_card).to_contain_text("tax · regex")
+        expect(collection_card).to_contain_text("total · regex")
+        expect(collection_card).to_contain_text(
+            "amount = total - tax"
+        )
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Колекцията 'services' е актуализирана."
+        )
+
+        browser.close()
+
+    assert len(mutation_requests) == 1
+    assert mutation_requests[0]["method"] == "PUT"
+    assert mutation_requests[0]["url"].endswith(
+        "/api/v1/config/document-types/invoice/profiles/"
+        "electricity_electrohold/collections/services"
+    )
+    assert mutation_requests[0]["body"] == {
+        "collection": {
+            "cardinality": "exactly_one",
+            "fields": collection["fields"],
+            "item_validations": collection["item_validations"],
+            "start_pattern": "Updated service start",
+        }
+    }
+    assert config_body["document_types"]["invoice"][
+        "default_profile"
+    ] == "telecom_a1"
+    assert console_errors == []
