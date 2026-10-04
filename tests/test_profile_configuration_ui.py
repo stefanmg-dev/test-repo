@@ -952,3 +952,206 @@ def test_configuration_browser_adds_item_validation(
         "default_profile"
     ] == "telecom_a1"
     assert console_errors == []
+
+
+def test_configuration_browser_adds_summary_validation(
+    live_server_url,
+):
+    config_body = {
+        "document_types": {
+            "invoice": {
+                "default_profile": "telecom_a1",
+                "common_fields": [
+                    {
+                        "name": "invoice_number",
+                        "type": "regex",
+                        "rule": "Invoice ([0-9]+)",
+                    }
+                ],
+                "profiles": {
+                    "telecom_a1": {
+                        "fields": [],
+                        "collections": {},
+                        "summary_validations": [],
+                    },
+                    "electricity_electrohold": {
+                        "fields": [
+                            {
+                                "name": "total_amount",
+                                "type": "regex",
+                                "rule": "Total: ([0-9.,]+)",
+                            }
+                        ],
+                        "collections": {
+                            "services": {
+                                "cardinality": "one_or_more",
+                                "fields": [
+                                    {
+                                        "name": "amount",
+                                        "type": "regex",
+                                        "rule": "Amount: ([0-9.,]+)",
+                                        "validation": [],
+                                    }
+                                ],
+                                "item_validations": [],
+                            }
+                        },
+                        "summary_validations": [],
+                    },
+                },
+                "collections": {},
+            }
+        },
+        "resolved_document_types": {},
+        "document_type_metadata": {
+            "invoice": {
+                "status": "ready",
+                "ready": True,
+                "field_count": 2,
+            }
+        },
+    }
+    mutation_requests = []
+    console_errors = []
+
+    with sync_playwright() as playwright:
+        executable = Path(playwright.chromium.executable_path)
+        if not executable.exists():
+            pytest.skip("Playwright Chromium is not installed")
+
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(
+            viewport={"width": 1280, "height": 1200}
+        )
+        page.on(
+            "console",
+            lambda message: (
+                console_errors.append(message.text)
+                if message.type == "error"
+                else None
+            ),
+        )
+        page.route(
+            "**/api/v1/auth/config",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"enabled": False}),
+            ),
+        )
+
+        def handle_config(route):
+            if route.request.method == "GET":
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps(config_body),
+                )
+                return
+
+            request_body = json.loads(route.request.post_data)
+            mutation_requests.append(
+                {
+                    "method": route.request.method,
+                    "url": route.request.url,
+                    "body": request_body,
+                }
+            )
+            config_body["document_types"]["invoice"]["profiles"][
+                "electricity_electrohold"
+            ]["summary_validations"].append(
+                request_body["validation"]
+            )
+            route.fulfill(
+                status=201,
+                content_type="application/json",
+                body=json.dumps(
+                    {
+                        "status": "ok",
+                        "message": "Summary validation added",
+                    }
+                ),
+            )
+
+        page.route(
+            "**/api/v1/config/document-types",
+            handle_config,
+        )
+        page.route(
+            "**/api/v1/config/document-types/**",
+            handle_config,
+        )
+        page.goto(
+            f"{live_server_url}/ui/index.html",
+            wait_until="networkidle",
+        )
+
+        page.locator("#profileSelector").select_option(
+            "electricity_electrohold"
+        )
+        page.locator("#fieldScope").select_option("profile")
+        expect(page.locator("#summaryValidationSection")).to_be_visible()
+        expect(page.locator("#summaryValidationList")).to_contain_text(
+            "Профилът още няма summary validations."
+        )
+
+        page.locator("#openAddSummaryValidationButton").click()
+        expect(page.get_by_role("dialog")).to_be_visible()
+        expect(page.locator("#summaryValidationType")).to_have_value(
+            "collection_sum_equals_field"
+        )
+        expect(page.locator("#summaryValidationCollection")).to_have_value(
+            "services"
+        )
+        expect(page.locator("#summaryValidationItemField")).to_have_value(
+            "amount"
+        )
+        page.locator("#summaryValidationTargetField").select_option(
+            "total_amount"
+        )
+        page.locator("#summaryValidationMessage").fill(
+            "Service amounts must equal total amount"
+        )
+        page.locator("#confirmModalButton").click()
+
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        expect(page.locator("#summaryValidationList")).to_contain_text(
+            "services.amount = total_amount"
+        )
+        expect(page.locator("#summaryValidationList")).to_contain_text(
+            "collection_sum_equals_field"
+        )
+        expect(page.locator("#summaryValidationList")).to_contain_text(
+            "Service amounts must equal total amount"
+        )
+        expect(page.locator("#summaryValidationList")).not_to_contain_text(
+            "Профилът още няма summary validations."
+        )
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Summary validation е добавена."
+        )
+
+        browser.close()
+
+    assert len(mutation_requests) == 1
+    assert mutation_requests[0]["method"] == "POST"
+    assert mutation_requests[0]["url"].endswith(
+        "/api/v1/config/document-types/invoice/profiles/"
+        "electricity_electrohold/summary-validations"
+    )
+    assert mutation_requests[0]["body"] == {
+        "validation": {
+            "type": "collection_sum_equals_field",
+            "collection": "services",
+            "item_field": "amount",
+            "target_field": "total_amount",
+            "message": "Service amounts must equal total amount",
+        }
+    }
+    assert config_body["document_types"]["invoice"][
+        "default_profile"
+    ] == "telecom_a1"
+    assert config_body["document_types"]["invoice"]["profiles"][
+        "telecom_a1"
+    ]["summary_validations"] == []
+    assert console_errors == []
