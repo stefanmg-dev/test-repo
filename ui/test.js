@@ -82,6 +82,22 @@ const elements = {
         "validationErrors"
     ),
 
+    summaryValidationPanel: document.getElementById(
+        "summaryValidationPanel"
+    ),
+
+    summaryValidationBadge: document.getElementById(
+        "summaryValidationBadge"
+    ),
+
+    summaryValidationSummary: document.getElementById(
+        "summaryValidationSummary"
+    ),
+
+    summaryValidationErrors: document.getElementById(
+        "summaryValidationErrors"
+    ),
+
     resultFields: document.getElementById(
         "resultFields"
     ),
@@ -468,6 +484,45 @@ function renderValidationErrors(errors) {
     );
 
     elements.validationErrors.appendChild(box);
+}
+
+
+function renderSummaryValidation(summaryValidation) {
+    const result = summaryValidation || {
+        valid: true,
+        errors: {}
+    };
+    const entries = Object.entries(result.errors || {});
+
+    elements.summaryValidationBadge.textContent = result.valid
+        ? "SUMMARY VALID"
+        : "SUMMARY INVALID";
+    elements.summaryValidationBadge.style.background = result.valid
+        ? "#f0fdf4"
+        : "#fef2f2";
+    elements.summaryValidationBadge.style.color = result.valid
+        ? "#15803d"
+        : "#b91c1c";
+    elements.summaryValidationSummary.textContent = result.valid
+        ? "Обобщаващите проверки са успешни."
+        : "Има несъответствия между collection стойности и scalar полета.";
+    elements.summaryValidationErrors.replaceChildren();
+
+    if (!entries.length) return;
+
+    const list = document.createElement("ul");
+    for (const [errorPath, messages] of entries) {
+        const targetField = errorPath.startsWith("_summary.")
+            ? errorPath.slice("_summary.".length)
+            : errorPath;
+        for (const message of messages) {
+            const item = document.createElement("li");
+            item.textContent = `${targetField}: ${message}`;
+            list.appendChild(item);
+        }
+    }
+    elements.summaryValidationErrors.style.color = "#b91c1c";
+    elements.summaryValidationErrors.appendChild(list);
 }
 
 
@@ -998,6 +1053,9 @@ function renderResult(body) {
 
     renderValidationErrors(
         validation.errors
+    );
+    renderSummaryValidation(
+        body.summary_validation
     );
 
     renderFields(
