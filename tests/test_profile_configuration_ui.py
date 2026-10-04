@@ -563,3 +563,182 @@ def test_configuration_browser_adds_profile_collection(
         "default_profile"
     ] == "telecom_a1"
     assert console_errors == []
+
+
+def test_configuration_browser_adds_profile_collection_field(
+    live_server_url,
+):
+    config_body = {
+        "document_types": {
+            "invoice": {
+                "default_profile": "telecom_a1",
+                "common_fields": [],
+                "profiles": {
+                    "telecom_a1": {
+                        "fields": [],
+                        "collections": {},
+                        "summary_validations": [],
+                    },
+                    "electricity_electrohold": {
+                        "fields": [],
+                        "collections": {
+                            "services": {
+                                "cardinality": "one_or_more",
+                                "fields": [],
+                                "item_validations": [],
+                                "start_pattern": "Service start",
+                            }
+                        },
+                        "summary_validations": [],
+                    },
+                },
+                "collections": {},
+            }
+        },
+        "resolved_document_types": {},
+        "document_type_metadata": {
+            "invoice": {
+                "status": "ready",
+                "ready": True,
+                "field_count": 0,
+            }
+        },
+    }
+    mutation_requests = []
+    console_errors = []
+
+    with sync_playwright() as playwright:
+        executable = Path(playwright.chromium.executable_path)
+        if not executable.exists():
+            pytest.skip("Playwright Chromium is not installed")
+
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(
+            viewport={"width": 1280, "height": 1100}
+        )
+        page.on(
+            "console",
+            lambda message: (
+                console_errors.append(message.text)
+                if message.type == "error"
+                else None
+            ),
+        )
+        page.route(
+            "**/api/v1/auth/config",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"enabled": False}),
+            ),
+        )
+
+        def handle_config(route):
+            if route.request.method == "GET":
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps(config_body),
+                )
+                return
+
+            request_body = json.loads(route.request.post_data)
+            mutation_requests.append(
+                {
+                    "method": route.request.method,
+                    "url": route.request.url,
+                    "body": request_body,
+                }
+            )
+            config_body["document_types"]["invoice"]["profiles"][
+                "electricity_electrohold"
+            ]["collections"]["services"]["fields"].append(
+                request_body["field"]
+            )
+            route.fulfill(
+                status=201,
+                content_type="application/json",
+                body=json.dumps(
+                    {
+                        "status": "ok",
+                        "message": "Collection field added",
+                    }
+                ),
+            )
+
+        page.route(
+            "**/api/v1/config/document-types",
+            handle_config,
+        )
+        page.route(
+            "**/api/v1/config/document-types/**",
+            handle_config,
+        )
+        page.goto(
+            f"{live_server_url}/ui/index.html",
+            wait_until="networkidle",
+        )
+
+        page.locator("#profileSelector").select_option(
+            "electricity_electrohold"
+        )
+        page.locator("#fieldScope").select_option("profile")
+        expect(page.locator("#collectionList")).to_contain_text(
+            "services"
+        )
+        expect(page.locator("#collectionList")).to_contain_text(
+            "Колекцията още няма полета."
+        )
+
+        page.get_by_role(
+            "button",
+            name="Добави поле в колекцията",
+        ).click()
+        expect(page.get_by_role("dialog")).to_be_visible()
+        expect(page.locator("#fieldName")).to_be_focused()
+        page.locator("#fieldName").fill("amount")
+        page.locator("#fieldType").select_option("regex")
+        page.locator("#fieldLabelBg").fill("Сума")
+        page.locator("#fieldLabelEn").fill("Amount")
+        page.locator("#fieldOccurrence").select_option("first")
+        page.locator("#fieldPrimaryValue").fill(
+            r"Amount: ([0-9.,]+)"
+        )
+        page.locator("#confirmModalButton").click()
+
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        expect(page.locator("#collectionList")).to_contain_text(
+            "amount · regex"
+        )
+        expect(page.locator("#collectionList")).not_to_contain_text(
+            "Колекцията още няма полета."
+        )
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Полето 'amount' е добавено."
+        )
+
+        browser.close()
+
+    assert len(mutation_requests) == 1
+    assert mutation_requests[0]["method"] == "POST"
+    assert mutation_requests[0]["url"].endswith(
+        "/api/v1/config/document-types/invoice/profiles/"
+        "electricity_electrohold/collections/services/fields"
+    )
+    assert mutation_requests[0]["body"] == {
+        "field": {
+            "name": "amount",
+            "type": "regex",
+            "label": {
+                "bg": "Сума",
+                "en": "Amount",
+            },
+            "rule": r"Amount: ([0-9.,]+)",
+            "occurrence": "first",
+            "validation": [],
+        }
+    }
+    assert config_body["document_types"]["invoice"][
+        "default_profile"
+    ] == "telecom_a1"
+    assert console_errors == []
