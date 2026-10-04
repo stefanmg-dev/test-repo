@@ -157,6 +157,48 @@ def test_extraction_browser_renders_evidence_and_validation_scopes(
             },
         },
     }
+    accepted_body = {
+        **extraction_body,
+        "processing_status": "accepted",
+        "llm_values": {},
+        "final_values": {"invoice_number": "FINAL-456"},
+        "field_evidence": {
+            "invoice_number": {
+                "method": "regex",
+                "matched": True,
+                "normalized": True,
+                "occurrence": "last",
+            }
+        },
+        "collections": {
+            "services": [{"amount": "20.00"}],
+        },
+        "collection_evidence": {
+            "services": [
+                {
+                    "amount": {
+                        "method": "regex",
+                        "matched": True,
+                        "normalized": True,
+                        "occurrence": "last",
+                    }
+                }
+            ],
+        },
+        "collection_validation": {
+            "valid": True,
+            "errors": {},
+        },
+        "summary_validation": {
+            "valid": True,
+            "errors": {},
+        },
+        "validation": {
+            "valid": True,
+            "errors": {},
+        },
+    }
+    extraction_bodies = [extraction_body, accepted_body]
 
     with sync_playwright() as playwright:
         executable = Path(playwright.chromium.executable_path)
@@ -200,10 +242,13 @@ def test_extraction_browser_renders_evidence_and_validation_scopes(
 
         def handle_extraction(route):
             extraction_requests.append(route.request.method)
+            response_body = extraction_bodies[
+                len(extraction_requests) - 1
+            ]
             route.fulfill(
                 status=200,
                 content_type="application/json",
-                body=json.dumps(extraction_body),
+                body=json.dumps(response_body),
             )
 
         page.route("**/extract-document", handle_extraction)
@@ -252,6 +297,48 @@ def test_extraction_browser_renders_evidence_and_validation_scopes(
             "electricity_electrohold"
         )
 
-        assert extraction_requests == ["POST"]
+        page.locator("#documentFile").set_input_files(
+            {
+                "name": "synthetic-second.pdf",
+                "mimeType": "application/pdf",
+                "buffer": b"synthetic-second-pdf",
+            }
+        )
+        page.locator("#extractButton").click()
+
+        expect(page.locator("#processingStatusBadge")).to_have_text(
+            "ACCEPTED"
+        )
+        expect(page.locator("#validationBadge")).to_have_text(
+            "VALIDATION VALID"
+        )
+        expect(page.locator("#resultFields")).to_contain_text(
+            "FINAL-456"
+        )
+        expect(page.locator("#resultFields")).not_to_contain_text(
+            "FINAL-123"
+        )
+        expect(page.locator("#resultFields")).not_to_contain_text(
+            "LLM-123"
+        )
+        expect(page.locator("#validationErrors")).to_be_empty()
+        expect(page.locator("#resultCollections")).to_contain_text(
+            "20.00"
+        )
+        expect(page.locator("#resultCollections")).not_to_contain_text(
+            "10.00"
+        )
+        expect(page.locator("#resultCollections")).not_to_contain_text(
+            "Amount requires review"
+        )
+        expect(page.locator("#resultCollections .field-card")).to_have_count(
+            1
+        )
+        expect(page.locator("#summaryValidationBadge")).to_have_text(
+            "SUMMARY VALID"
+        )
+        expect(page.locator("#summaryValidationErrors")).to_be_empty()
+
+        assert extraction_requests == ["POST", "POST"]
         assert console_errors == []
         browser.close()
