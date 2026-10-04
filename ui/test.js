@@ -751,21 +751,67 @@ function renderCollections(
                 const errorPath = (
                     `${collectionName}[${itemIndex}].${fieldName}`
                 );
-                const messages = [
+                const fieldErrors = [
                     ...(validationErrors?.[errorPath] || []),
                 ];
-                const evidenceText = formatCollectionEvidence(evidence);
-                if (evidenceText) {
-                    messages.push(evidenceText);
+
+                if (evidence) {
+                    const evidenceDetails = document.createElement("div");
+                    evidenceDetails.className = (
+                        "field-details collection-evidence-details"
+                    );
+
+                    const addEvidenceDetail = (labelText, valueText) => {
+                        const evidenceDetail = document.createElement("div");
+                        evidenceDetail.className = "field-detail";
+                        const evidenceLabel = document.createElement("span");
+                        evidenceLabel.className = "field-detail-label";
+                        evidenceLabel.textContent = labelText;
+                        const evidenceValue = document.createElement("span");
+                        evidenceValue.className = "field-detail-value";
+                        evidenceValue.textContent = valueText;
+                        evidenceDetail.append(evidenceLabel, evidenceValue);
+                        evidenceDetails.appendChild(evidenceDetail);
+                    };
+
+                    addEvidenceDetail(
+                        "Extraction method",
+                        evidence.method || "unknown"
+                    );
+                    addEvidenceDetail(
+                        "Match status",
+                        evidence.matched ? "Съвпадение" : "Няма съвпадение"
+                    );
+                    addEvidenceDetail(
+                        "Normalization",
+                        evidence.normalized ? "Приложена" : "Не е приложена"
+                    );
+                    if (evidence.occurrence) {
+                        addEvidenceDetail("Occurrence", evidence.occurrence);
+                    }
+                    if (evidence.rule_index !== undefined) {
+                        addEvidenceDetail(
+                            "Rule",
+                            String(evidence.rule_index + 1)
+                        );
+                    }
+                    if (evidence.failure_reason) {
+                        addEvidenceDetail(
+                            "Failure reason",
+                            evidence.failure_reason
+                        );
+                        evidenceDetails.style.borderColor = "#fecaca";
+                    }
+                    itemBox.appendChild(evidenceDetails);
                 }
 
-                if (messages.length) {
+                if (fieldErrors.length) {
                     const diagnostics = document.createElement("div");
                     diagnostics.className = "field-validation-errors";
-                    diagnostics.textContent = messages.join("; ");
-                    diagnostics.style.color = validationErrors?.[errorPath]
-                        ? "#b91c1c"
-                        : "#475569";
+                    diagnostics.textContent = (
+                        `Validation: ${fieldErrors.join("; ")}`
+                    );
+                    diagnostics.style.color = "#b91c1c";
                     itemBox.appendChild(diagnostics);
                 }
             }
