@@ -373,4 +373,5 @@ def extract_document_data(
         "collection_validation": (
             combined_collection_validation
         ),
+        "summary_validation": summary_validation,
     }

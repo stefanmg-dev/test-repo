@@ -4693,6 +4693,10 @@
             "$ref": "#/components/schemas/ExtractionValidationModel",
             "description": "Validation result for extracted collection items and collection summary rules."
           },
+          "summary_validation": {
+            "$ref": "#/components/schemas/ExtractionValidationModel",
+            "description": "Validation result for profile collection summary rules. Collection validation remains combined for backward compatibility."
+          },
           "validation": {
             "$ref": "#/components/schemas/ExtractionValidationModel",
             "description": "Validation result for final scalar extraction values."

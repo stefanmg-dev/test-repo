@@ -99,6 +99,10 @@ def test_extracts_fields_and_resolved_collections():
             "valid": True,
             "errors": {},
         },
+        "summary_validation": {
+            "valid": True,
+            "errors": {},
+        },
     }
 
 

@@ -502,6 +502,18 @@ class ExtractionResponseModel(BaseModel):
         ),
     )
 
+    summary_validation: ExtractionValidationModel = Field(
+        default_factory=lambda: ExtractionValidationModel(
+            valid=True,
+            errors={},
+        ),
+        description=(
+            "Validation result for profile collection summary rules. "
+            "Collection validation remains combined for backward "
+            "compatibility."
+        ),
+    )
+
     validation: ExtractionValidationModel = Field(
         description=(
             "Validation result for final scalar extraction values."

@@ -402,6 +402,13 @@ async def extract_document(
                 "errors": {},
             },
         )
+        summary_validation = engine_result.get(
+            "summary_validation",
+            {
+                "valid": True,
+                "errors": {},
+            },
+        )
         step_started_at = perf_counter()
         try:
             validation = validate_result(
@@ -437,6 +444,7 @@ async def extract_document(
                 {},
             ),
             "collection_validation": collection_validation,
+            "summary_validation": summary_validation,
             "validation": validation,
         }
         processing_run_service.complete_run(
@@ -464,6 +472,7 @@ async def extract_document(
             validation={
                 "fields": validation,
                 "collections": collection_validation,
+                "summary": summary_validation,
             },
             configuration_hash=configuration_hash,
             configuration_snapshot=configuration_snapshot,

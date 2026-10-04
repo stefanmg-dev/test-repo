@@ -207,6 +207,10 @@ def test_extract_document_persists_and_history_returns_run(
                 "valid": True,
                 "errors": {},
             },
+            "summary": {
+                "valid": True,
+                "errors": {},
+            },
         }
         assert history_body["quality"]["status"] == (
             "accepted"

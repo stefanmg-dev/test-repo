@@ -168,6 +168,7 @@ def test_successful_extraction_completes_processing_run(
     assert completed["validation"] == {
         "fields": {"valid": True, "errors": {}},
         "collections": {"valid": True, "errors": {}},
+        "summary": {"valid": True, "errors": {}},
     }
     assert service.failed == []
 
