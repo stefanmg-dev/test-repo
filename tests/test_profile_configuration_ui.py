@@ -1369,3 +1369,173 @@ def test_configuration_browser_edits_profile_collection(
         "default_profile"
     ] == "telecom_a1"
     assert console_errors == []
+
+
+def test_configuration_browser_deletes_profile_collection(
+    live_server_url,
+):
+    config_body = {
+        "document_types": {
+            "invoice": {
+                "default_profile": "telecom_a1",
+                "common_fields": [],
+                "profiles": {
+                    "telecom_a1": {
+                        "fields": [],
+                        "collections": {},
+                        "summary_validations": [],
+                    },
+                    "electricity_electrohold": {
+                        "fields": [],
+                        "collections": {
+                            "services": {
+                                "cardinality": "one_or_more",
+                                "fields": [],
+                                "item_validations": [],
+                                "start_pattern": "Service start",
+                            }
+                        },
+                        "summary_validations": [],
+                    },
+                },
+                "collections": {},
+            }
+        },
+        "resolved_document_types": {},
+        "document_type_metadata": {
+            "invoice": {
+                "status": "ready",
+                "ready": True,
+                "field_count": 0,
+            }
+        },
+    }
+    delete_requests = []
+    console_errors = []
+
+    with sync_playwright() as playwright:
+        executable = Path(playwright.chromium.executable_path)
+        if not executable.exists():
+            pytest.skip("Playwright Chromium is not installed")
+
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(
+            viewport={"width": 1280, "height": 1000}
+        )
+        page.on(
+            "console",
+            lambda message: (
+                console_errors.append(message.text)
+                if message.type == "error"
+                else None
+            ),
+        )
+        page.route(
+            "**/api/v1/auth/config",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"enabled": False}),
+            ),
+        )
+
+        def handle_config(route):
+            if route.request.method == "GET":
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps(config_body),
+                )
+                return
+
+            assert route.request.method == "DELETE"
+            delete_requests.append(route.request.url)
+            del config_body["document_types"]["invoice"]["profiles"][
+                "electricity_electrohold"
+            ]["collections"]["services"]
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(
+                    {
+                        "status": "ok",
+                        "message": "Collection deleted",
+                    }
+                ),
+            )
+
+        page.route(
+            "**/api/v1/config/document-types",
+            handle_config,
+        )
+        page.route(
+            "**/api/v1/config/document-types/**",
+            handle_config,
+        )
+        page.goto(
+            f"{live_server_url}/ui/index.html",
+            wait_until="networkidle",
+        )
+
+        page.locator("#profileSelector").select_option(
+            "electricity_electrohold"
+        )
+        page.locator("#fieldScope").select_option("profile")
+        collection_card = page.locator(
+            "#collectionList .field-card"
+        ).filter(has_text="services")
+        expect(collection_card).to_have_count(1)
+
+        collection_card.get_by_role(
+            "button",
+            name="Изтрий",
+            exact=True,
+        ).click()
+        expect(page.get_by_role("dialog")).to_be_visible()
+        expect(page.locator("#modalTitle")).to_have_text(
+            "Изтриване на колекция"
+        )
+        expect(page.locator("#modalBody")).to_contain_text(
+            "Изтриване на колекцията 'services'"
+        )
+        page.locator("#cancelModalButton").click()
+
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        expect(collection_card).to_have_count(1)
+        assert delete_requests == []
+
+        collection_card.get_by_role(
+            "button",
+            name="Изтрий",
+            exact=True,
+        ).click()
+        expect(page.get_by_role("dialog")).to_be_visible()
+        expect(page.locator("#confirmModalButton")).to_have_text(
+            "Изтрий"
+        )
+        page.locator("#confirmModalButton").click()
+
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        expect(page.locator("#collectionList .field-card")).to_have_count(0)
+        expect(page.locator("#collectionList")).to_contain_text(
+            "Този тип документ още няма колекции."
+        )
+        expect(page.locator("#profileSelector")).to_have_value(
+            "electricity_electrohold"
+        )
+        expect(page.locator("#fieldScope")).to_have_value("profile")
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Колекцията 'services' е изтрита."
+        )
+
+        browser.close()
+
+    assert len(delete_requests) == 1
+    assert delete_requests[0].endswith(
+        "/api/v1/config/document-types/invoice/profiles/"
+        "electricity_electrohold/collections/services"
+    )
+    assert config_body["document_types"]["invoice"][
+        "default_profile"
+    ] == "telecom_a1"
+    assert console_errors == []
