@@ -471,7 +471,8 @@ function renderFields(
     documentType,
     values,
     errors,
-    evidence
+    evidence,
+    llmValues
 ) {
     elements.resultFields.replaceChildren();
 
@@ -525,7 +526,22 @@ function renderFields(
 
         const valueElement =
             fragment.querySelector(
-                ".field-detail-value"
+                ".field-final-value"
+            );
+
+        const llmValueElement =
+            fragment.querySelector(
+                ".field-llm-value"
+            );
+
+        const llmComparison =
+            fragment.querySelector(
+                ".field-llm-comparison"
+            );
+
+        const sourceMethodElement =
+            fragment.querySelector(
+                ".field-source-method"
             );
 
         const errorContainer =
@@ -541,6 +557,14 @@ function renderFields(
         const fieldEvidence =
             evidence?.[fieldName];
 
+        const hasLlmValue = Object.prototype.hasOwnProperty.call(
+            llmValues || {},
+            fieldName
+        );
+        const llmValue = hasLlmValue
+            ? llmValues[fieldName]
+            : undefined;
+
         title.textContent = fieldLabel(
             documentType,
             fieldName
@@ -551,6 +575,16 @@ function renderFields(
         valueElement.textContent = formatValue(
             value
         );
+
+        llmValueElement.textContent = hasLlmValue
+            ? formatValue(llmValue)
+            : "Няма LLM стойност";
+        llmComparison.classList.toggle(
+            "hidden",
+            !hasLlmValue
+        );
+        sourceMethodElement.textContent =
+            fieldEvidence?.method || "unknown";
 
         if (
             value === null ||
@@ -890,7 +924,8 @@ function renderResult(body) {
         body.document_type,
         values,
         validation.errors || {},
-        body.field_evidence || {}
+        body.field_evidence || {},
+        body.llm_values || {}
     );
 
     renderCollections(
