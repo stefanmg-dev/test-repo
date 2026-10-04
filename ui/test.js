@@ -70,6 +70,10 @@ const elements = {
         "resultSummary"
     ),
 
+    processingStatusBadge: document.getElementById(
+        "processingStatusBadge"
+    ),
+
     validationBadge: document.getElementById(
         "validationBadge"
     ),
@@ -918,8 +922,38 @@ function renderInputQuality(quality) {
 }
 
 
+function renderProcessingStatus(status) {
+    const styles = {
+        accepted: {
+            label: "ACCEPTED",
+            background: "#f0fdf4",
+            color: "#15803d"
+        },
+        review: {
+            label: "REVIEW",
+            background: "#fff7ed",
+            color: "#c2410c"
+        },
+        invalid: {
+            label: "INVALID",
+            background: "#fef2f2",
+            color: "#b91c1c"
+        }
+    };
+    const selected = styles[status] || {
+        label: "UNKNOWN",
+        background: "#f8fafc",
+        color: "#475569"
+    };
+    elements.processingStatusBadge.textContent = selected.label;
+    elements.processingStatusBadge.style.background = selected.background;
+    elements.processingStatusBadge.style.color = selected.color;
+}
+
+
 function renderResult(body) {
     renderInputQuality(body.quality);
+    renderProcessingStatus(body.processing_status);
 
     const values =
         body.final_values || {};
@@ -949,8 +983,8 @@ function renderResult(body) {
 
     elements.validationBadge.textContent =
         validation.valid
-            ? "VALID"
-            : "INVALID";
+            ? "VALIDATION VALID"
+            : "VALIDATION INVALID";
 
     elements.validationBadge.style.background =
         validation.valid
@@ -1024,7 +1058,7 @@ function processingStatusMessage(status) {
                 "Документът е извлечен, "
                 + "но изисква човешка проверка."
             ),
-            type: "error"
+            type: "warning"
         };
     }
 
