@@ -2284,3 +2284,262 @@ def test_configuration_browser_edits_and_deletes_item_validation(
         "default_profile"
     ] == "telecom_a1"
     assert console_errors == []
+
+
+def test_configuration_browser_edits_and_deletes_summary_validation(
+    live_server_url,
+):
+    original_validation = {
+        "type": "collection_sum_equals_field",
+        "collection": "services",
+        "item_field": "amount",
+        "target_field": "total_amount",
+        "message": "Original summary message",
+    }
+    retained_validation = {
+        "type": "collection_sum_equals_field",
+        "collection": "taxes",
+        "item_field": "tax_amount",
+        "target_field": "tax_total",
+        "message": "Retained summary message",
+    }
+    config_body = {
+        "document_types": {
+            "invoice": {
+                "default_profile": "telecom_a1",
+                "common_fields": [],
+                "profiles": {
+                    "telecom_a1": {
+                        "fields": [],
+                        "collections": {},
+                        "summary_validations": [],
+                    },
+                    "electricity_electrohold": {
+                        "fields": [
+                            {"name": "total_amount", "type": "regex"},
+                            {"name": "tax_total", "type": "regex"},
+                        ],
+                        "collections": {
+                            "services": {
+                                "cardinality": "one_or_more",
+                                "fields": [
+                                    {"name": "amount", "type": "regex"},
+                                ],
+                                "item_validations": [],
+                            },
+                            "taxes": {
+                                "cardinality": "one_or_more",
+                                "fields": [
+                                    {"name": "tax_amount", "type": "regex"},
+                                ],
+                                "item_validations": [],
+                            },
+                        },
+                        "summary_validations": [
+                            original_validation,
+                            retained_validation,
+                        ],
+                    },
+                },
+                "collections": {},
+            }
+        },
+        "resolved_document_types": {},
+        "document_type_metadata": {
+            "invoice": {
+                "status": "ready",
+                "ready": True,
+                "field_count": 2,
+            }
+        },
+    }
+    mutation_requests = []
+    console_errors = []
+
+    with sync_playwright() as playwright:
+        executable = Path(playwright.chromium.executable_path)
+        if not executable.exists():
+            pytest.skip("Playwright Chromium is not installed")
+
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1280, "height": 1200})
+        page.on(
+            "console",
+            lambda message: (
+                console_errors.append(message.text)
+                if message.type == "error"
+                else None
+            ),
+        )
+        page.route(
+            "**/api/v1/auth/config",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"enabled": False}),
+            ),
+        )
+
+        def handle_config(route):
+            if route.request.method == "GET":
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps(config_body),
+                )
+                return
+
+            mutation_requests.append(
+                {
+                    "method": route.request.method,
+                    "url": route.request.url,
+                    "body": (
+                        json.loads(route.request.post_data)
+                        if route.request.post_data
+                        else None
+                    ),
+                }
+            )
+            validations = config_body["document_types"]["invoice"][
+                "profiles"
+            ]["electricity_electrohold"]["summary_validations"]
+            if route.request.method == "PUT":
+                validations[0] = mutation_requests[-1]["body"]["validation"]
+                status = 200
+            else:
+                assert route.request.method == "DELETE"
+                validations.pop(0)
+                status = 204
+            route.fulfill(
+                status=status,
+                content_type="application/json",
+                body=(json.dumps({"status": "ok"}) if status != 204 else ""),
+            )
+
+        page.route("**/api/v1/config/document-types", handle_config)
+        page.route("**/api/v1/config/document-types/**", handle_config)
+        page.goto(
+            f"{live_server_url}/ui/index.html",
+            wait_until="networkidle",
+        )
+
+        page.locator("#profileSelector").select_option(
+            "electricity_electrohold"
+        )
+        page.locator("#fieldScope").select_option("profile")
+        original_card = page.locator(
+            "#summaryValidationList .field-card"
+        ).filter(has_text="services.amount = total_amount")
+        retained_card = page.locator(
+            "#summaryValidationList .field-card"
+        ).filter(has_text="taxes.tax_amount = tax_total")
+        expect(original_card).to_have_count(1)
+        expect(retained_card).to_have_count(1)
+
+        original_card.get_by_role(
+            "button", name="Редактирай", exact=True
+        ).click()
+        expect(page.get_by_role("dialog")).to_be_visible()
+        expect(page.locator("#summaryValidationCollection")).to_have_value(
+            "services"
+        )
+        expect(page.locator("#summaryValidationItemField")).to_have_value(
+            "amount"
+        )
+        expect(page.locator("#summaryValidationTargetField")).to_have_value(
+            "total_amount"
+        )
+        expect(page.locator("#summaryValidationMessage")).to_have_value(
+            "Original summary message"
+        )
+        page.locator("#summaryValidationCollection").select_option("taxes")
+        expect(page.locator("#summaryValidationItemField")).to_have_value(
+            "tax_amount"
+        )
+        page.locator("#summaryValidationTargetField").select_option(
+            "tax_total"
+        )
+        page.locator("#summaryValidationMessage").fill(
+            "Updated summary message"
+        )
+        page.locator("#confirmModalButton").click()
+
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        updated_cards = page.locator(
+            "#summaryValidationList .field-card"
+        ).filter(has_text="taxes.tax_amount = tax_total")
+        expect(updated_cards).to_have_count(2)
+        expect(page.locator("#summaryValidationList")).not_to_contain_text(
+            "services.amount = total_amount"
+        )
+        expect(page.locator("#summaryValidationList")).to_contain_text(
+            "Updated summary message"
+        )
+        expect(page.locator("#summaryValidationList")).to_contain_text(
+            "Retained summary message"
+        )
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Summary validation е актуализирана."
+        )
+
+        edited_card = page.locator(
+            "#summaryValidationList .field-card"
+        ).filter(has_text="Updated summary message")
+        expect(edited_card).to_have_count(1)
+        edited_card.get_by_role("button", name="Изтрий", exact=True).click()
+        expect(page.get_by_role("dialog")).to_be_visible()
+        page.locator("#cancelModalButton").click()
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        expect(edited_card).to_have_count(1)
+        assert len(mutation_requests) == 1
+
+        edited_card.get_by_role("button", name="Изтрий", exact=True).click()
+        page.locator("#confirmModalButton").click()
+
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        expect(page.locator("#summaryValidationList .field-card")).to_have_count(1)
+        expect(page.locator("#summaryValidationList")).not_to_contain_text(
+            "Updated summary message"
+        )
+        expect(page.locator("#summaryValidationList")).to_contain_text(
+            "Retained summary message"
+        )
+        expect(page.locator("#profileSelector")).to_have_value(
+            "electricity_electrohold"
+        )
+        expect(page.locator("#fieldScope")).to_have_value("profile")
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Summary validation е изтрита."
+        )
+
+        browser.close()
+
+    assert [request["method"] for request in mutation_requests] == [
+        "PUT",
+        "DELETE",
+    ]
+    expected_endpoint = (
+        "/api/v1/config/document-types/invoice/profiles/"
+        "electricity_electrohold/summary-validations/0"
+    )
+    assert all(
+        request["url"].endswith(expected_endpoint)
+        for request in mutation_requests
+    )
+    assert mutation_requests[0]["body"] == {
+        "validation": {
+            "type": "collection_sum_equals_field",
+            "collection": "taxes",
+            "item_field": "tax_amount",
+            "target_field": "tax_total",
+            "message": "Updated summary message",
+        }
+    }
+    assert mutation_requests[1]["body"] is None
+    assert config_body["document_types"]["invoice"]["profiles"][
+        "electricity_electrohold"
+    ]["summary_validations"] == [retained_validation]
+    assert config_body["document_types"]["invoice"][
+        "default_profile"
+    ] == "telecom_a1"
+    assert console_errors == []
