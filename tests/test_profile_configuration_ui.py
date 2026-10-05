@@ -1777,3 +1777,229 @@ def test_configuration_browser_retries_failed_collection_edit(
     ] == "telecom_a1"
     assert len(console_errors) == 1
     assert "409 (Conflict)" in console_errors[0]
+
+
+def test_configuration_browser_edits_and_deletes_profile_collection_field(
+    live_server_url,
+):
+    amount_field = {
+        "name": "amount",
+        "type": "regex",
+        "label": {"bg": "Сума", "en": "Amount"},
+        "rule": "Amount: ([0-9.,]+)",
+        "occurrence": "first",
+        "validation": [],
+    }
+    tax_field = {
+        "name": "tax",
+        "type": "regex",
+        "label": {"bg": "Данък", "en": "Tax"},
+        "rule": "Tax: ([0-9.,]+)",
+        "occurrence": "first",
+        "validation": [],
+    }
+    config_body = {
+        "document_types": {
+            "invoice": {
+                "default_profile": "telecom_a1",
+                "common_fields": [],
+                "profiles": {
+                    "telecom_a1": {
+                        "fields": [],
+                        "collections": {},
+                        "summary_validations": [],
+                    },
+                    "electricity_electrohold": {
+                        "fields": [],
+                        "collections": {
+                            "services": {
+                                "cardinality": "one_or_more",
+                                "fields": [amount_field, tax_field],
+                                "item_validations": [],
+                            }
+                        },
+                        "summary_validations": [],
+                    },
+                },
+                "collections": {},
+            }
+        },
+        "resolved_document_types": {},
+        "document_type_metadata": {
+            "invoice": {
+                "status": "ready",
+                "ready": True,
+                "field_count": 0,
+            }
+        },
+    }
+    mutation_requests = []
+    console_errors = []
+
+    with sync_playwright() as playwright:
+        executable = Path(playwright.chromium.executable_path)
+        if not executable.exists():
+            pytest.skip("Playwright Chromium is not installed")
+
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1280, "height": 1200})
+        page.on(
+            "console",
+            lambda message: (
+                console_errors.append(message.text)
+                if message.type == "error"
+                else None
+            ),
+        )
+        page.route(
+            "**/api/v1/auth/config",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"enabled": False}),
+            ),
+        )
+
+        def handle_config(route):
+            if route.request.method == "GET":
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps(config_body),
+                )
+                return
+
+            mutation_requests.append(
+                {
+                    "method": route.request.method,
+                    "url": route.request.url,
+                    "body": (
+                        json.loads(route.request.post_data)
+                        if route.request.post_data
+                        else None
+                    ),
+                }
+            )
+            fields = config_body["document_types"]["invoice"]["profiles"][
+                "electricity_electrohold"
+            ]["collections"]["services"]["fields"]
+            if route.request.method == "PUT":
+                updated_field = mutation_requests[-1]["body"]["field"]
+                fields[0] = updated_field
+                status = 200
+            else:
+                assert route.request.method == "DELETE"
+                fields[:] = [field for field in fields if field["name"] != "amount"]
+                status = 204
+            route.fulfill(
+                status=status,
+                content_type="application/json",
+                body=(
+                    json.dumps({"status": "ok"})
+                    if status != 204
+                    else ""
+                ),
+            )
+
+        page.route("**/api/v1/config/document-types", handle_config)
+        page.route("**/api/v1/config/document-types/**", handle_config)
+        page.goto(
+            f"{live_server_url}/ui/index.html",
+            wait_until="networkidle",
+        )
+
+        page.locator("#profileSelector").select_option(
+            "electricity_electrohold"
+        )
+        page.locator("#fieldScope").select_option("profile")
+        collection_card = page.locator("#collectionList .field-card").filter(
+            has_text="services"
+        )
+        expect(collection_card).to_have_count(1)
+        expect(collection_card).to_contain_text("amount · regex")
+        expect(collection_card).to_contain_text("tax · regex")
+
+        amount_row = collection_card.locator(".field-detail").filter(
+            has_text="amount · regex"
+        )
+        amount_row.get_by_role("button", name="Редактирай поле").click()
+        expect(page.get_by_role("dialog")).to_be_visible()
+        page.locator("#fieldPrimaryValue").fill(
+            "Updated amount: ([0-9.,]+)"
+        )
+        page.locator("#fieldOccurrence").select_option("last")
+        page.locator("#confirmModalButton").click()
+
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        collection_card = page.locator("#collectionList .field-card").filter(
+            has_text="services"
+        )
+        expect(collection_card).to_have_count(1)
+        expect(collection_card.locator(".field-detail").filter(
+            has_text="amount · regex"
+        )).to_have_count(1)
+        expect(collection_card).to_contain_text("tax · regex")
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Полето 'amount' е актуализирано."
+        )
+
+        amount_row = collection_card.locator(".field-detail").filter(
+            has_text="amount · regex"
+        )
+        amount_row.get_by_role("button", name="Изтрий поле").click()
+        expect(page.get_by_role("dialog")).to_be_visible()
+        page.locator("#cancelModalButton").click()
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        expect(collection_card).to_contain_text("amount · regex")
+        assert len(mutation_requests) == 1
+
+        amount_row.get_by_role("button", name="Изтрий поле").click()
+        page.locator("#confirmModalButton").click()
+
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        collection_card = page.locator("#collectionList .field-card").filter(
+            has_text="services"
+        )
+        expect(collection_card).to_have_count(1)
+        expect(collection_card).not_to_contain_text("amount · regex")
+        expect(collection_card).to_contain_text("tax · regex")
+        expect(collection_card.locator(".field-detail").filter(
+            has_text="tax · regex"
+        )).to_have_count(1)
+        expect(page.locator("#profileSelector")).to_have_value(
+            "electricity_electrohold"
+        )
+        expect(page.locator("#fieldScope")).to_have_value("profile")
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Полето 'amount' е изтрито."
+        )
+
+        browser.close()
+
+    assert [request["method"] for request in mutation_requests] == [
+        "PUT",
+        "DELETE",
+    ]
+    expected_endpoint = (
+        "/api/v1/config/document-types/invoice/profiles/"
+        "electricity_electrohold/collections/services/fields/amount"
+    )
+    assert all(
+        request["url"].endswith(expected_endpoint)
+        for request in mutation_requests
+    )
+    assert mutation_requests[0]["body"] == {
+        "field": {
+            **amount_field,
+            "rule": "Updated amount: ([0-9.,]+)",
+            "occurrence": "last",
+        }
+    }
+    assert mutation_requests[1]["body"] is None
+    assert config_body["document_types"]["invoice"]["profiles"][
+        "electricity_electrohold"
+    ]["collections"]["services"]["fields"] == [tax_field]
+    assert config_body["document_types"]["invoice"][
+        "default_profile"
+    ] == "telecom_a1"
+    assert console_errors == []
