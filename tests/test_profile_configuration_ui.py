@@ -2543,3 +2543,217 @@ def test_configuration_browser_edits_and_deletes_summary_validation(
         "default_profile"
     ] == "telecom_a1"
     assert console_errors == []
+
+
+def test_configuration_browser_manages_document_collection(
+    live_server_url,
+):
+    config_body = {
+        "document_types": {
+            "invoice": {
+                "default_profile": "telecom_a1",
+                "common_fields": [],
+                "collections": {},
+                "profiles": {
+                    "telecom_a1": {
+                        "fields": [],
+                        "collections": {
+                            "profile_services": {
+                                "cardinality": "one_or_more",
+                                "fields": [],
+                                "item_validations": [],
+                            }
+                        },
+                        "summary_validations": [],
+                    },
+                    "electricity_electrohold": {
+                        "fields": [],
+                        "collections": {},
+                        "summary_validations": [],
+                    },
+                },
+            }
+        },
+        "resolved_document_types": {},
+        "document_type_metadata": {
+            "invoice": {
+                "status": "ready",
+                "ready": True,
+                "field_count": 0,
+            }
+        },
+    }
+    mutation_requests = []
+    console_errors = []
+
+    with sync_playwright() as playwright:
+        executable = Path(playwright.chromium.executable_path)
+        if not executable.exists():
+            pytest.skip("Playwright Chromium is not installed")
+
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1280, "height": 1100})
+        page.on(
+            "console",
+            lambda message: (
+                console_errors.append(message.text)
+                if message.type == "error"
+                else None
+            ),
+        )
+        page.route(
+            "**/api/v1/auth/config",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"enabled": False}),
+            ),
+        )
+
+        def handle_config(route):
+            if route.request.method == "GET":
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps(config_body),
+                )
+                return
+
+            request_body = (
+                json.loads(route.request.post_data)
+                if route.request.post_data
+                else None
+            )
+            mutation_requests.append(
+                {
+                    "method": route.request.method,
+                    "url": route.request.url,
+                    "body": request_body,
+                }
+            )
+            collections = config_body["document_types"]["invoice"][
+                "collections"
+            ]
+            if route.request.method == "POST":
+                collections["line_items"] = request_body["collection"]
+                status = 201
+            elif route.request.method == "PUT":
+                collections["line_items"] = request_body["collection"]
+                status = 200
+            else:
+                assert route.request.method == "DELETE"
+                del collections["line_items"]
+                status = 204
+            route.fulfill(
+                status=status,
+                content_type="application/json",
+                body=(json.dumps({"status": "ok"}) if status != 204 else ""),
+            )
+
+        page.route("**/api/v1/config/document-types", handle_config)
+        page.route("**/api/v1/config/document-types/**", handle_config)
+        page.goto(
+            f"{live_server_url}/ui/index.html",
+            wait_until="networkidle",
+        )
+
+        expect(page.locator("#fieldScope")).to_have_value("common")
+        expect(page.locator("#collectionList")).to_contain_text(
+            "Този тип документ още няма колекции."
+        )
+        page.locator("#openAddCollectionButton").click()
+        page.locator("#collectionName").fill("line_items")
+        page.locator("#collectionCardinality").select_option("one_or_more")
+        page.locator("#collectionStartPattern").fill("Line item start")
+        page.locator("#confirmModalButton").click()
+
+        document_card = page.locator("#collectionList .field-card").filter(
+            has_text="line_items"
+        )
+        expect(document_card).to_have_count(1)
+        expect(document_card).to_contain_text("one_or_more")
+        expect(document_card).to_contain_text("Line item start")
+        expect(document_card).not_to_contain_text("profile_services")
+
+        document_card.get_by_role(
+            "button", name="Редактирай", exact=True
+        ).click()
+        page.locator("#collectionCardinality").select_option("exactly_one")
+        page.locator("#collectionStartPattern").fill("Updated line start")
+        page.locator("#confirmModalButton").click()
+
+        document_card = page.locator("#collectionList .field-card").filter(
+            has_text="line_items"
+        )
+        expect(document_card).to_have_count(1)
+        expect(document_card).to_contain_text("exactly_one")
+        expect(document_card).to_contain_text("Updated line start")
+        expect(document_card).not_to_contain_text("Line item start")
+
+        document_card.get_by_role(
+            "button", name="Изтрий", exact=True
+        ).click()
+        page.locator("#cancelModalButton").click()
+        expect(document_card).to_have_count(1)
+        assert len(mutation_requests) == 2
+
+        document_card.get_by_role(
+            "button", name="Изтрий", exact=True
+        ).click()
+        page.locator("#confirmModalButton").click()
+
+        expect(page.locator("#collectionList .field-card")).to_have_count(0)
+        expect(page.locator("#collectionList")).to_contain_text(
+            "Този тип документ още няма колекции."
+        )
+        expect(page.locator("#fieldScope")).to_have_value("common")
+        expect(page.locator("#profileSelector")).to_have_value("telecom_a1")
+
+        page.locator("#fieldScope").select_option("profile")
+        expect(page.locator("#collectionList")).to_contain_text(
+            "profile_services"
+        )
+        expect(page.locator("#collectionList")).not_to_contain_text(
+            "line_items"
+        )
+
+        browser.close()
+
+    assert [request["method"] for request in mutation_requests] == [
+        "POST",
+        "PUT",
+        "DELETE",
+    ]
+    expected_endpoint = (
+        "/api/v1/config/document-types/invoice/collections/line_items"
+    )
+    assert all(
+        request["url"].endswith(expected_endpoint)
+        for request in mutation_requests
+    )
+    assert all("/profiles/" not in request["url"] for request in mutation_requests)
+    assert mutation_requests[0]["body"] == {
+        "collection": {
+            "cardinality": "one_or_more",
+            "fields": [],
+            "item_validations": [],
+            "start_pattern": "Line item start",
+        }
+    }
+    assert mutation_requests[1]["body"] == {
+        "collection": {
+            "cardinality": "exactly_one",
+            "fields": [],
+            "item_validations": [],
+            "start_pattern": "Updated line start",
+        }
+    }
+    assert mutation_requests[2]["body"] is None
+    assert config_body["document_types"]["invoice"]["collections"] == {}
+    assert "profile_services" in config_body["document_types"]["invoice"][
+        "profiles"
+    ]["telecom_a1"]["collections"]
+    assert config_body["document_types"]["invoice"][
+        "default_profile"
+    ] == "telecom_a1"
+    assert console_errors == []
