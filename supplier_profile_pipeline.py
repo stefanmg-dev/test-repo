@@ -8,6 +8,7 @@ from profile_selection import (
 )
 from supplier_matcher import (
     match_supplier,
+    match_supplier_from_config,
 )
 
 
@@ -15,6 +16,20 @@ class SupplierProfilePipelineError(
     ValueError
 ):
     pass
+
+
+def has_configured_supplier_matching(
+    document_config: dict,
+) -> bool:
+    profiles = document_config.get("profiles", {})
+    if not isinstance(profiles, dict):
+        return False
+
+    return any(
+        isinstance(profile, dict)
+        and profile.get("matching") is not None
+        for profile in profiles.values()
+    )
 
 
 def resolve_supplier_profile_fields(
@@ -27,9 +42,15 @@ def resolve_supplier_profile_fields(
             "be an object"
         )
 
-    supplier_match = match_supplier(
-        ocr_text
-    )
+    if has_configured_supplier_matching(document_config):
+        supplier_match = match_supplier_from_config(
+            document_config,
+            ocr_text,
+        )
+    else:
+        supplier_match = match_supplier(
+            ocr_text
+        )
 
     selection = select_document_profile(
         document_config=document_config,
