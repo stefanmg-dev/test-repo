@@ -2003,3 +2003,284 @@ def test_configuration_browser_edits_and_deletes_profile_collection_field(
         "default_profile"
     ] == "telecom_a1"
     assert console_errors == []
+
+
+def test_configuration_browser_edits_and_deletes_item_validation(
+    live_server_url,
+):
+    fields = [
+        {
+            "name": "previous_reading",
+            "type": "regex",
+            "rule": "Previous: ([0-9.]+)",
+            "validation": [],
+        },
+        {
+            "name": "current_reading",
+            "type": "regex",
+            "rule": "Current: ([0-9.]+)",
+            "validation": [],
+        },
+        {
+            "name": "difference",
+            "type": "regex",
+            "rule": "Difference: ([0-9.]+)",
+            "validation": [],
+        },
+    ]
+    original_validation = {
+        "type": "difference_equals",
+        "minuend": "current_reading",
+        "subtrahend": "previous_reading",
+        "result": "difference",
+        "message": "Original validation message",
+    }
+    config_body = {
+        "document_types": {
+            "invoice": {
+                "default_profile": "telecom_a1",
+                "common_fields": [],
+                "profiles": {
+                    "telecom_a1": {
+                        "fields": [],
+                        "collections": {},
+                        "summary_validations": [],
+                    },
+                    "electricity_electrohold": {
+                        "fields": [],
+                        "collections": {
+                            "readings": {
+                                "cardinality": "one_or_more",
+                                "fields": fields,
+                                "item_validations": [
+                                    original_validation,
+                                ],
+                            }
+                        },
+                        "summary_validations": [],
+                    },
+                },
+                "collections": {},
+            }
+        },
+        "resolved_document_types": {},
+        "document_type_metadata": {
+            "invoice": {
+                "status": "ready",
+                "ready": True,
+                "field_count": 0,
+            }
+        },
+    }
+    mutation_requests = []
+    console_errors = []
+
+    with sync_playwright() as playwright:
+        executable = Path(playwright.chromium.executable_path)
+        if not executable.exists():
+            pytest.skip("Playwright Chromium is not installed")
+
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(
+            viewport={"width": 1280, "height": 1200}
+        )
+        page.on(
+            "console",
+            lambda message: (
+                console_errors.append(message.text)
+                if message.type == "error"
+                else None
+            ),
+        )
+        page.route(
+            "**/api/v1/auth/config",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"enabled": False}),
+            ),
+        )
+
+        def handle_config(route):
+            if route.request.method == "GET":
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps(config_body),
+                )
+                return
+
+            request_body = json.loads(route.request.post_data)
+            mutation_requests.append(
+                {
+                    "method": route.request.method,
+                    "url": route.request.url,
+                    "body": request_body,
+                }
+            )
+            config_body["document_types"]["invoice"]["profiles"][
+                "electricity_electrohold"
+            ]["collections"]["readings"] = request_body[
+                "collection"
+            ]
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"status": "ok"}),
+            )
+
+        page.route(
+            "**/api/v1/config/document-types",
+            handle_config,
+        )
+        page.route(
+            "**/api/v1/config/document-types/**",
+            handle_config,
+        )
+        page.goto(
+            f"{live_server_url}/ui/index.html",
+            wait_until="networkidle",
+        )
+
+        page.locator("#profileSelector").select_option(
+            "electricity_electrohold"
+        )
+        page.locator("#fieldScope").select_option("profile")
+        collection_card = page.locator(
+            "#collectionList .field-card"
+        ).filter(has_text="readings")
+        validation_row = collection_card.locator(
+            ".field-detail"
+        ).filter(
+            has_text=(
+                "difference = current_reading"
+                " - previous_reading"
+            )
+        )
+        expect(validation_row).to_have_count(1)
+
+        validation_row.get_by_role(
+            "button",
+            name="Редактирай validation",
+        ).click()
+        expect(page.get_by_role("dialog")).to_be_visible()
+        expect(page.locator("#itemValidationMinuend")).to_have_value(
+            "current_reading"
+        )
+        expect(page.locator("#itemValidationSubtrahend")).to_have_value(
+            "previous_reading"
+        )
+        expect(page.locator("#itemValidationResult")).to_have_value(
+            "difference"
+        )
+        expect(page.locator("#itemValidationMessage")).to_have_value(
+            "Original validation message"
+        )
+        page.locator("#itemValidationMinuend").select_option(
+            "difference"
+        )
+        page.locator("#itemValidationSubtrahend").select_option(
+            "previous_reading"
+        )
+        page.locator("#itemValidationResult").select_option(
+            "current_reading"
+        )
+        page.locator("#itemValidationMessage").fill(
+            "Updated validation message"
+        )
+        page.locator("#confirmModalButton").click()
+
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        collection_card = page.locator(
+            "#collectionList .field-card"
+        ).filter(has_text="readings")
+        updated_row = collection_card.locator(
+            ".field-detail"
+        ).filter(
+            has_text=(
+                "current_reading = difference"
+                " - previous_reading"
+            )
+        )
+        expect(updated_row).to_have_count(1)
+        expect(collection_card).not_to_contain_text(
+            "difference = current_reading - previous_reading"
+        )
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Item validation е актуализирана."
+        )
+
+        updated_row.get_by_role(
+            "button",
+            name="Изтрий validation",
+        ).click()
+        expect(page.get_by_role("dialog")).to_be_visible()
+        page.locator("#cancelModalButton").click()
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        expect(updated_row).to_have_count(1)
+        assert len(mutation_requests) == 1
+
+        updated_row.get_by_role(
+            "button",
+            name="Изтрий validation",
+        ).click()
+        page.locator("#confirmModalButton").click()
+
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        collection_card = page.locator(
+            "#collectionList .field-card"
+        ).filter(has_text="readings")
+        expect(collection_card).not_to_contain_text(
+            "current_reading = difference - previous_reading"
+        )
+        expect(collection_card).to_contain_text(
+            "Колекцията още няма item validations."
+        )
+        expect(page.locator("#profileSelector")).to_have_value(
+            "electricity_electrohold"
+        )
+        expect(page.locator("#fieldScope")).to_have_value("profile")
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Item validation е изтрита."
+        )
+
+        browser.close()
+
+    assert [request["method"] for request in mutation_requests] == [
+        "PUT",
+        "PUT",
+    ]
+    expected_endpoint = (
+        "/api/v1/config/document-types/invoice/profiles/"
+        "electricity_electrohold/collections/readings"
+    )
+    assert all(
+        request["url"].endswith(expected_endpoint)
+        for request in mutation_requests
+    )
+    assert mutation_requests[0]["body"] == {
+        "collection": {
+            "cardinality": "one_or_more",
+            "fields": fields,
+            "item_validations": [
+                {
+                    "type": "difference_equals",
+                    "minuend": "difference",
+                    "subtrahend": "previous_reading",
+                    "result": "current_reading",
+                    "message": "Updated validation message",
+                }
+            ],
+        }
+    }
+    assert mutation_requests[1]["body"] == {
+        "collection": {
+            "cardinality": "one_or_more",
+            "fields": fields,
+            "item_validations": [],
+        }
+    }
+    assert config_body["document_types"]["invoice"][
+        "default_profile"
+    ] == "telecom_a1"
+    assert console_errors == []
