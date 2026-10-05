@@ -1539,3 +1539,241 @@ def test_configuration_browser_deletes_profile_collection(
         "default_profile"
     ] == "telecom_a1"
     assert console_errors == []
+
+
+def test_configuration_browser_retries_failed_collection_edit(
+    live_server_url,
+):
+    original_collection = {
+        "cardinality": "one_or_more",
+        "fields": [
+            {
+                "name": "amount",
+                "type": "regex",
+                "rule": "Amount: ([0-9.,]+)",
+                "occurrence": "first",
+                "validation": [],
+            }
+        ],
+        "item_validations": [],
+        "start_pattern": "Original service start",
+    }
+    config_body = {
+        "document_types": {
+            "invoice": {
+                "default_profile": "telecom_a1",
+                "common_fields": [],
+                "profiles": {
+                    "telecom_a1": {
+                        "fields": [],
+                        "collections": {},
+                        "summary_validations": [],
+                    },
+                    "electricity_electrohold": {
+                        "fields": [],
+                        "collections": {
+                            "services": original_collection,
+                        },
+                        "summary_validations": [],
+                    },
+                },
+                "collections": {},
+            }
+        },
+        "resolved_document_types": {},
+        "document_type_metadata": {
+            "invoice": {
+                "status": "ready",
+                "ready": True,
+                "field_count": 0,
+            }
+        },
+    }
+    mutation_requests = []
+    console_errors = []
+
+    with sync_playwright() as playwright:
+        executable = Path(playwright.chromium.executable_path)
+        if not executable.exists():
+            pytest.skip("Playwright Chromium is not installed")
+
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(
+            viewport={"width": 1280, "height": 1100}
+        )
+        page.on(
+            "console",
+            lambda message: (
+                console_errors.append(message.text)
+                if message.type == "error"
+                else None
+            ),
+        )
+        page.route(
+            "**/api/v1/auth/config",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"enabled": False}),
+            ),
+        )
+
+        def handle_config(route):
+            if route.request.method == "GET":
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps(config_body),
+                )
+                return
+
+            request_body = json.loads(route.request.post_data)
+            mutation_requests.append(
+                {
+                    "method": route.request.method,
+                    "url": route.request.url,
+                    "body": request_body,
+                }
+            )
+            if len(mutation_requests) == 1:
+                route.fulfill(
+                    status=409,
+                    content_type="application/json",
+                    body=json.dumps(
+                        {
+                            "detail": (
+                                "Configuration changed; retry save"
+                            )
+                        }
+                    ),
+                )
+                return
+
+            config_body["document_types"]["invoice"]["profiles"][
+                "electricity_electrohold"
+            ]["collections"]["services"] = request_body["collection"]
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(
+                    {
+                        "status": "ok",
+                        "message": "Collection updated",
+                    }
+                ),
+            )
+
+        page.route(
+            "**/api/v1/config/document-types",
+            handle_config,
+        )
+        page.route(
+            "**/api/v1/config/document-types/**",
+            handle_config,
+        )
+        page.goto(
+            f"{live_server_url}/ui/index.html",
+            wait_until="networkidle",
+        )
+
+        page.locator("#profileSelector").select_option(
+            "electricity_electrohold"
+        )
+        page.locator("#fieldScope").select_option("profile")
+        collection_card = page.locator(
+            "#collectionList .field-card"
+        ).filter(has_text="services")
+        expect(collection_card).to_have_count(1)
+        expect(collection_card).to_contain_text("one_or_more")
+        expect(collection_card).to_contain_text(
+            "Original service start"
+        )
+
+        collection_card.get_by_role(
+            "button",
+            name="Редактирай",
+            exact=True,
+        ).click()
+        page.locator("#collectionCardinality").select_option(
+            "exactly_one"
+        )
+        page.locator("#collectionStartPattern").fill(
+            "Retried service start"
+        )
+        page.locator("#confirmModalButton").click()
+
+        expect(page.get_by_role("dialog")).to_be_visible()
+        expect(page.locator("#collectionCardinality")).to_have_value(
+            "exactly_one"
+        )
+        expect(page.locator("#collectionStartPattern")).to_have_value(
+            "Retried service start"
+        )
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Configuration changed; retry save"
+        )
+        expect(collection_card).to_have_count(1)
+        expect(collection_card).to_contain_text("one_or_more")
+        expect(collection_card).to_contain_text(
+            "Original service start"
+        )
+        expect(collection_card).not_to_contain_text(
+            "Retried service start"
+        )
+        expect(page.locator("#profileSelector")).to_have_value(
+            "electricity_electrohold"
+        )
+        expect(page.locator("#fieldScope")).to_have_value("profile")
+
+        page.locator("#confirmModalButton").click()
+
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        collection_card = page.locator(
+            "#collectionList .field-card"
+        ).filter(has_text="services")
+        expect(collection_card).to_have_count(1)
+        expect(collection_card).to_contain_text("exactly_one")
+        expect(collection_card).to_contain_text(
+            "Retried service start"
+        )
+        expect(collection_card).not_to_contain_text(
+            "Original service start"
+        )
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Колекцията 'services' е актуализирана."
+        )
+        expect(page.locator("#profileSelector")).to_have_value(
+            "electricity_electrohold"
+        )
+        expect(page.locator("#fieldScope")).to_have_value("profile")
+
+        browser.close()
+
+    assert len(mutation_requests) == 2
+    assert [request["method"] for request in mutation_requests] == [
+        "PUT",
+        "PUT",
+    ]
+    assert all(
+        request["url"].endswith(
+            "/api/v1/config/document-types/invoice/profiles/"
+            "electricity_electrohold/collections/services"
+        )
+        for request in mutation_requests
+    )
+    assert mutation_requests[0]["body"] == mutation_requests[1]["body"]
+    assert mutation_requests[1]["body"] == {
+        "collection": {
+            "cardinality": "exactly_one",
+            "fields": original_collection["fields"],
+            "item_validations": original_collection[
+                "item_validations"
+            ],
+            "start_pattern": "Retried service start",
+        }
+    }
+    assert config_body["document_types"]["invoice"][
+        "default_profile"
+    ] == "telecom_a1"
+    assert len(console_errors) == 1
+    assert "409 (Conflict)" in console_errors[0]
