@@ -25,6 +25,7 @@ SUPPORTED_SUMMARY_VALIDATION_TYPES = {
 }
 COLLECTION_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 PROFILE_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
+MATCH_EVIDENCE_CODE_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 
 
 class ConfigValidationError(ValueError):
@@ -178,6 +179,46 @@ def validate_profile_name(profile_name: Any, path: str) -> str:
         )
 
     return profile_name
+
+
+def validate_profile_matching(matching: Any, path: str) -> None:
+    if matching is None:
+        return
+    if not isinstance(matching, dict):
+        raise ConfigValidationError(f"{path} must be an object")
+
+    unknown_keys = set(matching) - {"any_of"}
+    if unknown_keys:
+        raise ConfigValidationError(
+            f"{path} contains unsupported properties: {sorted(unknown_keys)}"
+        )
+
+    rules = matching.get("any_of")
+    if not isinstance(rules, list) or not rules:
+        raise ConfigValidationError(f"{path}.any_of must be a non-empty list")
+
+    evidence_codes = set()
+    for index, rule in enumerate(rules):
+        rule_path = f"{path}.any_of[{index}]"
+        if not isinstance(rule, dict):
+            raise ConfigValidationError(f"{rule_path} must be an object")
+        unknown_rule_keys = set(rule) - {"code", "pattern"}
+        if unknown_rule_keys:
+            raise ConfigValidationError(
+                f"{rule_path} contains unsupported properties: "
+                f"{sorted(unknown_rule_keys)}"
+            )
+        code = require_non_empty_string(rule.get("code"), f"{rule_path}.code")
+        if not MATCH_EVIDENCE_CODE_PATTERN.fullmatch(code):
+            raise ConfigValidationError(
+                f"{rule_path}.code must match ^[a-z][a-z0-9_]*$"
+            )
+        if code in evidence_codes:
+            raise ConfigValidationError(
+                f"{rule_path}.code contains duplicate evidence code '{code}'"
+            )
+        evidence_codes.add(code)
+        validate_regex(rule.get("pattern"), f"{rule_path}.pattern")
 
 
 def validate_collection_item_validations(
@@ -489,6 +530,7 @@ def validate_profile_document_type(
             )
 
         unknown_keys = set(profile_config) - {
+            "matching",
             "fields",
             "collections",
             "summary_validations",
@@ -499,6 +541,10 @@ def validate_profile_document_type(
                 f"{sorted(unknown_keys)}"
             )
 
+        validate_profile_matching(
+            profile_config.get("matching"),
+            f"{profile_path}.matching",
+        )
         profile_field_names = validate_field_list(
             profile_config.get("fields", []),
             f"{profile_path}.fields",

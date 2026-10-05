@@ -4206,6 +4206,17 @@
       },
       "DocumentProfileModel": {
         "properties": {
+          "matching": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SupplierMatchingModel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional configuration-driven supplier matching rules."
+          },
           "fields": {
             "items": {
               "$ref": "#/components/schemas/DocumentFieldModel"
@@ -6816,6 +6827,56 @@
         "additionalProperties": false,
         "type": "object",
         "title": "ResolvedDocumentTypeModel"
+      },
+      "SupplierMatchRuleModel": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "title": "Code",
+            "description": "Stable evidence code identifying one supplier match rule.",
+            "examples": [
+              "synthetic_provider_company"
+            ]
+          },
+          "pattern": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Pattern",
+            "description": "Regular expression matched against normalized OCR text.",
+            "examples": [
+              "\\bsynthetic provider ead\\b"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "pattern"
+        ],
+        "title": "SupplierMatchRuleModel"
+      },
+      "SupplierMatchingModel": {
+        "properties": {
+          "any_of": {
+            "items": {
+              "$ref": "#/components/schemas/SupplierMatchRuleModel"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Any Of",
+            "description": "Supplier match rules where any matching pattern selects the profile."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "any_of"
+        ],
+        "title": "SupplierMatchingModel"
       },
       "UniversalInvoiceModel": {
         "properties": {

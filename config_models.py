@@ -1,3 +1,4 @@
+import re
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -245,9 +246,58 @@ class CollectionSummaryValidationModel(BaseModel):
     )
 
 
+class SupplierMatchRuleModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: str = Field(
+        min_length=1,
+        max_length=100,
+        pattern=r"^[a-z][a-z0-9_]*$",
+        description="Stable evidence code identifying one supplier match rule.",
+        examples=["synthetic_provider_company"],
+    )
+    pattern: str = Field(
+        min_length=1,
+        description="Regular expression matched against normalized OCR text.",
+        examples=[r"\bsynthetic provider ead\b"],
+    )
+
+    @model_validator(mode="after")
+    def validate_pattern(self):
+        try:
+            re.compile(self.pattern)
+        except re.error as exc:
+            raise ValueError(
+                f"Supplier matching pattern contains invalid regex: {exc}"
+            ) from exc
+        return self
+
+
+class SupplierMatchingModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    any_of: list[SupplierMatchRuleModel] = Field(
+        min_length=1,
+        description=(
+            "Supplier match rules where any matching pattern selects the profile."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def validate_unique_codes(self):
+        codes = [rule.code for rule in self.any_of]
+        if len(codes) != len(set(codes)):
+            raise ValueError("Supplier matching evidence codes must be unique")
+        return self
+
+
 class DocumentProfileModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    matching: SupplierMatchingModel | None = Field(
+        default=None,
+        description="Optional configuration-driven supplier matching rules.",
+    )
     fields: list[DocumentFieldModel] = Field(
         default_factory=list,
         description="Profile-specific extraction fields."

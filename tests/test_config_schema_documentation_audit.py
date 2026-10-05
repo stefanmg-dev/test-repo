@@ -7,6 +7,8 @@ MODEL_NAMES = (
     "CollectionItemValidationModel",
     "DocumentCollectionModel",
     "CollectionSummaryValidationModel",
+    "SupplierMatchRuleModel",
+    "SupplierMatchingModel",
     "DocumentProfileModel",
     "DocumentTypeModel",
     "DocumentTypeMetadataModel",
