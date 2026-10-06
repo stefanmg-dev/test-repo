@@ -98,6 +98,34 @@ def test_configuration_ui_profile_selector_does_not_change_default_profile():
     assert 'state.selectedFieldScope = "profile"' in listener
 
 
+def test_configuration_page_contains_profile_matching_editor():
+    html = read_text(INDEX_HTML)
+    js = read_text(UI_JS)
+
+    assert 'id="profileMatchingSection"' in html
+    assert 'id="profileMatchingList"' in html
+    assert 'id="editProfileMatchingButton"' in html
+    assert "function renderProfileMatching(config)" in js
+    assert "function openProfileMatchingModal()" in js
+
+
+def test_configuration_ui_uses_profile_matching_endpoint():
+    content = read_text(UI_JS)
+
+    assert "/matching`" in content
+    assert 'method: "PUT"' in content
+    assert "JSON.stringify({ matching: { any_of: anyOf } })" in content
+
+
+def test_configuration_ui_requires_at_least_one_matching_rule():
+    content = read_text(UI_JS)
+
+    assert "editors.length <= 1" in content
+    assert "Matching изисква поне едно правило." in content
+    assert "Добави matching правило" in content
+    assert "Премахни правило" in content
+
+
 def test_configuration_ui_uses_selected_profile_for_field_endpoint():
     content = read_text(UI_JS)
 
@@ -298,7 +326,11 @@ def test_configuration_browser_switches_profile_for_editing(
             "contract_number"
         )
 
-        page.get_by_role("button", name="Редактирай").click()
+        page.get_by_role(
+            "button",
+            name="Редактирай",
+            exact=True,
+        ).click()
         page.locator("#fieldPrimaryValue").fill(
             "Supplier ID ([0-9]+)"
         )

@@ -28,6 +28,9 @@ const el = {
     fieldScope: byId("fieldScope"),
     profileSelector: byId("profileSelector"),
     defaultProfileName: byId("defaultProfileName"),
+    profileMatchingSection: byId("profileMatchingSection"),
+    profileMatchingList: byId("profileMatchingList"),
+    editProfileMatchingButton: byId("editProfileMatchingButton"),
     fieldList: byId("fieldList"),
     collectionList: byId("collectionList"),
     summaryValidationSection: byId("summaryValidationSection"),
@@ -270,6 +273,150 @@ function updateFieldScope(config) {
     profileOption.selected = state.selectedFieldScope === "profile";
     profileOption.disabled = !profileName;
     el.fieldScope.append(commonOption, profileOption);
+}
+
+function renderProfileMatching(config) {
+    const profileName = getSelectedProfile(config);
+    const profile = config.profiles?.[profileName];
+    const visible = Boolean(profileName && profile);
+    el.profileMatchingSection.classList.toggle("hidden", !visible);
+    el.profileMatchingList.replaceChildren();
+    if (!visible) return;
+
+    const rules = profile.matching?.any_of || [];
+    if (!rules.length) {
+        const empty = document.createElement("div");
+        empty.className = "loading-state";
+        empty.textContent = "Профилът още няма supplier matching правила.";
+        el.profileMatchingList.appendChild(empty);
+        return;
+    }
+
+    for (const rule of rules) {
+        const card = document.createElement("article");
+        card.className = "field-card";
+        const title = document.createElement("h3");
+        title.className = "field-title";
+        title.textContent = rule.code;
+        const details = document.createElement("div");
+        details.className = "field-details";
+        const detail = document.createElement("div");
+        detail.className = "field-detail";
+        const label = document.createElement("span");
+        label.className = "field-detail-label";
+        label.textContent = "Regex pattern";
+        const value = document.createElement("span");
+        value.className = "field-detail-value";
+        value.textContent = rule.pattern;
+        detail.append(label, value);
+        details.appendChild(detail);
+        card.append(title, details);
+        el.profileMatchingList.appendChild(card);
+    }
+}
+
+function createMatchingRuleEditor(rule, index, onRemove) {
+    const row = document.createElement("div");
+    row.className = "field-card full-width";
+    row.dataset.matchingRule = String(index);
+
+    const form = document.createElement("div");
+    form.className = "form-grid";
+    const code = textInput(
+        `matchingCode${index}`,
+        "Evidence code",
+        rule.code || "",
+        {
+            required: true,
+            pattern: "^[a-z][a-z0-9_]*$",
+            fullWidth: false,
+        }
+    );
+    const pattern = textareaInput(
+        `matchingPattern${index}`,
+        "Regex pattern",
+        rule.pattern || "",
+        "Pattern against normalized OCR text."
+    );
+    pattern.textarea.required = true;
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "button button-danger-outline";
+    remove.textContent = "Премахни правило";
+    remove.addEventListener("click", () => onRemove(row));
+
+    form.append(code.group, pattern.group);
+    row.append(form, remove);
+    return { row, code: code.input, pattern: pattern.textarea };
+}
+
+function openProfileMatchingModal() {
+    const config = state.documentTypes[state.selectedDocumentType];
+    const profileName = getSelectedProfile(config);
+    if (!profileName) return;
+
+    const form = document.createElement("form");
+    form.className = "form-grid";
+    const rulesContainer = document.createElement("div");
+    rulesContainer.className = "form-group full-width";
+    const editors = [];
+
+    const removeEditor = (row) => {
+        if (editors.length <= 1) {
+            showMessage("Matching изисква поне едно правило.", "error");
+            return;
+        }
+        const index = editors.findIndex((editor) => editor.row === row);
+        if (index >= 0) editors.splice(index, 1);
+        row.remove();
+    };
+
+    const addEditor = (rule = {}) => {
+        const editor = createMatchingRuleEditor(
+            rule,
+            editors.length,
+            removeEditor
+        );
+        editors.push(editor);
+        rulesContainer.appendChild(editor.row);
+    };
+
+    const existingRules = (
+        config.profiles?.[profileName]?.matching?.any_of || []
+    );
+    for (const rule of existingRules) addEditor(rule);
+    if (!editors.length) addEditor();
+
+    const addRuleButton = document.createElement("button");
+    addRuleButton.type = "button";
+    addRuleButton.className = "button button-secondary full-width";
+    addRuleButton.textContent = "Добави matching правило";
+    addRuleButton.addEventListener("click", () => addEditor());
+    form.append(rulesContainer, addRuleButton);
+
+    openModal({
+        title: `Supplier matching за '${profileName}'`,
+        body: form,
+        onConfirm: async () => {
+            if (!form.reportValidity()) return;
+            const anyOf = editors.map((editor) => ({
+                code: editor.code.value.trim(),
+                pattern: editor.pattern.value.trim(),
+            }));
+            const endpoint = (
+                `/document-types/${encodeURIComponent(state.selectedDocumentType)}`
+                + `/profiles/${encodeURIComponent(profileName)}/matching`
+            );
+            await apiRequest(endpoint, {
+                method: "PUT",
+                body: JSON.stringify({ matching: { any_of: anyOf } }),
+            });
+            closeModal();
+            await loadConfiguration();
+            showMessage(`Matching правилата за '${profileName}' са актуализирани.`);
+        },
+    });
 }
 
 function buildFieldEndpoint(
@@ -1118,6 +1265,7 @@ function selectDocumentType(name) {
         `${metadata.status.toUpperCase()} · `
         + `${metadata.field_count} конфигурирани полета`;
     updateFieldScope(config);
+    renderProfileMatching(config);
     renderFields(config);
     renderCollections(config);
     renderSummaryValidations(config);
@@ -1732,11 +1880,16 @@ el.openCreateDocumentTypeButton.addEventListener("click", openCreateDocumentType
 el.renameDocumentTypeButton.addEventListener("click", openRenameDocumentTypeModal);
 el.deleteDocumentTypeButton.addEventListener("click", confirmDeleteDocumentType);
 el.openAddFieldButton.addEventListener("click", () => openFieldModal());
+el.editProfileMatchingButton.addEventListener(
+    "click",
+    openProfileMatchingModal
+);
 el.profileSelector.addEventListener("change", () => {
     state.selectedProfileName = el.profileSelector.value || null;
     state.selectedFieldScope = "profile";
     const config = state.documentTypes[state.selectedDocumentType];
     updateFieldScope(config);
+    renderProfileMatching(config);
     renderFields(config);
     renderCollections(config);
     renderSummaryValidations(config);
