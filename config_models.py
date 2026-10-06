@@ -432,6 +432,17 @@ class AddProfileRequest(BaseModel):
     )
 
 
+class UpdateProfileMatchingRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    matching: SupplierMatchingModel = Field(
+        description=(
+            "Complete replacement supplier matching configuration "
+            "for one existing profile."
+        )
+    )
+
+
 class RenameDocumentTypeRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

@@ -18,6 +18,7 @@ from config_models import (
     OperationResponse,
     RenameDocumentTypeRequest,
     UpdateFieldRequest,
+    UpdateProfileMatchingRequest,
 )
 from config_api_helpers import (
     ensure_profile_based_config,
@@ -547,6 +548,53 @@ def add_profile(
     return {
         "status": "ok",
         "message": f"Profile '{profile_name}' added",
+    }
+
+
+@router.put(
+    "/document-types/{document_type}/profiles/{profile_name}/matching",
+    summary="Replace profile supplier matching rules",
+    description=(
+        "Replaces only the supplier matching rules of one existing profile. "
+        "Profile fields, collections, and summary validations are preserved. "
+        "Legacy document types are rejected. Authenticated requests require "
+        "the config:write scope."
+    ),
+    response_description="Profile matching update result.",
+    response_model=OperationResponse,
+)
+def update_profile_matching(
+    request: UpdateProfileMatchingRequest,
+    document_type: str = Path(
+        ...,
+        description="Profile-based document-type configuration key.",
+    ),
+    profile_name: str = Path(
+        ...,
+        min_length=1,
+        max_length=100,
+        pattern=r"^[a-z][a-z0-9_]*$",
+        description="Existing profile whose matching rules are replaced.",
+    ),
+):
+    config = load_config()
+    document_config = get_document_type_or_404(
+        config=config,
+        document_type=document_type,
+    )
+    ensure_profile_based_config(document_config)
+    get_profile_or_404(document_config, profile_name)
+
+    matching_data = request.matching.model_dump()
+    updated_config = deepcopy(config)
+    updated_config[document_type]["profiles"][profile_name][
+        "matching"
+    ] = matching_data
+    save_validated_config(updated_config)
+
+    return {
+        "status": "ok",
+        "message": f"Profile '{profile_name}' matching updated",
     }
 
 

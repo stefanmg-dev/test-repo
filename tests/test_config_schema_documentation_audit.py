@@ -14,6 +14,7 @@ MODEL_NAMES = (
     "DocumentTypeMetadataModel",
     "CreateDocumentTypeRequest",
     "AddProfileRequest",
+    "UpdateProfileMatchingRequest",
     "RenameDocumentTypeRequest",
     "AddFieldRequest",
     "UpdateFieldRequest",

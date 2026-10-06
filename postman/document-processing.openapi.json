@@ -1697,6 +1697,83 @@
         }
       }
     },
+    "/api/v1/config/document-types/{document_type}/profiles/{profile_name}/matching": {
+      "put": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Replace profile supplier matching rules",
+        "description": "Replaces only the supplier matching rules of one existing profile. Profile fields, collections, and summary validations are preserved. Legacy document types are rejected. Authenticated requests require the config:write scope.",
+        "operationId": "update_profile_matching_api_v1_config_document_types__document_type__profiles__profile_name__matching_put",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Profile-based document-type configuration key.",
+              "title": "Document Type"
+            },
+            "description": "Profile-based document-type configuration key."
+          },
+          {
+            "name": "profile_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "^[a-z][a-z0-9_]*$",
+              "description": "Existing profile whose matching rules are replaced.",
+              "title": "Profile Name"
+            },
+            "description": "Existing profile whose matching rules are replaced."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileMatchingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile matching update result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/config/document-types/{document_type}/common-fields": {
       "post": {
         "tags": [
@@ -7191,6 +7268,20 @@
           "field"
         ],
         "title": "UpdateFieldRequest"
+      },
+      "UpdateProfileMatchingRequest": {
+        "properties": {
+          "matching": {
+            "$ref": "#/components/schemas/SupplierMatchingModel",
+            "description": "Complete replacement supplier matching configuration for one existing profile."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "matching"
+        ],
+        "title": "UpdateProfileMatchingRequest"
       },
       "UpdateSummaryValidationRequest": {
         "properties": {
