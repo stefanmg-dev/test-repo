@@ -138,6 +138,26 @@
     ],
     "profiles": {
       "telecom_a1": {
+        "matching": {
+          "any_of": [
+            {
+              "code": "a1_bulgaria_company",
+              "pattern": "\\b[aа]\\s*1\\s+(?:bulgaria|българия)(?:\\s*[\\\"„“']*)?\\s+(?:ead|еад)\\b"
+            },
+            {
+              "code": "a1_bulgaria",
+              "pattern": "\\b[aа]\\s*1\\s+(?:bulgaria|българия)\\b"
+            },
+            {
+              "code": "a1_bulgaria_company_reversed",
+              "pattern": "\\b(?:bulgaria|българия)\\s+(?:ead|еад)\\s+\\b[aа]\\s*1\\b"
+            },
+            {
+              "code": "a1_official_domain",
+              "pattern": "(?<![\\w.-])(?:https?://)?(?:www\\.)?a1\\.bg(?![\\w.-])"
+            }
+          ]
+        },
         "fields": [
           {
             "name": "supplier_name",
@@ -173,6 +193,18 @@
         ]
       },
       "electricity_electrohold": {
+        "matching": {
+          "any_of": [
+            {
+              "code": "electrohold_sales_company",
+              "pattern": "\\bелектрохолд\\s+продажби\\s+еад\\b"
+            },
+            {
+              "code": "electrohold_official_domain",
+              "pattern": "(?<![\\w.-])(?:https?://)?(?:www\\.)?electrohold\\.bg(?:/[^\\s]*)?(?![\\w.-])"
+            }
+          ]
+        },
         "fields": [
           {
             "name": "supplier_name",
@@ -529,6 +561,18 @@
         ]
       },
       "heating_toplofikacia_sofia": {
+        "matching": {
+          "any_of": [
+            {
+              "code": "toplofikacia_sofia_company",
+              "pattern": "\\bтоплофикация\\s+софия(?:\\s*[\\\"„“']*)?\\s+еад\\b"
+            },
+            {
+              "code": "toplofikacia_sofia_domain",
+              "pattern": "(?<![\\w.-])(?:https?://)?(?:www\\.)?toplo\\.bg(?:/[^\\s]*)?(?![\\w.-])"
+            }
+          ]
+        },
         "fields": [
           {
             "name": "supplier_name",
