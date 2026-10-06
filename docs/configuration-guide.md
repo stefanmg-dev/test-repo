@@ -4,6 +4,8 @@
 
 This guide explains how administrators and configuration specialists define document types, supplier profiles, extraction fields, collections, and validation rules. Configuration changes affect future processing and should be tested with representative documents before production use.
 
+For the complete creation and acceptance workflow, see [Provider onboarding](provider-onboarding.md).
+
 ## Document type and supplier profile
 
 A document type represents a business document category, such as `invoice`, `receipt`, or `contract`. A supplier profile represents one layout or supplier variation inside that category.

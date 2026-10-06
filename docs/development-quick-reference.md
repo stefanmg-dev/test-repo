@@ -8,6 +8,8 @@ For processing outcome semantics, see [Processing acceptance contract](processin
 
 For real-document acceptance, see [Real-document fixture matrix and acceptance checklist](real-document-fixture-matrix.md).
 
+For adding a supplier profile, see [Provider onboarding](provider-onboarding.md).
+
 
 For the complete restart-safe start, status, and stop workflow, see [Local development start, status, and stop](local-development-runbook.md).
 

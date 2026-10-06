@@ -2,6 +2,8 @@
 
 This document defines the local, privacy-preserving acceptance matrix for real invoice fixtures. Real customer documents remain outside Git under `uploaded_documents/manual-regression/` or another explicitly configured local path.
 
+For the full supplier-profile workflow, see [Provider onboarding](provider-onboarding.md).
+
 ## Baseline command
 
 Run the versioned PDF acceptance suite with:
