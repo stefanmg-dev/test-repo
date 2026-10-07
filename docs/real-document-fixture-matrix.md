@@ -16,9 +16,10 @@ A successful baseline reports:
 
 ```text
 PASS A1: passed
+PASS A1 September: passed
 PASS Electrohold: passed
 PASS Toplofikacia: passed
-SUMMARY passed=3 failed=0
+SUMMARY passed=4 failed=0
 ```
 
 The command exits non-zero when a required PDF fixture is missing or a mapped E2E test fails.
@@ -28,6 +29,7 @@ The command exits non-zero when a required PDF fixture is missing or a mapped E2
 | Case | Local fixture or variable | Acquisition path | Expected profile | Scalar acceptance | Collection acceptance | Validation acceptance | Expected outcome |
 |---|---|---|---|---|---|---|---|
 | A1 PDF | `uploaded_documents/manual-regression/a1.pdf` or `A1_REAL_PDF_PATH` | Native PDF and/or OCR through the document endpoint | `telecom_a1` | Exact configured field-name set, non-empty normalized values, and configured supplier-name constant | All configured invoice collections are present and empty for the approved fixture | Scalar and collection validation pass; quality is accepted without unknown-supplier warning | `accepted` |
+| A1 September PDF | `uploaded_documents/manual-regression/a1-september.pdf` or `A1_SEPTEMBER_REAL_PDF_PATH` | Second real billing period through the document endpoint | `telecom_a1` | Same privacy-safe configured field contract with different real values | All configured invoice collections are present and empty for the approved fixture | Scalar and collection validation pass; quality is accepted without unknown-supplier warning | `accepted` |
 | Electrohold PDF | `uploaded_documents/manual-regression/electrohold.pdf` or `ELECTROHOLD_REAL_PDF_PATH` | Document endpoint | `electricity_electrohold` | Configured invoice fields | Metering point, meter, and consumption rows match the approved fixture | Scalar, collection, and summary validation pass | `accepted` |
 | Toplofikacia PDF | `uploaded_documents/manual-regression/toplofikacia.pdf` or `TOPLOFIKACIA_REAL_PDF_PATH` | Document endpoint | `heating_toplofikacia_sofia` | All configured scalar fields are non-empty | Service rows match the approved fixture | Scalar and collection validation pass | `accepted` |
 | A1 JPEG variants | `A1_REAL_JPEG_DIR` | Real OCR for five JPEG quality/orientation variants | Scalar rule configuration | Supplier ID, invoice number, dates, amount, and contract number match | Not applicable in the current JPEG test | Input quality matches the expected variant status | One low-resolution variant is `review`; the other variants are `accepted` |
@@ -50,7 +52,7 @@ A real fixture is accepted into the matrix only when all applicable checks are e
 
 ## Current local baseline
 
-The three required PDF cases are executed by `scripts/manual_invoice_regression.py`. The A1 JPEG matrix is optional until `A1_REAL_JPEG_DIR` points to the local JPEG fixture directory.
+The four required PDF cases are executed by `scripts/manual_invoice_regression.py`. The A1 JPEG matrix is optional until `A1_REAL_JPEG_DIR` points to the local JPEG fixture directory.
 
 Do not copy real documents into versioned test directories. Do not include extracted customer values in documentation, logs, or commit messages.
 

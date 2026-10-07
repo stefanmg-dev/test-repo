@@ -16,6 +16,12 @@ CASES = (
         "tests/test_a1_real_pdf_e2e.py::test_real_a1_pdf_end_to_end",
     ),
     (
+        "A1 September",
+        "a1-september.pdf",
+        "A1_SEPTEMBER_REAL_PDF_PATH",
+        "tests/test_a1_real_pdf_e2e.py::test_real_a1_september_pdf_end_to_end",
+    ),
+    (
         "Electrohold",
         "electrohold.pdf",
         "ELECTROHOLD_REAL_PDF_PATH",

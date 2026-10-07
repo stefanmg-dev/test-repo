@@ -12,6 +12,7 @@ def test_matrix_documents_all_existing_real_fixture_cases():
 
     for case in (
         "A1 PDF",
+        "A1 September PDF",
         "Electrohold PDF",
         "Toplofikacia PDF",
         "A1 JPEG variants",
@@ -21,6 +22,7 @@ def test_matrix_documents_all_existing_real_fixture_cases():
 
     for variable in (
         "A1_REAL_PDF_PATH",
+        "A1_SEPTEMBER_REAL_PDF_PATH",
         "ELECTROHOLD_REAL_PDF_PATH",
         "TOPLOFIKACIA_REAL_PDF_PATH",
         "A1_REAL_JPEG_DIR",
@@ -45,6 +47,7 @@ def test_manual_runner_cases_are_represented_in_matrix():
 
     for filename in (
         "a1.pdf",
+        "a1-september.pdf",
         "electrohold.pdf",
         "toplofikacia.pdf",
     ):

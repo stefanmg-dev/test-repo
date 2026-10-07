@@ -20,6 +20,7 @@ def test_manual_regression_runner_uses_ignored_fixture_paths():
 
     assert '"uploaded_documents" / "manual-regression"' in content
     assert '"a1.pdf"' in content
+    assert '"a1-september.pdf"' in content
     assert '"electrohold.pdf"' in content
     assert '"toplofikacia.pdf"' in content
 
