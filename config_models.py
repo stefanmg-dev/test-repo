@@ -535,6 +535,15 @@ class ResolvedDocumentTypeModel(BaseModel):
 class ConfigResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    revision: str = Field(
+        min_length=64,
+        max_length=64,
+        pattern=r"^[0-9a-f]{64}$",
+        description=(
+            "SHA-256 revision of the complete stored configuration."
+        ),
+        examples=["0" * 64],
+    )
     document_types: dict[str, DocumentTypeModel] = Field(
         description="Stored document-type configurations keyed by name."
     )

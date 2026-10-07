@@ -4009,6 +4009,17 @@
       },
       "ConfigResponse": {
         "properties": {
+          "revision": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Revision",
+            "description": "SHA-256 revision of the complete stored configuration.",
+            "examples": [
+              "0000000000000000000000000000000000000000000000000000000000000000"
+            ]
+          },
           "document_types": {
             "additionalProperties": {
               "$ref": "#/components/schemas/DocumentTypeModel"
@@ -4037,6 +4048,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "revision",
           "document_types"
         ],
         "title": "ConfigResponse"

@@ -29,6 +29,10 @@ from config_api_helpers import (
     save_validated_config,
 )
 from config_store import load_config
+from configuration_revision import (
+    configuration_etag,
+    configuration_revision,
+)
 from security_scopes import enforce_config_scope
 from document_config_resolver import resolve_document_fields
 from document_status import build_document_type_metadata
@@ -79,8 +83,14 @@ def build_resolved_document_types(
     response_model=ConfigResponse,
     response_model_exclude_none=True,
 )
-def get_document_types():
+def get_document_types(
+    response: Response,
+):
     config = load_config()
+    revision = configuration_revision(config)
+    response.headers["ETag"] = configuration_etag(
+        revision
+    )
 
     document_type_metadata = (
         build_all_document_type_metadata(config)
@@ -91,6 +101,7 @@ def get_document_types():
     )
 
     return {
+        "revision": revision,
         "document_types": config,
         "resolved_document_types": (
             resolved_document_types
