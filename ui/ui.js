@@ -29,6 +29,7 @@ const el = {
     profileSelector: byId("profileSelector"),
     openAddProfileButton: byId("openAddProfileButton"),
     deleteProfileButton: byId("deleteProfileButton"),
+    setDefaultProfileButton: byId("setDefaultProfileButton"),
     defaultProfileName: byId("defaultProfileName"),
     profileMatchingSection: byId("profileMatchingSection"),
     profileMatchingList: byId("profileMatchingList"),
@@ -261,6 +262,9 @@ function updateFieldScope(config) {
         el.profileSelector.append(option);
     }
     el.profileSelector.disabled = !profileName;
+    el.setDefaultProfileButton.disabled = (
+        !profileName || profileName === config.default_profile
+    );
     el.deleteProfileButton.disabled = (
         !profileName || profileName === config.default_profile
     );
@@ -359,6 +363,37 @@ function createMatchingRuleEditor(rule, index, onRemove) {
     form.append(code.group, pattern.group);
     row.append(form, remove);
     return { row, code: code.input, pattern: pattern.textarea };
+}
+
+function confirmSetDefaultProfile() {
+    const config = state.documentTypes[state.selectedDocumentType];
+    const profileName = getSelectedProfile(config);
+    if (!profileName || profileName === config.default_profile) return;
+
+    const body = document.createElement("div");
+    body.textContent = (
+        `Задаване на профил '${profileName}' като профил по подразбиране?`
+    );
+    openModal({
+        title: "Профил по подразбиране",
+        body,
+        confirmText: "Задай",
+        onConfirm: async () => {
+            const endpoint = (
+                `/document-types/${encodeURIComponent(state.selectedDocumentType)}`
+                + "/default-profile"
+            );
+            await apiRequest(endpoint, {
+                method: "PUT",
+                body: JSON.stringify({ profile_name: profileName }),
+            });
+            closeModal();
+            await loadConfiguration();
+            showMessage(
+                `Профилът '${profileName}' е зададен по подразбиране.`
+            );
+        },
+    });
 }
 
 function confirmDeleteProfile() {
@@ -2013,6 +2048,10 @@ el.deleteDocumentTypeButton.addEventListener("click", confirmDeleteDocumentType)
 el.openAddFieldButton.addEventListener("click", () => openFieldModal());
 el.openAddProfileButton.addEventListener("click", openAddProfileModal);
 el.deleteProfileButton.addEventListener("click", confirmDeleteProfile);
+el.setDefaultProfileButton.addEventListener(
+    "click",
+    confirmSetDefaultProfile
+);
 el.editProfileMatchingButton.addEventListener(
     "click",
     openProfileMatchingModal

@@ -98,6 +98,17 @@ def test_configuration_ui_profile_selector_does_not_change_default_profile():
     assert 'state.selectedFieldScope = "profile"' in listener
 
 
+def test_configuration_page_contains_default_profile_control():
+    html = read_text(INDEX_HTML)
+    js = read_text(UI_JS)
+
+    assert 'id="setDefaultProfileButton"' in html
+    assert "function confirmSetDefaultProfile()" in js
+    assert '"/default-profile"' in js
+    assert "JSON.stringify({ profile_name: profileName })" in js
+    assert "profileName === config.default_profile" in js
+
+
 def test_configuration_page_contains_profile_deletion_control():
     html = read_text(INDEX_HTML)
     js = read_text(UI_JS)
@@ -3402,4 +3413,172 @@ def test_configuration_browser_deletes_non_default_profile(
     assert "synthetic_provider" not in config_body["document_types"][
         "invoice"
     ]["profiles"]
+    assert console_errors == []
+
+
+def test_configuration_browser_sets_default_profile(
+    live_server_url,
+):
+    config_body = {
+        "document_types": {
+            "invoice": {
+                "default_profile": "telecom_a1",
+                "common_fields": [],
+                "profiles": {
+                    "telecom_a1": {
+                        "matching": {
+                            "any_of": [
+                                {
+                                    "code": "a1_company",
+                                    "pattern": "a1 bulgaria ead",
+                                }
+                            ]
+                        },
+                        "fields": [],
+                        "collections": {},
+                        "summary_validations": [],
+                    },
+                    "synthetic_provider": {
+                        "matching": {
+                            "any_of": [
+                                {
+                                    "code": "synthetic_company",
+                                    "pattern": "synthetic provider ead",
+                                }
+                            ]
+                        },
+                        "fields": [],
+                        "collections": {},
+                        "summary_validations": [],
+                    },
+                },
+                "collections": {},
+            }
+        },
+        "resolved_document_types": {},
+        "document_type_metadata": {
+            "invoice": {
+                "status": "ready",
+                "ready": True,
+                "field_count": 0,
+            }
+        },
+    }
+    mutation_requests = []
+    console_errors = []
+
+    with sync_playwright() as playwright:
+        executable = Path(playwright.chromium.executable_path)
+        if not executable.exists():
+            pytest.skip("Playwright Chromium is not installed")
+
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1280, "height": 1000})
+        page.on(
+            "console",
+            lambda message: (
+                console_errors.append(message.text)
+                if message.type == "error"
+                else None
+            ),
+        )
+        page.route(
+            "**/api/v1/auth/config",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"enabled": False}),
+            ),
+        )
+
+        def handle_config(route):
+            if route.request.method == "GET":
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps(config_body),
+                )
+                return
+
+            assert route.request.method == "PUT"
+            request_body = json.loads(route.request.post_data)
+            mutation_requests.append(
+                {
+                    "method": route.request.method,
+                    "url": route.request.url,
+                    "body": request_body,
+                }
+            )
+            config_body["document_types"]["invoice"][
+                "default_profile"
+            ] = request_body["profile_name"]
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"status": "ok"}),
+            )
+
+        page.route("**/api/v1/config/document-types", handle_config)
+        page.route("**/api/v1/config/document-types/**", handle_config)
+        page.goto(
+            f"{live_server_url}/ui/index.html",
+            wait_until="commit",
+        )
+        expect(page.locator("#documentEditor")).to_be_visible()
+
+        expect(page.locator("#profileSelector")).to_have_value("telecom_a1")
+        expect(page.locator("#setDefaultProfileButton")).to_be_disabled()
+        expect(page.locator("#deleteProfileButton")).to_be_disabled()
+
+        page.locator("#profileSelector").select_option("synthetic_provider")
+        expect(page.locator("#fieldScope")).to_have_value("profile")
+        expect(page.locator("#setDefaultProfileButton")).to_be_enabled()
+        expect(page.locator("#deleteProfileButton")).to_be_enabled()
+
+        page.locator("#setDefaultProfileButton").click()
+        expect(page.get_by_role("dialog")).to_be_visible()
+        expect(page.locator("#modalBody")).to_contain_text(
+            "Задаване на профил 'synthetic_provider'"
+        )
+        page.locator("#cancelModalButton").click()
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        assert mutation_requests == []
+        expect(page.locator("#defaultProfileName")).to_have_text("telecom_a1")
+
+        page.locator("#setDefaultProfileButton").click()
+        page.locator("#confirmModalButton").click()
+
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        expect(page.locator("#profileSelector")).to_have_value(
+            "synthetic_provider"
+        )
+        expect(page.locator("#fieldScope")).to_have_value("profile")
+        expect(page.locator("#defaultProfileName")).to_have_text(
+            "synthetic_provider"
+        )
+        expect(page.locator("#setDefaultProfileButton")).to_be_disabled()
+        expect(page.locator("#deleteProfileButton")).to_be_disabled()
+        expect(page.locator("#profileMatchingList")).to_contain_text(
+            "synthetic_company"
+        )
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Профилът 'synthetic_provider' е зададен по подразбиране."
+        )
+        browser.close()
+
+    assert mutation_requests == [
+        {
+            "method": "PUT",
+            "url": (
+                mutation_requests[0]["url"]
+            ),
+            "body": {"profile_name": "synthetic_provider"},
+        }
+    ]
+    assert mutation_requests[0]["url"].endswith(
+        "/api/v1/config/document-types/invoice/default-profile"
+    )
+    assert config_body["document_types"]["invoice"][
+        "default_profile"
+    ] == "synthetic_provider"
     assert console_errors == []
