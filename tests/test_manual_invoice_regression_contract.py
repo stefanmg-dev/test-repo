@@ -28,7 +28,11 @@ def test_a1_real_pdf_test_does_not_assert_personal_values():
     content = A1_TEST.read_text(encoding="utf-8")
 
     assert '"profile"] == "telecom_a1"' in content
-    assert 'len(body["final_values"]) > 0' in content
+    assert 'set(final_values) == expected_field_names' in content
+    assert 'value not in {None, ""}' in content
+    assert 'quality["status"] == "accepted"' in content
+    assert 'quality["requires_review"] is False' in content
+    assert '"unknown_supplier_profile" not in warning_codes' in content
     assert "customer_name" not in content
     assert "customer_address" not in content
     assert "invoice_number" not in content

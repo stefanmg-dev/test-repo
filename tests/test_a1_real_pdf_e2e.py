@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 import routes_extract
 from api import app
+from config_store import load_config
 
 
 PDF_PATH_ENV = "A1_REAL_PDF_PATH"
@@ -47,7 +48,45 @@ def test_real_a1_pdf_end_to_end(monkeypatch):
     body = response.json()
     assert body["document_type"] == "invoice"
     assert body["profile"] == "telecom_a1"
-    assert body["processing_status"] in {"accepted", "review"}
-    assert isinstance(body["validation"]["valid"], bool)
-    assert isinstance(body["final_values"], dict)
-    assert len(body["final_values"]) > 0
+    assert body["processing_status"] == "accepted"
+    assert body["validation"] == {
+        "valid": True,
+        "errors": {},
+    }
+    assert body["collection_validation"] == {
+        "valid": True,
+        "errors": {},
+    }
+
+    invoice = load_config()["invoice"]
+    profile = invoice["profiles"][body["profile"]]
+    expected_field_names = {
+        field["name"]
+        for field in [
+            *invoice.get("common_fields", []),
+            *profile.get("fields", []),
+        ]
+    }
+    final_values = body["final_values"]
+    assert set(final_values) == expected_field_names
+    assert all(
+        value not in {None, ""}
+        for value in final_values.values()
+    )
+    assert final_values["supplier_name"] == "А1 България ЕАД"
+
+    assert body["collections"] == {
+        "services": [],
+        "metering_points": [],
+        "meters": [],
+        "consumption_items": [],
+    }
+
+    quality = body["quality"]
+    assert quality["status"] == "accepted"
+    assert quality["requires_review"] is False
+    warning_codes = {
+        warning["code"]
+        for warning in quality["warnings"]
+    }
+    assert "unknown_supplier_profile" not in warning_codes
