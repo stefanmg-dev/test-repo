@@ -2789,3 +2789,266 @@ def test_configuration_browser_manages_document_collection(
         "default_profile"
     ] == "telecom_a1"
     assert console_errors == []
+
+
+def test_configuration_browser_edits_matching_with_retry(
+    live_server_url,
+):
+    original_a1_rules = [
+        {
+            "code": "a1_company",
+            "pattern": r"\\ba1 bulgaria ead\\b",
+        }
+    ]
+    original_electrohold_rules = [
+        {
+            "code": "electrohold_company",
+            "pattern": r"\\bелектрохолд продажби еад\\b",
+        },
+        {
+            "code": "electrohold_domain",
+            "pattern": r"electrohold\\.bg",
+        },
+    ]
+    config_body = {
+        "document_types": {
+            "invoice": {
+                "default_profile": "telecom_a1",
+                "common_fields": [],
+                "profiles": {
+                    "telecom_a1": {
+                        "matching": {"any_of": original_a1_rules},
+                        "fields": [],
+                        "collections": {},
+                        "summary_validations": [],
+                    },
+                    "electricity_electrohold": {
+                        "matching": {
+                            "any_of": original_electrohold_rules,
+                        },
+                        "fields": [],
+                        "collections": {},
+                        "summary_validations": [],
+                    },
+                },
+                "collections": {},
+            }
+        },
+        "resolved_document_types": {},
+        "document_type_metadata": {
+            "invoice": {
+                "status": "ready",
+                "ready": True,
+                "field_count": 0,
+            }
+        },
+    }
+    mutation_requests = []
+    console_errors = []
+
+    with sync_playwright() as playwright:
+        executable = Path(playwright.chromium.executable_path)
+        if not executable.exists():
+            pytest.skip("Playwright Chromium is not installed")
+
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1280, "height": 1200})
+        page.on(
+            "console",
+            lambda message: (
+                console_errors.append(message.text)
+                if message.type == "error"
+                else None
+            ),
+        )
+        page.route(
+            "**/api/v1/auth/config",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"enabled": False}),
+            ),
+        )
+
+        def handle_config(route):
+            if route.request.method == "GET":
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps(config_body),
+                )
+                return
+
+            request_body = json.loads(route.request.post_data)
+            mutation_requests.append(
+                {
+                    "method": route.request.method,
+                    "url": route.request.url,
+                    "body": request_body,
+                }
+            )
+            if len(mutation_requests) == 1:
+                route.fulfill(
+                    status=409,
+                    content_type="application/json",
+                    body=json.dumps(
+                        {"detail": "Configuration changed; retry save"}
+                    ),
+                )
+                return
+
+            config_body["document_types"]["invoice"]["profiles"][
+                "electricity_electrohold"
+            ]["matching"] = request_body["matching"]
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"status": "ok"}),
+            )
+
+        page.route("**/api/v1/config/document-types", handle_config)
+        page.route("**/api/v1/config/document-types/**", handle_config)
+        page.goto(
+            f"{live_server_url}/ui/index.html",
+            wait_until="networkidle",
+        )
+
+        page.locator("#profileSelector").select_option(
+            "electricity_electrohold"
+        )
+        page.locator("#fieldScope").select_option("profile")
+        matching_cards = page.locator("#profileMatchingList .field-card")
+        expect(matching_cards).to_have_count(2)
+        expect(page.locator("#profileMatchingList")).to_contain_text(
+            "electrohold_company"
+        )
+        expect(page.locator("#profileMatchingList")).to_contain_text(
+            "electrohold_domain"
+        )
+
+        page.locator("#editProfileMatchingButton").click()
+        expect(page.get_by_role("dialog")).to_be_visible()
+        expect(page.locator("#matchingCode0")).to_have_value(
+            "electrohold_company"
+        )
+        expect(page.locator("#matchingPattern0")).to_have_value(
+            r"\\bелектрохолд продажби еад\\b"
+        )
+        expect(page.locator("#matchingCode1")).to_have_value(
+            "electrohold_domain"
+        )
+
+        page.locator("#matchingCode0").fill("electrohold_sales_company")
+        page.locator("#matchingPattern0").fill(
+            r"\\bелектрохолд продажби еад\\b"
+        )
+        page.get_by_role(
+            "button", name="Премахни правило", exact=True
+        ).nth(1).click()
+        expect(page.locator('[data-matching-rule]')).to_have_count(1)
+
+        page.get_by_role(
+            "button", name="Премахни правило", exact=True
+        ).click()
+        expect(page.locator('[data-matching-rule]')).to_have_count(1)
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Matching изисква поне едно правило."
+        )
+
+        page.get_by_role(
+            "button", name="Добави matching правило", exact=True
+        ).click()
+        expect(page.locator('[data-matching-rule]')).to_have_count(2)
+        page.locator("#matchingCode1").fill("electrohold_official_domain")
+        page.locator("#matchingPattern1").fill(r"electrohold\\.bg")
+
+        page.locator("#confirmModalButton").click()
+
+        expect(page.get_by_role("dialog")).to_be_visible()
+        expect(page.locator("#matchingCode0")).to_have_value(
+            "electrohold_sales_company"
+        )
+        expect(page.locator("#matchingCode1")).to_have_value(
+            "electrohold_official_domain"
+        )
+        expect(page.locator("#matchingPattern1")).to_have_value(
+            r"electrohold\\.bg"
+        )
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Configuration changed; retry save"
+        )
+        expect(page.locator("#profileMatchingList .field-card")).to_have_count(
+            2
+        )
+        expect(page.locator("#profileMatchingList")).to_contain_text(
+            "electrohold_company"
+        )
+        expect(page.locator("#profileMatchingList")).not_to_contain_text(
+            "electrohold_sales_company"
+        )
+
+        page.locator("#confirmModalButton").click()
+
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        expect(page.locator("#profileMatchingList .field-card")).to_have_count(
+            2
+        )
+        expect(page.locator("#profileMatchingList")).to_contain_text(
+            "electrohold_sales_company"
+        )
+        expect(page.locator("#profileMatchingList")).to_contain_text(
+            "electrohold_official_domain"
+        )
+        expect(page.locator("#profileMatchingList")).not_to_contain_text(
+            "electrohold_company"
+        )
+        expect(page.locator("#profileMatchingList")).not_to_contain_text(
+            "electrohold_domain"
+        )
+        expect(page.locator("#profileSelector")).to_have_value(
+            "electricity_electrohold"
+        )
+        expect(page.locator("#fieldScope")).to_have_value("profile")
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Matching правилата за 'electricity_electrohold' са актуализирани."
+        )
+
+        browser.close()
+
+    assert len(mutation_requests) == 2
+    assert [request["method"] for request in mutation_requests] == [
+        "PUT",
+        "PUT",
+    ]
+    expected_endpoint = (
+        "/api/v1/config/document-types/invoice/profiles/"
+        "electricity_electrohold/matching"
+    )
+    assert all(
+        request["url"].endswith(expected_endpoint)
+        for request in mutation_requests
+    )
+    expected_payload = {
+        "matching": {
+            "any_of": [
+                {
+                    "code": "electrohold_sales_company",
+                    "pattern": r"\\bелектрохолд продажби еад\\b",
+                },
+                {
+                    "code": "electrohold_official_domain",
+                    "pattern": r"electrohold\\.bg",
+                },
+            ]
+        }
+    }
+    assert mutation_requests[0]["body"] == expected_payload
+    assert mutation_requests[1]["body"] == expected_payload
+    assert config_body["document_types"]["invoice"]["profiles"][
+        "telecom_a1"
+    ]["matching"]["any_of"] == original_a1_rules
+    assert config_body["document_types"]["invoice"][
+        "default_profile"
+    ] == "telecom_a1"
+    assert len(console_errors) == 1
+    assert "409 (Conflict)" in console_errors[0]
