@@ -98,6 +98,17 @@ def test_configuration_ui_profile_selector_does_not_change_default_profile():
     assert 'state.selectedFieldScope = "profile"' in listener
 
 
+def test_configuration_page_contains_profile_deletion_control():
+    html = read_text(INDEX_HTML)
+    js = read_text(UI_JS)
+
+    assert 'id="deleteProfileButton"' in html
+    assert "function confirmDeleteProfile()" in js
+    assert 'method: "DELETE"' in js
+    assert "profileName === config.default_profile" in js
+    assert "remainingProfiles" in js
+
+
 def test_configuration_page_contains_profile_creation_control():
     html = read_text(INDEX_HTML)
     js = read_text(UI_JS)
@@ -3236,4 +3247,157 @@ def test_configuration_browser_creates_profile_with_matching(
     assert config_body["document_types"]["invoice"][
         "default_profile"
     ] == "telecom_a1"
+    assert console_errors == []
+
+
+def test_configuration_browser_deletes_non_default_profile(
+    live_server_url,
+):
+    config_body = {
+        "document_types": {
+            "invoice": {
+                "default_profile": "telecom_a1",
+                "common_fields": [],
+                "profiles": {
+                    "telecom_a1": {
+                        "matching": {
+                            "any_of": [
+                                {
+                                    "code": "a1_company",
+                                    "pattern": "a1 bulgaria ead",
+                                }
+                            ]
+                        },
+                        "fields": [],
+                        "collections": {},
+                        "summary_validations": [],
+                    },
+                    "synthetic_provider": {
+                        "matching": {
+                            "any_of": [
+                                {
+                                    "code": "synthetic_company",
+                                    "pattern": "synthetic provider ead",
+                                }
+                            ]
+                        },
+                        "fields": [],
+                        "collections": {},
+                        "summary_validations": [],
+                    },
+                },
+                "collections": {},
+            }
+        },
+        "resolved_document_types": {},
+        "document_type_metadata": {
+            "invoice": {
+                "status": "ready",
+                "ready": True,
+                "field_count": 0,
+            }
+        },
+    }
+    delete_requests = []
+    console_errors = []
+
+    with sync_playwright() as playwright:
+        executable = Path(playwright.chromium.executable_path)
+        if not executable.exists():
+            pytest.skip("Playwright Chromium is not installed")
+
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1280, "height": 1000})
+        page.on(
+            "console",
+            lambda message: (
+                console_errors.append(message.text)
+                if message.type == "error"
+                else None
+            ),
+        )
+        page.route(
+            "**/api/v1/auth/config",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"enabled": False}),
+            ),
+        )
+
+        def handle_config(route):
+            if route.request.method == "GET":
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps(config_body),
+                )
+                return
+
+            assert route.request.method == "DELETE"
+            delete_requests.append(route.request.url)
+            del config_body["document_types"]["invoice"]["profiles"][
+                "synthetic_provider"
+            ]
+            route.fulfill(status=204, body="")
+
+        page.route("**/api/v1/config/document-types", handle_config)
+        page.route("**/api/v1/config/document-types/**", handle_config)
+        page.goto(
+            f"{live_server_url}/ui/index.html",
+            wait_until="networkidle",
+        )
+
+        expect(page.locator("#profileSelector")).to_have_value("telecom_a1")
+        expect(page.locator("#deleteProfileButton")).to_be_disabled()
+        expect(page.locator("#deleteProfileButton")).to_have_attribute(
+            "title",
+            "Профилът по подразбиране не може да бъде изтрит.",
+        )
+
+        page.locator("#profileSelector").select_option("synthetic_provider")
+        expect(page.locator("#fieldScope")).to_have_value("profile")
+        expect(page.locator("#deleteProfileButton")).to_be_enabled()
+        page.locator("#deleteProfileButton").click()
+        expect(page.get_by_role("dialog")).to_be_visible()
+        expect(page.locator("#modalBody")).to_contain_text(
+            "Изтриване на профил 'synthetic_provider'?"
+        )
+        page.locator("#cancelModalButton").click()
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        assert delete_requests == []
+        expect(page.locator("#profileSelector")).to_have_value(
+            "synthetic_provider"
+        )
+
+        page.locator("#deleteProfileButton").click()
+        page.locator("#confirmModalButton").click()
+
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        expect(page.locator("#profileSelector option")).to_have_count(1)
+        expect(page.locator("#profileSelector")).to_have_value("telecom_a1")
+        expect(page.locator("#fieldScope")).to_have_value("profile")
+        expect(page.locator("#deleteProfileButton")).to_be_disabled()
+        expect(page.locator("#defaultProfileName")).to_have_text("telecom_a1")
+        expect(page.locator("#profileMatchingList")).to_contain_text(
+            "a1_company"
+        )
+        expect(page.locator("#profileMatchingList")).not_to_contain_text(
+            "synthetic_company"
+        )
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Профилът 'synthetic_provider' е изтрит."
+        )
+        browser.close()
+
+    assert len(delete_requests) == 1
+    assert delete_requests[0].endswith(
+        "/api/v1/config/document-types/invoice/profiles/synthetic_provider"
+    )
+    assert config_body["document_types"]["invoice"][
+        "default_profile"
+    ] == "telecom_a1"
+    assert "synthetic_provider" not in config_body["document_types"][
+        "invoice"
+    ]["profiles"]
     assert console_errors == []

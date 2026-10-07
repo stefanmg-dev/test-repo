@@ -28,6 +28,7 @@ const el = {
     fieldScope: byId("fieldScope"),
     profileSelector: byId("profileSelector"),
     openAddProfileButton: byId("openAddProfileButton"),
+    deleteProfileButton: byId("deleteProfileButton"),
     defaultProfileName: byId("defaultProfileName"),
     profileMatchingSection: byId("profileMatchingSection"),
     profileMatchingList: byId("profileMatchingList"),
@@ -260,6 +261,14 @@ function updateFieldScope(config) {
         el.profileSelector.append(option);
     }
     el.profileSelector.disabled = !profileName;
+    el.deleteProfileButton.disabled = (
+        !profileName || profileName === config.default_profile
+    );
+    el.deleteProfileButton.title = (
+        profileName === config.default_profile
+            ? "Профилът по подразбиране не може да бъде изтрит."
+            : ""
+    );
 
     if (!["common", "profile"].includes(state.selectedFieldScope)) {
         state.selectedFieldScope = "common";
@@ -350,6 +359,49 @@ function createMatchingRuleEditor(rule, index, onRemove) {
     form.append(code.group, pattern.group);
     row.append(form, remove);
     return { row, code: code.input, pattern: pattern.textarea };
+}
+
+function confirmDeleteProfile() {
+    const config = state.documentTypes[state.selectedDocumentType];
+    const profileName = getSelectedProfile(config);
+    if (!profileName) return;
+    if (profileName === config.default_profile) {
+        showMessage(
+            "Профилът по подразбиране не може да бъде изтрит.",
+            "error"
+        );
+        return;
+    }
+
+    const body = document.createElement("div");
+    body.textContent = `Изтриване на профил '${profileName}'?`;
+    openModal({
+        title: "Изтриване на supplier profile",
+        body,
+        confirmText: "Изтрий",
+        onConfirm: async () => {
+            const endpoint = (
+                `/document-types/${encodeURIComponent(state.selectedDocumentType)}`
+                + `/profiles/${encodeURIComponent(profileName)}`
+            );
+            await apiRequest(endpoint, { method: "DELETE" });
+            const remainingProfiles = Object.keys(config.profiles || {})
+                .filter((name) => name !== profileName)
+                .sort();
+            state.selectedProfileName = (
+                config.default_profile
+                && remainingProfiles.includes(config.default_profile)
+                    ? config.default_profile
+                    : remainingProfiles[0] || null
+            );
+            state.selectedFieldScope = state.selectedProfileName
+                ? "profile"
+                : "common";
+            closeModal();
+            await loadConfiguration();
+            showMessage(`Профилът '${profileName}' е изтрит.`);
+        },
+    });
 }
 
 function openAddProfileModal() {
@@ -1960,6 +2012,7 @@ el.renameDocumentTypeButton.addEventListener("click", openRenameDocumentTypeModa
 el.deleteDocumentTypeButton.addEventListener("click", confirmDeleteDocumentType);
 el.openAddFieldButton.addEventListener("click", () => openFieldModal());
 el.openAddProfileButton.addEventListener("click", openAddProfileModal);
+el.deleteProfileButton.addEventListener("click", confirmDeleteProfile);
 el.editProfileMatchingButton.addEventListener(
     "click",
     openProfileMatchingModal
