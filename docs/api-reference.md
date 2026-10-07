@@ -440,6 +440,28 @@ The field is renamed when the replacement `field.name` differs from `field_name`
 - `404`: The document type or addressed field does not exist.
 - `422`: A path value violates request validation.
 
+### PUT `/api/v1/config/document-types/{document_type}/default-profile`
+
+**Purpose:** Assign one existing profile as the default for a profile-based document-type configuration.
+
+**Access:** Authenticated callers require `config:write`. The `admin` scope is also accepted. Legacy anonymous access remains available when enabled.
+
+**Path parameters:**
+
+- `document_type` (required): Existing profile-based document-type configuration key.
+
+**Request body:** `UpdateDefaultProfileRequest` containing `profile_name`, which must reference an existing profile and match `^[a-z][a-z0-9_]*$`.
+
+The operation changes only `default_profile`. Matching rules, fields, collections, and summary validations are preserved. Assigning the current default profile is idempotent.
+
+**Successful response:** `OperationResponse`.
+
+**Error responses:**
+
+- `404`: The document type or requested profile does not exist.
+- `409`: The document type uses legacy configuration.
+- `422`: The requested profile name violates request validation.
+
 ### POST `/api/v1/config/document-types/{document_type}/profiles/{profile_name}`
 
 **Purpose:** Add one uniquely named profile to a profile-based document-type configuration.

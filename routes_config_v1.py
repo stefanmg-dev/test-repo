@@ -17,6 +17,7 @@ from config_models import (
     DocumentTypeModel,
     OperationResponse,
     RenameDocumentTypeRequest,
+    UpdateDefaultProfileRequest,
     UpdateFieldRequest,
     UpdateProfileMatchingRequest,
 )
@@ -493,6 +494,51 @@ def delete_field(
             f"Field '{field_name}' deleted from "
             f"document type '{document_type}'"
         ),
+    }
+
+
+@router.put(
+    "/document-types/{document_type}/default-profile",
+    summary="Set the default document profile",
+    description=(
+        "Assigns one existing profile as the default for a profile-based "
+        "document type. Profile matching, fields, collections, and "
+        "validations are preserved. Legacy document types are rejected. "
+        "Authenticated requests require the config:write scope."
+    ),
+    response_description="Default profile update result.",
+    response_model=OperationResponse,
+)
+def update_default_profile(
+    request: UpdateDefaultProfileRequest,
+    document_type: str = Path(
+        ...,
+        description="Profile-based document-type configuration key.",
+    ),
+):
+    config = load_config()
+    document_config = get_document_type_or_404(
+        config=config,
+        document_type=document_type,
+    )
+    ensure_profile_based_config(document_config)
+    get_profile_or_404(document_config, request.profile_name)
+
+    if document_config.get("default_profile") == request.profile_name:
+        return {
+            "status": "ok",
+            "message": (
+                f"Profile '{request.profile_name}' remains the default"
+            ),
+        }
+
+    updated_config = deepcopy(config)
+    updated_config[document_type]["default_profile"] = request.profile_name
+    save_validated_config(updated_config)
+
+    return {
+        "status": "ok",
+        "message": f"Profile '{request.profile_name}' set as default",
     }
 
 

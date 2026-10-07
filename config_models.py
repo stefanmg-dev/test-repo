@@ -424,6 +424,20 @@ class CreateDocumentTypeRequest(BaseModel):
     )
 
 
+class UpdateDefaultProfileRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    profile_name: str = Field(
+        min_length=1,
+        max_length=100,
+        pattern=r"^[a-z][a-z0-9_]*$",
+        description=(
+            "Existing profile name to assign as the document type default."
+        ),
+        examples=["synthetic_provider"],
+    )
+
+
 class AddProfileRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

@@ -1555,6 +1555,69 @@
         }
       }
     },
+    "/api/v1/config/document-types/{document_type}/default-profile": {
+      "put": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Set the default document profile",
+        "description": "Assigns one existing profile as the default for a profile-based document type. Profile matching, fields, collections, and validations are preserved. Legacy document types are rejected. Authenticated requests require the config:write scope.",
+        "operationId": "update_default_profile_api_v1_config_document_types__document_type__default_profile_put",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "document_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Profile-based document-type configuration key.",
+              "title": "Document Type"
+            },
+            "description": "Profile-based document-type configuration key."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDefaultProfileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default profile update result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/config/document-types/{document_type}/profiles/{profile_name}": {
       "post": {
         "tags": [
@@ -7254,6 +7317,27 @@
           "collection"
         ],
         "title": "UpdateCollectionRequest"
+      },
+      "UpdateDefaultProfileRequest": {
+        "properties": {
+          "profile_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "title": "Profile Name",
+            "description": "Existing profile name to assign as the document type default.",
+            "examples": [
+              "synthetic_provider"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "profile_name"
+        ],
+        "title": "UpdateDefaultProfileRequest"
       },
       "UpdateFieldRequest": {
         "properties": {

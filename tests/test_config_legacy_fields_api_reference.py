@@ -14,7 +14,7 @@ def legacy_fields_section() -> str:
         "### POST `/api/v1/config/document-types/{document_type}/fields`"
     )
     end = content.index(
-        "### POST `/api/v1/config/document-types/{document_type}/profiles/{profile_name}`",
+        "### PUT `/api/v1/config/document-types/{document_type}/default-profile`",
         start,
     )
     return content[start:end]
