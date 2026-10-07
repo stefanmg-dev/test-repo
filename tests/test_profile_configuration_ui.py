@@ -3345,10 +3345,12 @@ def test_configuration_browser_deletes_non_default_profile(
         page.route("**/api/v1/config/document-types/**", handle_config)
         page.goto(
             f"{live_server_url}/ui/index.html",
-            wait_until="networkidle",
+            wait_until="domcontentloaded",
         )
-
-        expect(page.locator("#profileSelector")).to_have_value("telecom_a1")
+        expect(page.locator("#documentEditor")).to_be_visible()
+        expect(page.locator("#profileSelector")).to_have_value(
+            "telecom_a1"
+        )
         expect(page.locator("#deleteProfileButton")).to_be_disabled()
         expect(page.locator("#deleteProfileButton")).to_have_attribute(
             "title",
