@@ -202,8 +202,8 @@ def live_server_url():
             "warning",
         ],
         cwd=PROJECT_ROOT,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
         text=True,
     )
     try:
@@ -3345,7 +3345,7 @@ def test_configuration_browser_deletes_non_default_profile(
         page.route("**/api/v1/config/document-types/**", handle_config)
         page.goto(
             f"{live_server_url}/ui/index.html",
-            wait_until="domcontentloaded",
+            wait_until="commit",
         )
         expect(page.locator("#documentEditor")).to_be_visible()
         expect(page.locator("#profileSelector")).to_have_value(
