@@ -1,4 +1,6 @@
 import json
+import os
+import tempfile
 from pathlib import Path
 
 from config_validator import validate_config
@@ -36,24 +38,37 @@ def load_config() -> dict:
 def save_config(config: dict) -> None:
     validate_config(config)
 
-    temporary_path = CONFIG_PATH.with_suffix(".json.tmp")
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{CONFIG_PATH.name}.",
+        suffix=".tmp",
+        dir=CONFIG_PATH.parent,
+        text=True,
+    )
+    temporary_path = Path(temporary_name)
 
     try:
-        with temporary_path.open(
+        config_file = os.fdopen(
+            descriptor,
             "w",
-            encoding="utf-8"
-        ) as config_file:
+            encoding="utf-8",
+        )
+        descriptor = None
+
+        with config_file:
             json.dump(
                 config,
                 config_file,
                 ensure_ascii=False,
-                indent=2
+                indent=2,
             )
-
             config_file.write("\n")
+            config_file.flush()
+            os.fsync(config_file.fileno())
 
-        temporary_path.replace(CONFIG_PATH)
+        os.replace(temporary_path, CONFIG_PATH)
 
     finally:
+        if descriptor is not None:
+            os.close(descriptor)
         if temporary_path.exists():
             temporary_path.unlink()
