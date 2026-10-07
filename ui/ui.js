@@ -27,6 +27,7 @@ const el = {
     fieldScopeSection: byId("fieldScopeSection"),
     fieldScope: byId("fieldScope"),
     profileSelector: byId("profileSelector"),
+    openAddProfileButton: byId("openAddProfileButton"),
     defaultProfileName: byId("defaultProfileName"),
     profileMatchingSection: byId("profileMatchingSection"),
     profileMatchingList: byId("profileMatchingList"),
@@ -349,6 +350,84 @@ function createMatchingRuleEditor(rule, index, onRemove) {
     form.append(code.group, pattern.group);
     row.append(form, remove);
     return { row, code: code.input, pattern: pattern.textarea };
+}
+
+function openAddProfileModal() {
+    const config = state.documentTypes[state.selectedDocumentType];
+    if (!config || Array.isArray(config.fields)) return;
+
+    const form = document.createElement("form");
+    form.className = "form-grid";
+    const name = textInput("newProfileName", "Системно име на профила", "", {
+        required: true,
+        pattern: "^[a-z][a-z0-9_]*$",
+        help: "Малки латински букви, цифри и долна черта.",
+    });
+    const rulesContainer = document.createElement("div");
+    rulesContainer.className = "form-group full-width";
+    const editors = [];
+
+    const removeEditor = (row) => {
+        if (editors.length <= 1) {
+            showMessage("Новият профил изисква поне едно matching правило.", "error");
+            return;
+        }
+        const index = editors.findIndex((editor) => editor.row === row);
+        if (index >= 0) editors.splice(index, 1);
+        row.remove();
+    };
+
+    const addEditor = (rule = {}) => {
+        const editor = createMatchingRuleEditor(
+            rule,
+            editors.length,
+            removeEditor
+        );
+        editors.push(editor);
+        rulesContainer.appendChild(editor.row);
+    };
+    addEditor();
+
+    const addRuleButton = document.createElement("button");
+    addRuleButton.type = "button";
+    addRuleButton.className = "button button-secondary full-width";
+    addRuleButton.textContent = "Добави matching правило";
+    addRuleButton.addEventListener("click", () => addEditor());
+    form.append(name.group, rulesContainer, addRuleButton);
+
+    openModal({
+        title: "Нов supplier profile",
+        body: form,
+        confirmText: "Създай",
+        onConfirm: async () => {
+            if (!form.reportValidity()) return;
+            const profileName = name.input.value.trim();
+            const anyOf = editors.map((editor) => ({
+                code: editor.code.value.trim(),
+                pattern: editor.pattern.value.trim(),
+            }));
+            const endpoint = (
+                `/document-types/${encodeURIComponent(state.selectedDocumentType)}`
+                + `/profiles/${encodeURIComponent(profileName)}`
+            );
+            await apiRequest(endpoint, {
+                method: "POST",
+                body: JSON.stringify({
+                    profile: {
+                        matching: { any_of: anyOf },
+                        fields: [],
+                        collections: {},
+                        summary_validations: [],
+                    },
+                }),
+            });
+            state.selectedProfileName = profileName;
+            state.selectedFieldScope = "profile";
+            closeModal();
+            await loadConfiguration();
+            showMessage(`Профилът '${profileName}' е създаден.`);
+        },
+    });
 }
 
 function openProfileMatchingModal() {
@@ -1880,6 +1959,7 @@ el.openCreateDocumentTypeButton.addEventListener("click", openCreateDocumentType
 el.renameDocumentTypeButton.addEventListener("click", openRenameDocumentTypeModal);
 el.deleteDocumentTypeButton.addEventListener("click", confirmDeleteDocumentType);
 el.openAddFieldButton.addEventListener("click", () => openFieldModal());
+el.openAddProfileButton.addEventListener("click", openAddProfileModal);
 el.editProfileMatchingButton.addEventListener(
     "click",
     openProfileMatchingModal

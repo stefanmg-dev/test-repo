@@ -98,6 +98,27 @@ def test_configuration_ui_profile_selector_does_not_change_default_profile():
     assert 'state.selectedFieldScope = "profile"' in listener
 
 
+def test_configuration_page_contains_profile_creation_control():
+    html = read_text(INDEX_HTML)
+    js = read_text(UI_JS)
+
+    assert 'id="openAddProfileButton"' in html
+    assert "function openAddProfileModal()" in js
+    assert 'method: "POST"' in js
+    assert "state.selectedProfileName = profileName" in js
+    assert 'state.selectedFieldScope = "profile"' in js
+
+
+def test_configuration_profile_creation_uses_complete_safe_payload():
+    content = read_text(UI_JS)
+
+    assert "matching: { any_of: anyOf }" in content
+    assert "fields: []" in content
+    assert "collections: {}" in content
+    assert "summary_validations: []" in content
+    assert "Новият профил изисква поне едно matching правило." in content
+
+
 def test_configuration_page_contains_profile_matching_editor():
     html = read_text(INDEX_HTML)
     js = read_text(UI_JS)
@@ -3052,3 +3073,167 @@ def test_configuration_browser_edits_matching_with_retry(
     ] == "telecom_a1"
     assert len(console_errors) == 1
     assert "409 (Conflict)" in console_errors[0]
+
+
+def test_configuration_browser_creates_profile_with_matching(
+    live_server_url,
+):
+    config_body = {
+        "document_types": {
+            "invoice": {
+                "default_profile": "telecom_a1",
+                "common_fields": [],
+                "profiles": {
+                    "telecom_a1": {
+                        "matching": {
+                            "any_of": [
+                                {
+                                    "code": "a1_company",
+                                    "pattern": "a1 bulgaria ead",
+                                }
+                            ]
+                        },
+                        "fields": [],
+                        "collections": {},
+                        "summary_validations": [],
+                    }
+                },
+                "collections": {},
+            }
+        },
+        "resolved_document_types": {},
+        "document_type_metadata": {
+            "invoice": {
+                "status": "ready",
+                "ready": True,
+                "field_count": 0,
+            }
+        },
+    }
+    mutation_requests = []
+    console_errors = []
+
+    with sync_playwright() as playwright:
+        executable = Path(playwright.chromium.executable_path)
+        if not executable.exists():
+            pytest.skip("Playwright Chromium is not installed")
+
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1280, "height": 1200})
+        page.on(
+            "console",
+            lambda message: (
+                console_errors.append(message.text)
+                if message.type == "error"
+                else None
+            ),
+        )
+        page.route(
+            "**/api/v1/auth/config",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"enabled": False}),
+            ),
+        )
+
+        def handle_config(route):
+            if route.request.method == "GET":
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps(config_body),
+                )
+                return
+
+            request_body = json.loads(route.request.post_data)
+            mutation_requests.append(
+                {
+                    "method": route.request.method,
+                    "url": route.request.url,
+                    "body": request_body,
+                }
+            )
+            config_body["document_types"]["invoice"]["profiles"][
+                "synthetic_provider"
+            ] = request_body["profile"]
+            route.fulfill(
+                status=201,
+                content_type="application/json",
+                body=json.dumps({"status": "ok"}),
+            )
+
+        page.route("**/api/v1/config/document-types", handle_config)
+        page.route("**/api/v1/config/document-types/**", handle_config)
+        page.goto(
+            f"{live_server_url}/ui/index.html",
+            wait_until="networkidle",
+        )
+
+        expect(page.locator("#defaultProfileName")).to_have_text(
+            "telecom_a1"
+        )
+        page.locator("#openAddProfileButton").click()
+        expect(page.get_by_role("dialog")).to_be_visible()
+        page.locator("#newProfileName").fill("synthetic_provider")
+        page.locator("#matchingCode0").fill("synthetic_company")
+        page.locator("#matchingPattern0").fill(
+            r"\\bsynthetic provider ead\\b"
+        )
+        page.get_by_role(
+            "button", name="Добави matching правило", exact=True
+        ).click()
+        page.locator("#matchingCode1").fill("synthetic_domain")
+        page.locator("#matchingPattern1").fill(r"synthetic\\.example")
+        page.locator("#confirmModalButton").click()
+
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        expect(page.locator("#profileSelector")).to_have_value(
+            "synthetic_provider"
+        )
+        expect(page.locator("#fieldScope")).to_have_value("profile")
+        expect(page.locator("#defaultProfileName")).to_have_text(
+            "telecom_a1"
+        )
+        expect(page.locator("#profileMatchingList .field-card")).to_have_count(
+            2
+        )
+        expect(page.locator("#profileMatchingList")).to_contain_text(
+            "synthetic_company"
+        )
+        expect(page.locator("#profileMatchingList")).to_contain_text(
+            "synthetic_domain"
+        )
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Профилът 'synthetic_provider' е създаден."
+        )
+        browser.close()
+
+    assert len(mutation_requests) == 1
+    assert mutation_requests[0]["method"] == "POST"
+    assert mutation_requests[0]["url"].endswith(
+        "/api/v1/config/document-types/invoice/profiles/synthetic_provider"
+    )
+    assert mutation_requests[0]["body"] == {
+        "profile": {
+            "matching": {
+                "any_of": [
+                    {
+                        "code": "synthetic_company",
+                        "pattern": r"\\bsynthetic provider ead\\b",
+                    },
+                    {
+                        "code": "synthetic_domain",
+                        "pattern": r"synthetic\\.example",
+                    },
+                ]
+            },
+            "fields": [],
+            "collections": {},
+            "summary_validations": [],
+        }
+    }
+    assert config_body["document_types"]["invoice"][
+        "default_profile"
+    ] == "telecom_a1"
+    assert console_errors == []
