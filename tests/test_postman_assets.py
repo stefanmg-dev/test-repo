@@ -46,3 +46,17 @@ def test_postman_environment_contract_and_safety():
     serialized = json.dumps(data, ensure_ascii=False)
     assert "/Users/" not in serialized
     assert "DATABASE_URL" not in serialized
+
+def test_postman_configuration_revision_contract():
+    data = load(COLLECTION)
+    request = next(
+        item
+        for item in requests(data["item"])
+        if item["name"] == "List Document Types"
+    )
+    script = "\n".join(request["event"][0]["script"]["exec"])
+
+    assert "body.revision" in script
+    assert "^[0-9a-f]{64}$" in script
+    assert 'headers.get("ETag")' in script
+    assert '`"${body.revision}"`' in script

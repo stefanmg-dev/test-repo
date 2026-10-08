@@ -113,11 +113,16 @@ Authentication can be supplied through an API key or OIDC bearer token where req
 - `document_types`: Stored legacy or profile-based configurations keyed by document type.
 - `resolved_document_types`: Effective default-profile fields keyed by document type.
 - `document_type_metadata`: Readiness metadata keyed by document type.
+- `revision`: Deterministic 64-character SHA-256 revision of the complete stored configuration.
+- `ETag` response header: Strong quoted entity tag whose value matches `revision`.
 - `profile`: Default profile used to resolve effective fields, or `null` when profiles do not apply.
 - `fields`: Effective extraction fields after profile resolution.
 - `status`: Configuration lifecycle state, `draft` or `ready`.
 - `ready`: Whether usable extraction fields are available.
 - `field_count`: Number of resolved extraction fields.
+
+
+**Optimistic concurrency for configuration mutations:** All configuration `POST`, `PUT`, and `DELETE` operations accept an optional `If-Match` request header. Use the strong quoted `ETag` returned by `GET /api/v1/config/document-types`. When the supplied revision is stale or weak, the API returns `412 Precondition Failed`, includes the current `ETag`, and does not write the configuration. Reload the configuration, review the latest state, and explicitly retry the intended change. The header remains temporarily optional for backward compatibility.
 
 ### POST `/api/v1/config/document-types`
 
@@ -135,6 +140,7 @@ Authentication can be supplied through an API key or OIDC bearer token where req
 **Error responses:**
 
 - `409`: The document-type key already exists.
+- `412`: The supplied `If-Match` revision is stale or weak. The response includes the current `ETag`, and no configuration write occurs.
 - `422`: The key or configuration mode violates request validation.
 
 ### GET `/api/v1/config/document-types/{document_type}`

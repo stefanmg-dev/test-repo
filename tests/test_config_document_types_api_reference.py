@@ -55,3 +55,20 @@ def test_document_type_rename_reference_documents_contract():
     assert "`404`" in content
     assert "`409`" in content
     assert "`422`" in content
+
+def test_configuration_revision_and_stale_update_reference_contract():
+    content = section(
+        "### GET `/api/v1/config/document-types`",
+        "### POST `/api/v1/config/document-types/{document_type}/collections/{collection_name}`",
+    )
+
+    for term in (
+        "`revision`",
+        "`ETag`",
+        "`If-Match`",
+        "`412`",
+        "Precondition Failed",
+        "no configuration write occurs",
+        "temporarily optional",
+    ):
+        assert term in content
