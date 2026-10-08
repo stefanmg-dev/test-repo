@@ -32,6 +32,7 @@ from config_store import load_config
 from configuration_revision import (
     configuration_etag,
     configuration_revision,
+    enforce_configuration_revision,
 )
 from security_scopes import enforce_config_scope
 from document_config_resolver import resolve_document_fields
@@ -41,7 +42,10 @@ from document_status import build_document_type_metadata
 router = APIRouter(
     prefix="/api/v1/config",
     tags=["Configuration API v1"],
-    dependencies=[Depends(enforce_config_scope)],
+    dependencies=[
+        Depends(enforce_config_scope),
+        Depends(enforce_configuration_revision),
+    ],
 )
 
 

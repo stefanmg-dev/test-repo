@@ -28,13 +28,17 @@ from config_collection_service import (
     update_profile_summary_validation,
 )
 from config_store import load_config
+from configuration_revision import enforce_configuration_revision
 from security_scopes import enforce_config_scope
 
 
 router = APIRouter(
     prefix="/api/v1/config",
     tags=["Configuration API v1"],
-    dependencies=[Depends(enforce_config_scope)],
+    dependencies=[
+        Depends(enforce_config_scope),
+        Depends(enforce_configuration_revision),
+    ],
 )
 
 

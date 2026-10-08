@@ -45,5 +45,6 @@ def test_summary_validation_service_uses_copy_and_validated_save():
 def test_summary_validation_routes_require_existing_config_scope():
     content = ROUTES.read_text(encoding="utf-8")
     assert 'prefix="/api/v1/config"' in content
-    assert "dependencies=[Depends(enforce_config_scope)]" in content
+    assert "Depends(enforce_config_scope)" in content
+    assert "Depends(enforce_configuration_revision)" in content
     assert "summary-validations/{validation_index}" in content
