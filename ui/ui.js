@@ -6,6 +6,7 @@ const state = {
     documentTypes: {},
     resolvedDocumentTypes: {},
     documentTypeMetadata: {},
+    configurationRevision: null,
     selectedDocumentType: null,
     selectedFieldScope: "legacy",
     selectedProfileName: null,
@@ -56,12 +57,25 @@ const el = {
     fieldCardTemplate: byId("fieldCardTemplate"),
 };
 
+function isConfigurationMutation(method = "GET") {
+    return ["POST", "PUT", "DELETE"].includes(
+        method.toUpperCase()
+    );
+}
+
 async function apiRequest(path, options = {}) {
+    const revisionHeaders = (
+        isConfigurationMutation(options.method)
+        && state.configurationRevision
+    )
+        ? { "If-Match": `"${state.configurationRevision}"` }
+        : {};
     const response = await window.documentAuth.authenticatedFetch(`${API_BASE}${path}`, {
         ...options,
         headers: {
             Accept: "application/json",
             ...(options.body ? { "Content-Type": "application/json" } : {}),
+            ...revisionHeaders,
             ...(options.headers || {}),
         },
     });
@@ -80,7 +94,9 @@ async function apiRequest(path, options = {}) {
         if (Array.isArray(detail)) {
             throw new Error(detail.map((item) => `${item.loc?.join(".") || "request"}: ${item.msg}`).join("\n"));
         }
-        throw new Error(detail || `HTTP ${response.status}`);
+        const error = new Error(detail || `HTTP ${response.status}`);
+        error.status = response.status;
+        throw error;
     }
 
     return body;
@@ -1442,6 +1458,7 @@ async function loadConfiguration(preserveSelection = true) {
 
     try {
         const response = await apiRequest("/document-types");
+        state.configurationRevision = response.revision || null;
         state.documentTypes =
             response.document_types || {};
 
@@ -1463,6 +1480,7 @@ async function loadConfiguration(preserveSelection = true) {
     } catch (error) {
         state.documentTypes = {};
         state.resolvedDocumentTypes = {};
+        state.configurationRevision = null;
         state.documentTypeMetadata = {};
         state.selectedDocumentType = null;
         renderDocumentTypes();
@@ -2017,7 +2035,17 @@ el.confirmModalButton.addEventListener("click", async () => {
     try {
         await state.modalConfirmHandler();
     } catch (error) {
-        showMessage(error.message, "error");
+        if (error.status === 412) {
+            closeModal();
+            await loadConfiguration();
+            showMessage(
+                "Конфигурацията е променена другаде. "
+                + "Заредена е актуалната версия. Повторете промяната.",
+                "error"
+            );
+        } else {
+            showMessage(error.message, "error");
+        }
     } finally {
         el.confirmModalButton.disabled = false;
     }

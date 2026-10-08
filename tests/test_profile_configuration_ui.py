@@ -30,6 +30,16 @@ def test_configuration_ui_tracks_resolved_document_types():
     )
 
 
+def test_configuration_ui_tracks_revision_and_sends_if_match():
+    content = read_text(UI_JS)
+
+    assert "configurationRevision: null" in content
+    assert "response.revision || null" in content
+    assert '{ "If-Match": `"${state.configurationRevision}"` }' in content
+    assert 'error.status === 412' in content
+    assert "Заредена е актуалната версия" in content
+
+
 def test_configuration_ui_tracks_selected_field_scope():
     content = read_text(UI_JS)
 
@@ -3582,3 +3592,127 @@ def test_configuration_browser_sets_default_profile(
         "default_profile"
     ] == "synthetic_provider"
     assert console_errors == []
+
+
+def test_configuration_browser_reloads_after_stale_revision(
+    live_server_url,
+):
+    config_body = {
+        "revision": "a" * 64,
+        "document_types": {
+            "invoice": {
+                "fields": [],
+            }
+        },
+        "resolved_document_types": {},
+        "document_type_metadata": {
+            "invoice": {
+                "status": "draft",
+                "ready": False,
+                "field_count": 0,
+            }
+        },
+    }
+    mutation_requests = []
+    get_count = 0
+    console_errors = []
+
+    with sync_playwright() as playwright:
+        executable = Path(playwright.chromium.executable_path)
+        if not executable.exists():
+            pytest.skip("Playwright Chromium is not installed")
+
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1280, "height": 900})
+        page.on(
+            "console",
+            lambda message: (
+                console_errors.append(message.text)
+                if message.type == "error"
+                else None
+            ),
+        )
+        page.route(
+            "**/api/v1/auth/config",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"enabled": False}),
+            ),
+        )
+
+        def handle_config(route):
+            nonlocal get_count
+            if route.request.method == "GET":
+                get_count += 1
+                if get_count > 1:
+                    config_body["revision"] = "b" * 64
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps(config_body),
+                )
+                return
+
+            mutation_requests.append(
+                {
+                    "method": route.request.method,
+                    "headers": route.request.headers,
+                    "body": json.loads(route.request.post_data),
+                }
+            )
+            route.fulfill(
+                status=412,
+                content_type="application/json",
+                headers={"ETag": f'"{"b" * 64}"'},
+                body=json.dumps(
+                    {
+                        "detail": (
+                            "Configuration revision is stale. "
+                            "Reload the configuration and retry."
+                        )
+                    }
+                ),
+            )
+
+        page.route("**/api/v1/config/document-types", handle_config)
+        page.route("**/api/v1/config/document-types/**", handle_config)
+        page.goto(
+            f"{live_server_url}/ui/index.html",
+            wait_until="commit",
+        )
+        expect(page.locator("#documentEditor")).to_be_visible()
+
+        page.locator("#openCreateDocumentTypeButton").click()
+        expect(page.get_by_role("dialog")).to_be_visible()
+        page.locator("#newDocumentType").fill("contract")
+        page.locator("#confirmModalButton").click()
+
+        expect(page.get_by_role("dialog")).to_be_hidden()
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Конфигурацията е променена другаде."
+        )
+        expect(page.locator("#messageArea")).to_contain_text(
+            "Заредена е актуалната версия."
+        )
+        expect(page.locator("#documentTypeList")).not_to_contain_text(
+            "contract"
+        )
+        browser.close()
+
+    assert get_count == 2
+    assert len(mutation_requests) == 1
+    assert mutation_requests[0]["method"] == "POST"
+    assert mutation_requests[0]["headers"]["if-match"] == f'"{"a" * 64}"'
+    assert mutation_requests[0]["body"] == {
+        "document_type": "contract"
+    }
+    assert any(
+        "412 (Precondition Failed)" in message
+        for message in console_errors
+    )
+    assert [
+        message
+        for message in console_errors
+        if "412 (Precondition Failed)" not in message
+    ] == []
