@@ -1,7 +1,10 @@
+import fcntl
 import json
 import os
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Iterator
 
 from config_validator import validate_config
 
@@ -35,9 +38,29 @@ def load_config() -> dict:
     return config
 
 
-def save_config(config: dict) -> None:
-    validate_config(config)
+def configuration_lock_path(
+    config_path: Path | None = None,
+) -> Path:
+    target = config_path or CONFIG_PATH
+    return target.with_name(f".{target.name}.lock")
 
+
+@contextmanager
+def configuration_write_lock(
+    config_path: Path | None = None,
+) -> Iterator[None]:
+    lock_path = configuration_lock_path(config_path)
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with lock_path.open("a+", encoding="utf-8") as lock_file:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+
+
+def _save_config_unlocked(config: dict) -> None:
     descriptor, temporary_name = tempfile.mkstemp(
         prefix=f".{CONFIG_PATH.name}.",
         suffix=".tmp",
@@ -72,3 +95,10 @@ def save_config(config: dict) -> None:
             os.close(descriptor)
         if temporary_path.exists():
             temporary_path.unlink()
+
+
+def save_config(config: dict) -> None:
+    validate_config(config)
+
+    with configuration_write_lock():
+        _save_config_unlocked(config)
