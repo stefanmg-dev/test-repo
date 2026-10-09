@@ -62,3 +62,33 @@ def test_status_handles_stopped_api_without_raw_curl_errors():
         in content
     )
 
+
+def test_runbook_explains_local_environment_layers():
+    content = RUNBOOK.read_text(encoding="utf-8")
+
+    assert "Opening a new Terminal does not automatically" in content
+    assert "**Pipenv environment**" in content
+    assert "**`DATABASE_URL`**" in content
+    assert "**Uvicorn**" in content
+    assert "not required for Git commands or most test commands" in content
+
+
+def test_runbook_documents_new_terminal_bootstrap():
+    content = RUNBOOK.read_text(encoding="utf-8")
+
+    assert "## Standard bootstrap in a new Terminal" in content
+    assert "cd ~/AI/ai-code-assistant" in content
+    assert "postgresql+psycopg:///document_processing?host=/tmp" in content
+    assert "pipenv run python -m pytest -q" in content
+    assert "The application does not need to be running" in content
+
+
+def test_runbook_explains_foreground_server_terminal():
+    content = RUNBOOK.read_text(encoding="utf-8")
+
+    assert "## Why the server terminal appears blocked" in content
+    assert "runs Uvicorn in the foreground" in content
+    assert "does not mean the terminal has frozen" in content
+    assert "in a second Terminal" in content
+    assert "Press `Ctrl+C`" in content
+

@@ -60,6 +60,42 @@ pg_isready
 
 Then run the start command again.
 
+## Understand the local development layers
+
+These are separate parts of the local environment:
+
+- **Terminal** is the shell window where commands run. Opening a new Terminal does not automatically activate Pipenv, export `DATABASE_URL`, or start Uvicorn.
+- **Pipenv environment** selects the project Python interpreter and installed dependencies. `pipenv run <command>` runs one command in that environment without opening an interactive subshell.
+- **`DATABASE_URL`** tells the application and database tools which PostgreSQL database to use. A manual `export` affects only the current terminal session.
+- **Uvicorn** is the running API server. Uvicorn is needed when using the browser UI or making HTTP requests to the API, but it is not required for Git commands or most test commands.
+
+## Standard bootstrap in a new Terminal
+
+For Git operations and tests, use the project directory and run commands through Pipenv:
+
+```bash
+cd ~/AI/ai-code-assistant
+export DATABASE_URL='postgresql+psycopg:///document_processing?host=/tmp'
+pipenv run python -m pytest -q
+```
+
+The application does not need to be running for `git status`, `git diff`, `git add`, `git commit`, `git push`, or the normal pytest suite.
+
+Use the helper when the browser UI or live API is needed:
+
+```bash
+cd ~/AI/ai-code-assistant
+pipenv run bash scripts/local_dev.sh start
+```
+
+The helper supplies its own default `DATABASE_URL`, checks PostgreSQL, applies migrations, and starts Uvicorn.
+
+## Why the server terminal appears blocked
+
+`scripts/local_dev.sh start` runs Uvicorn in the foreground and waits for the server process. The terminal therefore shows server logs instead of a new shell prompt. This is expected and does not mean the terminal has frozen.
+
+Keep the server terminal open while using the UI. Run Git commands, tests, and status checks in a second Terminal. Press `Ctrl+C` in the server terminal to stop Uvicorn and return to the prompt.
+
 ## Manual fallback
 
 Use this only when debugging the helper itself:
