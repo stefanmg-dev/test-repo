@@ -1175,12 +1175,22 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "409": {
+            "description": "The expected revision is stale or a guarded restore safety check detected a concurrent configuration change.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ConfigurationRecoveryErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The restore request or snapshot is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigurationRecoveryErrorResponse"
                 }
               }
             }
@@ -1246,11 +1256,11 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Snapshot validation failed.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ConfigurationRecoveryErrorResponse"
                 }
               }
             }
@@ -1306,11 +1316,11 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Snapshot export request validation failed.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ConfigurationRecoveryErrorResponse"
                 }
               }
             }
@@ -4861,6 +4871,24 @@
         ],
         "title": "ConfigResponse"
       },
+      "ConfigurationRecoveryErrorResponse": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "description": "Human-readable explanation of the validation, precondition, revision-conflict, or restore-safety failure.",
+            "examples": [
+              "Configuration snapshot revision does not match its content"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "ConfigurationRecoveryErrorResponse"
+      },
       "ConfigurationRestoreDryRunRequest": {
         "properties": {
           "schema_version": {
@@ -4947,7 +4975,7 @@
         "properties": {
           "snapshot": {
             "$ref": "#/components/schemas/ConfigurationRestoreDryRunRequest",
-            "description": "Validated configuration snapshot to restore."
+            "description": "Configuration snapshot envelope previously exported by the API and accepted by the restore dry-run operation."
           },
           "expected_current_revision": {
             "type": "string",
@@ -4977,34 +5005,58 @@
         "properties": {
           "restore_applied": {
             "type": "boolean",
-            "title": "Restore Applied"
+            "title": "Restore Applied",
+            "description": "Whether the guarded restore completed successfully.",
+            "examples": [
+              true
+            ]
           },
           "previous_revision": {
             "type": "string",
             "maxLength": 64,
             "minLength": 64,
-            "title": "Previous Revision"
+            "title": "Previous Revision",
+            "description": "Revision that was current before the restore.",
+            "examples": [
+              "0000000000000000000000000000000000000000000000000000000000000000"
+            ]
           },
           "restored_revision": {
             "type": "string",
             "maxLength": 64,
             "minLength": 64,
-            "title": "Restored Revision"
+            "title": "Restored Revision",
+            "description": "Revision of the configuration written by the restore.",
+            "examples": [
+              "1111111111111111111111111111111111111111111111111111111111111111"
+            ]
           },
           "backup_revision": {
             "type": "string",
             "maxLength": 64,
             "minLength": 64,
-            "title": "Backup Revision"
+            "title": "Backup Revision",
+            "description": "Revision contained in the verified pre-restore backup.",
+            "examples": [
+              "0000000000000000000000000000000000000000000000000000000000000000"
+            ]
           },
           "backup_identifier": {
             "type": "string",
-            "title": "Backup Identifier"
+            "title": "Backup Identifier",
+            "description": "Server-generated identifier of the retained pre-restore backup; this is not a filesystem path.",
+            "examples": [
+              "pre-restore-example.config-snapshot.json"
+            ]
           },
           "configuration_write": {
             "type": "string",
             "const": "PERFORMED",
-            "title": "Configuration Write"
+            "title": "Configuration Write",
+            "description": "Confirms that the guarded configuration write occurred.",
+            "examples": [
+              "PERFORMED"
+            ]
           }
         },
         "additionalProperties": false,

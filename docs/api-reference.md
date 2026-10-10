@@ -1134,6 +1134,174 @@ Important response fields:
 - `200`: Successful Response Response: `application/json`: `documented schema`.
 - `503`: Application dependencies are not ready Response: No response body documented.
 
+
+## Configuration recovery
+
+Configuration recovery is an administrative workflow. Export creates a portable snapshot, dry-run validates a candidate without writing configuration, and guarded restore applies only a previously validated candidate with revision and confirmation safeguards.
+
+### GET `/api/v1/config/snapshot`
+
+**Purpose:** Export the complete stored configuration as a versioned, integrity-protected snapshot.
+
+**Access:** Authenticated requests require `config:read`.
+
+**Parameters:** No path or query parameters. The shared optional `If-Match` header may be documented by the configuration router but does not cause this read-only operation to write configuration.
+
+**Request body:** None.
+
+**Successful response fields:**
+
+- `schema_version`: Version of the snapshot envelope format.
+- `revision`: SHA-256 revision of the exact configuration contained in the snapshot.
+- `configuration`: Complete stored document-type configuration, preserved without inserting optional defaults.
+
+**Example response:**
+
+```json
+{
+  "schema_version": "1",
+  "revision": "0000000000000000000000000000000000000000000000000000000000000000",
+  "configuration": {
+    "synthetic_invoice": {
+      "fields": []
+    }
+  }
+}
+```
+
+**Responses:**
+
+- `200`: Snapshot exported successfully.
+- `422`: Request validation failed. The `detail` field explains the failure.
+
+### POST `/api/v1/config/restore/dry-run`
+
+**Purpose:** Validate a snapshot and compare its revision with the current configuration without writing, backing up, or restoring configuration.
+
+**Access:** Authenticated requests follow the configuration POST-operation scope policy.
+
+**Request body fields:**
+
+- `schema_version`: Snapshot envelope version; currently `1`.
+- `revision`: SHA-256 revision declared by the snapshot.
+- `configuration`: Complete candidate document-type configuration to validate.
+
+**Example request:**
+
+```json
+{
+  "schema_version": "1",
+  "revision": "1111111111111111111111111111111111111111111111111111111111111111",
+  "configuration": {
+    "synthetic_invoice": {
+      "fields": []
+    }
+  }
+}
+```
+
+**Successful response fields:**
+
+- `valid`: `true` when the candidate passes snapshot and configuration validation.
+- `snapshot_revision`: Validated SHA-256 revision of the candidate configuration.
+- `current_revision`: SHA-256 revision of the currently stored configuration.
+- `changes_detected`: Whether the candidate revision differs from the current revision.
+- `document_types`: Sorted document-type keys contained in the candidate.
+
+**Example response:**
+
+```json
+{
+  "valid": true,
+  "snapshot_revision": "1111111111111111111111111111111111111111111111111111111111111111",
+  "current_revision": "0000000000000000000000000000000000000000000000000000000000000000",
+  "changes_detected": true,
+  "document_types": ["synthetic_invoice"]
+}
+```
+
+**Responses:**
+
+- `200`: Candidate is valid and the comparison completed.
+- `422`: Snapshot or request validation failed. The `detail` field explains the failure.
+
+**Example `422` response:**
+
+```json
+{
+  "detail": "Configuration snapshot revision does not match its content"
+}
+```
+
+### POST `/api/v1/config/restore`
+
+**Purpose:** Apply a guarded atomic restore using the shared write lock, verified pre-restore backup, atomic write, and rollback verification.
+
+**Access:** Authenticated requests require `config:write`.
+
+**Request body fields:**
+
+- `snapshot`: Snapshot envelope previously accepted by dry-run.
+  - `schema_version`: Snapshot envelope version.
+  - `revision`: SHA-256 revision declared by the snapshot.
+  - `configuration`: Complete candidate configuration.
+- `expected_current_revision`: Current revision observed during dry-run; prevents restoring over a newer configuration.
+- `confirmation`: Explicit destructive-operation confirmation; must be exactly `RESTORE`.
+
+**Example request:**
+
+```json
+{
+  "snapshot": {
+    "schema_version": "1",
+    "revision": "1111111111111111111111111111111111111111111111111111111111111111",
+    "configuration": {
+      "synthetic_invoice": {
+        "fields": []
+      }
+    }
+  },
+  "expected_current_revision": "0000000000000000000000000000000000000000000000000000000000000000",
+  "confirmation": "RESTORE"
+}
+```
+
+**Successful response fields:**
+
+- `restore_applied`: Whether the guarded restore completed successfully.
+- `previous_revision`: Revision that was current before the restore.
+- `restored_revision`: Revision written from the snapshot.
+- `backup_revision`: Revision verified in the retained pre-restore backup.
+- `backup_identifier`: Server-generated backup identifier; not a filesystem path.
+- `configuration_write`: `PERFORMED` when the guarded write occurred.
+
+**Example response:**
+
+```json
+{
+  "restore_applied": true,
+  "previous_revision": "0000000000000000000000000000000000000000000000000000000000000000",
+  "restored_revision": "1111111111111111111111111111111111111111111111111111111111111111",
+  "backup_revision": "0000000000000000000000000000000000000000000000000000000000000000",
+  "backup_identifier": "pre-restore-example.config-snapshot.json",
+  "configuration_write": "PERFORMED"
+}
+```
+
+**Responses:**
+
+- `200`: Guarded restore completed and the verified backup was retained.
+- `409`: Expected revision is stale or a restore safety check detected a concurrent change. The `detail` field explains the conflict.
+- `422`: Request body, confirmation, or snapshot validation failed. The `detail` field explains the failure.
+
+**Example `409` response:**
+
+```json
+{
+  "detail": "Current configuration revision changed before backup"
+}
+```
+
 ## Important workflows
 
 ### Extract a document

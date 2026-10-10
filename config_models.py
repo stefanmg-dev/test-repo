@@ -549,11 +549,28 @@ class ConfigurationRestoreDryRunRequest(BaseModel):
     )
 
 
+class ConfigurationRecoveryErrorResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    detail: str = Field(
+        description=(
+            "Human-readable explanation of the validation, precondition, "
+            "revision-conflict, or restore-safety failure."
+        ),
+        examples=[
+            "Configuration snapshot revision does not match its content"
+        ],
+    )
+
+
 class ConfigurationRestoreRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     snapshot: ConfigurationRestoreDryRunRequest = Field(
-        description="Validated configuration snapshot to restore."
+        description=(
+            "Configuration snapshot envelope previously exported by the API "
+            "and accepted by the restore dry-run operation."
+        )
     )
     expected_current_revision: str = Field(
         min_length=64,
@@ -569,12 +586,39 @@ class ConfigurationRestoreRequest(BaseModel):
 class ConfigurationRestoreResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    restore_applied: bool
-    previous_revision: str = Field(min_length=64, max_length=64)
-    restored_revision: str = Field(min_length=64, max_length=64)
-    backup_revision: str = Field(min_length=64, max_length=64)
-    backup_identifier: str
-    configuration_write: Literal["PERFORMED"]
+    restore_applied: bool = Field(
+        description="Whether the guarded restore completed successfully.",
+        examples=[True],
+    )
+    previous_revision: str = Field(
+        min_length=64,
+        max_length=64,
+        description="Revision that was current before the restore.",
+        examples=["0" * 64],
+    )
+    restored_revision: str = Field(
+        min_length=64,
+        max_length=64,
+        description="Revision of the configuration written by the restore.",
+        examples=["1" * 64],
+    )
+    backup_revision: str = Field(
+        min_length=64,
+        max_length=64,
+        description="Revision contained in the verified pre-restore backup.",
+        examples=["0" * 64],
+    )
+    backup_identifier: str = Field(
+        description=(
+            "Server-generated identifier of the retained pre-restore backup; "
+            "this is not a filesystem path."
+        ),
+        examples=["pre-restore-example.config-snapshot.json"],
+    )
+    configuration_write: Literal["PERFORMED"] = Field(
+        description="Confirms that the guarded configuration write occurred.",
+        examples=["PERFORMED"],
+    )
 
 
 class ConfigurationRestoreDryRunResponse(BaseModel):

@@ -17,6 +17,7 @@ from config_models import (
     AddFieldRequest,
     AddProfileRequest,
     ConfigResponse,
+    ConfigurationRecoveryErrorResponse,
     ConfigurationRestoreDryRunRequest,
     ConfigurationRestoreRequest,
     ConfigurationRestoreResponse,
@@ -103,6 +104,19 @@ def build_resolved_document_types(
     ),
     response_description="Applied restore and retained backup metadata.",
     response_model=ConfigurationRestoreResponse,
+    responses={
+        409: {
+            "model": ConfigurationRecoveryErrorResponse,
+            "description": (
+                "The expected revision is stale or a guarded restore safety "
+                "check detected a concurrent configuration change."
+            ),
+        },
+        422: {
+            "model": ConfigurationRecoveryErrorResponse,
+            "description": "The restore request or snapshot is invalid.",
+        },
+    },
 )
 def restore_configuration(
     request: ConfigurationRestoreRequest,
@@ -175,6 +189,12 @@ def restore_configuration(
     ),
     response_description="Read-only configuration restore validation result.",
     response_model=ConfigurationRestoreDryRunResponse,
+    responses={
+        422: {
+            "model": ConfigurationRecoveryErrorResponse,
+            "description": "Snapshot validation failed.",
+        },
+    },
 )
 def validate_configuration_restore_candidate(
     request: ConfigurationRestoreDryRunRequest,
@@ -212,6 +232,12 @@ def validate_configuration_restore_candidate(
     response_description="Versioned configuration snapshot.",
     response_model=ConfigurationSnapshotResponse,
     response_model_exclude_none=True,
+    responses={
+        422: {
+            "model": ConfigurationRecoveryErrorResponse,
+            "description": "Snapshot export request validation failed.",
+        },
+    },
 )
 def get_configuration_snapshot(
     response: Response,
