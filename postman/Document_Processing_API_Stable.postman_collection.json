@@ -917,6 +917,73 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "05 Configuration Recovery",
+      "item": [
+        {
+          "name": "Validate Configuration Restore Candidate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Dry-run contract is valid\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.valid).to.eql(true);",
+                  "    pm.expect(body.snapshot_revision).to.match(/^[0-9a-f]{64}$/);",
+                  "    pm.expect(body.current_revision).to.match(/^[0-9a-f]{64}$/);",
+                  "    pm.expect(body.changes_detected).to.be.a(\"boolean\");",
+                  "    pm.expect(body.document_types).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"schema_version\": \"1\",\n  \"revision\": \"{{configurationSnapshotRevision}}\",\n  \"configuration\": {{configurationSnapshotConfiguration}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/config/restore/dry-run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "config",
+                "restore",
+                "dry-run"
+              ]
+            },
+            "description": "Validates a configuration snapshot as a restore candidate. This operation is read-only and never writes configuration."
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }

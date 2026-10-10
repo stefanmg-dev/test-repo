@@ -127,4 +127,4 @@ def test_all_configuration_mutations_document_optional_if_match():
             assert parameter["description"]
             checked += 1
 
-    assert checked == 31
+    assert checked == 32

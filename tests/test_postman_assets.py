@@ -25,6 +25,7 @@ def test_postman_collection_contract_and_safety():
     assert {item["name"] for item in data["item"]} == {
         "00 Health", "01 Extract Document", "02 Processing History",
         "03 Error Contracts", "04 Configuration - Read Only",
+        "05 Configuration Recovery",
     }
     names = {item["name"] for item in requests(data["item"])}
     assert {"Health Check", "Readiness Check", "A1 Invoice",

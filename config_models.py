@@ -532,6 +532,49 @@ class ResolvedDocumentTypeModel(BaseModel):
     )
 
 
+class ConfigurationRestoreDryRunRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: str = Field(
+        description="Configuration snapshot schema version."
+    )
+    revision: str = Field(
+        min_length=64,
+        max_length=64,
+        pattern=r"^[0-9a-f]{64}$",
+        description="SHA-256 revision declared by the snapshot.",
+    )
+    configuration: dict[str, dict[str, Any]] = Field(
+        description="Complete candidate configuration to validate."
+    )
+
+
+class ConfigurationRestoreDryRunResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    valid: bool = Field(
+        description="Whether the restore candidate is valid."
+    )
+    snapshot_revision: str = Field(
+        min_length=64,
+        max_length=64,
+        pattern=r"^[0-9a-f]{64}$",
+        description="Validated revision of the candidate configuration.",
+    )
+    current_revision: str = Field(
+        min_length=64,
+        max_length=64,
+        pattern=r"^[0-9a-f]{64}$",
+        description="Revision of the currently stored configuration.",
+    )
+    changes_detected: bool = Field(
+        description="Whether the candidate differs from current configuration."
+    )
+    document_types: list[str] = Field(
+        description="Sorted document-type keys in the candidate configuration."
+    )
+
+
 class ConfigurationSnapshotResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

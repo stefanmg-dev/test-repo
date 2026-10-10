@@ -13,6 +13,8 @@ from config_models import (
     AddFieldRequest,
     AddProfileRequest,
     ConfigResponse,
+    ConfigurationRestoreDryRunRequest,
+    ConfigurationRestoreDryRunResponse,
     ConfigurationSnapshotResponse,
     CreateDocumentTypeRequest,
     DocumentTypeModel,
@@ -35,7 +37,11 @@ from configuration_revision import (
     configuration_revision,
     enforce_configuration_revision,
 )
-from configuration_snapshot import build_configuration_snapshot
+from configuration_snapshot import (
+    ConfigurationSnapshotError,
+    build_configuration_snapshot,
+    validate_configuration_snapshot,
+)
 from security_scopes import enforce_config_scope
 from document_config_resolver import resolve_document_fields
 from document_status import build_document_type_metadata
@@ -75,6 +81,44 @@ def build_resolved_document_types(
         }
 
     return resolved_document_types
+
+
+@router.post(
+    "/restore/dry-run",
+    summary="Validate configuration restore candidate",
+    description=(
+        "Validates a configuration snapshot and compares its revision with "
+        "the currently stored configuration. This operation is read-only and "
+        "never writes configuration. Authenticated requests follow the "
+        "configuration write-scope policy for POST operations."
+    ),
+    response_description="Read-only configuration restore validation result.",
+    response_model=ConfigurationRestoreDryRunResponse,
+)
+def validate_configuration_restore_candidate(
+    request: ConfigurationRestoreDryRunRequest,
+):
+    snapshot = request.model_dump()
+
+    try:
+        candidate_config = validate_configuration_snapshot(snapshot)
+    except (ConfigurationSnapshotError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
+    current_config = load_config()
+    snapshot_revision = configuration_revision(candidate_config)
+    current_revision = configuration_revision(current_config)
+
+    return {
+        "valid": True,
+        "snapshot_revision": snapshot_revision,
+        "current_revision": current_revision,
+        "changes_detected": snapshot_revision != current_revision,
+        "document_types": sorted(candidate_config),
+    }
 
 
 @router.get(

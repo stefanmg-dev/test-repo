@@ -1118,6 +1118,76 @@
         }
       }
     },
+    "/api/v1/config/restore/dry-run": {
+      "post": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Validate configuration restore candidate",
+        "description": "Validates a configuration snapshot and compares its revision with the currently stored configuration. This operation is read-only and never writes configuration. Authenticated requests follow the configuration write-scope policy for POST operations.",
+        "operationId": "validate_configuration_restore_candidate_api_v1_config_restore_dry_run_post",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional strong configuration ETag. A stale value rejects the mutation.",
+              "title": "If-Match"
+            },
+            "description": "Optional strong configuration ETag. A stale value rejects the mutation."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigurationRestoreDryRunRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Read-only configuration restore validation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigurationRestoreDryRunResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/config/snapshot": {
       "get": {
         "tags": [
@@ -4720,6 +4790,88 @@
           "document_types"
         ],
         "title": "ConfigResponse"
+      },
+      "ConfigurationRestoreDryRunRequest": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "title": "Schema Version",
+            "description": "Configuration snapshot schema version."
+          },
+          "revision": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Revision",
+            "description": "SHA-256 revision declared by the snapshot."
+          },
+          "configuration": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Configuration",
+            "description": "Complete candidate configuration to validate."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "schema_version",
+          "revision",
+          "configuration"
+        ],
+        "title": "ConfigurationRestoreDryRunRequest"
+      },
+      "ConfigurationRestoreDryRunResponse": {
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "title": "Valid",
+            "description": "Whether the restore candidate is valid."
+          },
+          "snapshot_revision": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Snapshot Revision",
+            "description": "Validated revision of the candidate configuration."
+          },
+          "current_revision": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Current Revision",
+            "description": "Revision of the currently stored configuration."
+          },
+          "changes_detected": {
+            "type": "boolean",
+            "title": "Changes Detected",
+            "description": "Whether the candidate differs from current configuration."
+          },
+          "document_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Document Types",
+            "description": "Sorted document-type keys in the candidate configuration."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "valid",
+          "snapshot_revision",
+          "current_revision",
+          "changes_detected",
+          "document_types"
+        ],
+        "title": "ConfigurationRestoreDryRunResponse"
       },
       "ConfigurationSnapshotResponse": {
         "properties": {

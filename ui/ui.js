@@ -49,6 +49,8 @@ const el = {
     closeModalButton: byId("closeModalButton"),
     navRefresh: byId("navRefresh"),
     navExportConfiguration: byId("navExportConfiguration"),
+    navValidateRestore: byId("navValidateRestore"),
+    restoreSnapshotInput: byId("restoreSnapshotInput"),
     openCreateDocumentTypeButton: byId("openCreateDocumentTypeButton"),
     renameDocumentTypeButton: byId("renameDocumentTypeButton"),
     deleteDocumentTypeButton: byId("deleteDocumentTypeButton"),
@@ -2071,6 +2073,34 @@ el.navRefresh.addEventListener("click", async () => {
     await loadConfiguration();
     showMessage("Конфигурацията е обновена.");
 });
+el.navValidateRestore.addEventListener("click", () => {
+    el.restoreSnapshotInput.value = "";
+    el.restoreSnapshotInput.click();
+});
+el.restoreSnapshotInput.addEventListener("change", async () => {
+    const file = el.restoreSnapshotInput.files[0];
+    if (!file) return;
+
+    try {
+        const snapshot = JSON.parse(await file.text());
+        const result = await apiRequest("/restore/dry-run", {
+            method: "POST",
+            body: JSON.stringify(snapshot),
+        });
+        const changeStatus = result.changes_detected
+            ? "има промени"
+            : "няма промени";
+        showMessage(
+            `Snapshot е валиден: ${changeStatus}; `
+            + `snapshot revision ${result.snapshot_revision}; `
+            + `текуща revision ${result.current_revision}; `
+            + `типове документи: ${result.document_types.join(", ")}.`
+        );
+    } catch (error) {
+        showMessage(`Невалиден snapshot: ${error.message}`, "error");
+    }
+});
+
 el.navExportConfiguration.addEventListener("click", async () => {
     try {
         const snapshot = await apiRequest("/snapshot");
