@@ -1118,6 +1118,66 @@
         }
       }
     },
+    "/api/v1/config/snapshot": {
+      "get": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Export configuration snapshot",
+        "description": "Returns a read-only snapshot of the complete stored configuration. Authenticated requests require the config:read scope.",
+        "operationId": "get_configuration_snapshot_api_v1_config_snapshot_get",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional strong configuration ETag. A stale value rejects the mutation.",
+              "title": "If-Match"
+            },
+            "description": "Optional strong configuration ETag. A stale value rejects the mutation."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versioned configuration snapshot.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigurationSnapshotResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/config/document-types": {
       "get": {
         "tags": [
@@ -4660,6 +4720,43 @@
           "document_types"
         ],
         "title": "ConfigResponse"
+      },
+      "ConfigurationSnapshotResponse": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "title": "Schema Version",
+            "description": "Configuration snapshot schema version."
+          },
+          "revision": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Revision",
+            "description": "SHA-256 revision of the snapshot configuration.",
+            "examples": [
+              "0000000000000000000000000000000000000000000000000000000000000000"
+            ]
+          },
+          "configuration": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Configuration",
+            "description": "Complete stored configuration included in the snapshot without normalizing optional fields or inserting model defaults."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "schema_version",
+          "revision",
+          "configuration"
+        ],
+        "title": "ConfigurationSnapshotResponse"
       },
       "CreateDocumentTypeRequest": {
         "properties": {

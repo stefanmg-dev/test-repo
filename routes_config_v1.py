@@ -13,6 +13,7 @@ from config_models import (
     AddFieldRequest,
     AddProfileRequest,
     ConfigResponse,
+    ConfigurationSnapshotResponse,
     CreateDocumentTypeRequest,
     DocumentTypeModel,
     OperationResponse,
@@ -34,6 +35,7 @@ from configuration_revision import (
     configuration_revision,
     enforce_configuration_revision,
 )
+from configuration_snapshot import build_configuration_snapshot
 from security_scopes import enforce_config_scope
 from document_config_resolver import resolve_document_fields
 from document_status import build_document_type_metadata
@@ -73,6 +75,27 @@ def build_resolved_document_types(
         }
 
     return resolved_document_types
+
+
+@router.get(
+    "/snapshot",
+    summary="Export configuration snapshot",
+    description=(
+        "Returns a read-only snapshot of the complete stored configuration. "
+        "Authenticated requests require the config:read scope."
+    ),
+    response_description="Versioned configuration snapshot.",
+    response_model=ConfigurationSnapshotResponse,
+    response_model_exclude_none=True,
+)
+def get_configuration_snapshot(
+    response: Response,
+):
+    snapshot = build_configuration_snapshot(load_config())
+    response.headers["ETag"] = configuration_etag(
+        snapshot["revision"]
+    )
+    return snapshot
 
 
 @router.get(

@@ -48,6 +48,7 @@ const el = {
     cancelModalButton: byId("cancelModalButton"),
     closeModalButton: byId("closeModalButton"),
     navRefresh: byId("navRefresh"),
+    navExportConfiguration: byId("navExportConfiguration"),
     openCreateDocumentTypeButton: byId("openCreateDocumentTypeButton"),
     renameDocumentTypeButton: byId("renameDocumentTypeButton"),
     deleteDocumentTypeButton: byId("deleteDocumentTypeButton"),
@@ -2069,6 +2070,24 @@ document.addEventListener("keydown", (event) => {
 el.navRefresh.addEventListener("click", async () => {
     await loadConfiguration();
     showMessage("Конфигурацията е обновена.");
+});
+el.navExportConfiguration.addEventListener("click", async () => {
+    try {
+        const snapshot = await apiRequest("/snapshot");
+        const content = JSON.stringify(snapshot, null, 2) + "\n";
+        const blob = new Blob([content], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `configuration-${snapshot.revision}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        showMessage("Конфигурацията е експортирана.");
+    } catch (error) {
+        showMessage(`Грешка при експортиране: ${error.message}`, "error");
+    }
 });
 el.openCreateDocumentTypeButton.addEventListener("click", openCreateDocumentTypeModal);
 el.renameDocumentTypeButton.addEventListener("click", openRenameDocumentTypeModal);

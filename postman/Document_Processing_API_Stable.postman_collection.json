@@ -869,6 +869,52 @@
               }
             }
           ]
+        },
+        {
+          "name": "Export Configuration Snapshot",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Snapshot contract is valid\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.schema_version).to.eql(\"1\");",
+                  "    pm.expect(body.revision).to.match(/^[0-9a-f]{64}$/);",
+                  "    pm.expect(body.configuration).to.be.an(\"object\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/config/snapshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "config",
+                "snapshot"
+              ]
+            },
+            "description": "Exports a read-only, versioned snapshot of the complete stored configuration. Authenticated requests require the config:read scope."
+          },
+          "response": []
         }
       ]
     }

@@ -532,6 +532,27 @@ class ResolvedDocumentTypeModel(BaseModel):
     )
 
 
+class ConfigurationSnapshotResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: str = Field(
+        description="Configuration snapshot schema version."
+    )
+    revision: str = Field(
+        min_length=64,
+        max_length=64,
+        pattern=r"^[0-9a-f]{64}$",
+        description="SHA-256 revision of the snapshot configuration.",
+        examples=["0" * 64],
+    )
+    configuration: dict[str, dict] = Field(
+        description=(
+            "Complete stored configuration included in the snapshot without "
+            "normalizing optional fields or inserting model defaults."
+        )
+    )
+
+
 class ConfigResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
