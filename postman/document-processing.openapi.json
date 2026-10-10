@@ -6110,7 +6110,24 @@
               "$ref": "#/components/schemas/ValidationError"
             },
             "type": "array",
-            "title": "Detail"
+            "title": "Detail",
+            "description": "List of request validation errors detected in path, query, header, cookie, or body input.",
+            "examples": [
+              [
+                {
+                  "type": "string_too_short",
+                  "loc": [
+                    "body",
+                    "name"
+                  ],
+                  "msg": "String should have at least 1 character",
+                  "input": "",
+                  "ctx": {
+                    "min_length": 1
+                  }
+                }
+              ]
+            ]
           }
         },
         "type": "object",
@@ -8479,22 +8496,47 @@
               ]
             },
             "type": "array",
-            "title": "Location"
+            "title": "Location",
+            "description": "Location of the invalid value, beginning with its request source and followed by nested field names or indexes.",
+            "examples": [
+              [
+                "body",
+                "name"
+              ]
+            ]
           },
           "msg": {
             "type": "string",
-            "title": "Message"
+            "title": "Message",
+            "description": "Human-readable explanation of the validation failure.",
+            "examples": [
+              "String should have at least 1 character"
+            ]
           },
           "type": {
             "type": "string",
-            "title": "Error Type"
+            "title": "Error Type",
+            "description": "Machine-readable validation error code suitable for programmatic handling.",
+            "examples": [
+              "string_too_short"
+            ]
           },
           "input": {
-            "title": "Input"
+            "title": "Input",
+            "description": "Input value that failed validation, when available.",
+            "examples": [
+              ""
+            ]
           },
           "ctx": {
             "type": "object",
-            "title": "Context"
+            "title": "Context",
+            "description": "Optional structured values used to format or explain the validation error.",
+            "examples": [
+              {
+                "min_length": 1
+              }
+            ]
           }
         },
         "type": "object",

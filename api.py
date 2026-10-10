@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, status
+from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
@@ -143,3 +144,70 @@ def readiness_check():
             else list(result.current_revisions)
         ),
     }
+
+
+def custom_openapi():
+    if app.openapi_schema is not None:
+        return app.openapi_schema
+
+    schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    components = schema.get("components", {}).get("schemas", {})
+
+    http_validation = components.get("HTTPValidationError", {})
+    detail = http_validation.get("properties", {}).get("detail")
+    if detail is not None:
+        detail["description"] = (
+            "List of request validation errors detected in path, query, "
+            "header, cookie, or body input."
+        )
+        detail["examples"] = [[
+            {
+                "type": "string_too_short",
+                "loc": ["body", "name"],
+                "msg": "String should have at least 1 character",
+                "input": "",
+                "ctx": {"min_length": 1},
+            }
+        ]]
+
+    validation_error = components.get("ValidationError", {})
+    properties = validation_error.get("properties", {})
+    documentation = {
+        "loc": (
+            "Location of the invalid value, beginning with its request "
+            "source and followed by nested field names or indexes."
+        ),
+        "msg": "Human-readable explanation of the validation failure.",
+        "type": (
+            "Machine-readable validation error code suitable for programmatic "
+            "handling."
+        ),
+        "input": "Input value that failed validation, when available.",
+        "ctx": (
+            "Optional structured values used to format or explain the "
+            "validation error."
+        ),
+    }
+    examples = {
+        "loc": [["body", "name"]],
+        "msg": ["String should have at least 1 character"],
+        "type": ["string_too_short"],
+        "input": [""],
+        "ctx": [{"min_length": 1}],
+    }
+    for name, description in documentation.items():
+        field = properties.get(name)
+        if field is not None:
+            field["description"] = description
+            field["examples"] = examples[name]
+
+    app.openapi_schema = schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
