@@ -4928,7 +4928,10 @@
           "valid": {
             "type": "boolean",
             "title": "Valid",
-            "description": "Whether the restore candidate is valid."
+            "description": "Whether the restore candidate is valid.",
+            "examples": [
+              true
+            ]
           },
           "snapshot_revision": {
             "type": "string",
@@ -4936,7 +4939,10 @@
             "minLength": 64,
             "pattern": "^[0-9a-f]{64}$",
             "title": "Snapshot Revision",
-            "description": "Validated revision of the candidate configuration."
+            "description": "Validated revision of the candidate configuration.",
+            "examples": [
+              "1111111111111111111111111111111111111111111111111111111111111111"
+            ]
           },
           "current_revision": {
             "type": "string",
@@ -4944,12 +4950,18 @@
             "minLength": 64,
             "pattern": "^[0-9a-f]{64}$",
             "title": "Current Revision",
-            "description": "Revision of the currently stored configuration."
+            "description": "Revision of the currently stored configuration.",
+            "examples": [
+              "0000000000000000000000000000000000000000000000000000000000000000"
+            ]
           },
           "changes_detected": {
             "type": "boolean",
             "title": "Changes Detected",
-            "description": "Whether the candidate differs from current configuration."
+            "description": "Whether the candidate differs from current configuration.",
+            "examples": [
+              true
+            ]
           },
           "document_types": {
             "items": {
@@ -4957,7 +4969,12 @@
             },
             "type": "array",
             "title": "Document Types",
-            "description": "Sorted document-type keys in the candidate configuration."
+            "description": "Sorted document-type keys in the candidate configuration.",
+            "examples": [
+              [
+                "synthetic_invoice"
+              ]
+            ]
           }
         },
         "additionalProperties": false,

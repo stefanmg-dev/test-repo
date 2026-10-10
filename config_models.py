@@ -625,25 +625,30 @@ class ConfigurationRestoreDryRunResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     valid: bool = Field(
-        description="Whether the restore candidate is valid."
+        description="Whether the restore candidate is valid.",
+        examples=[True],
     )
     snapshot_revision: str = Field(
         min_length=64,
         max_length=64,
         pattern=r"^[0-9a-f]{64}$",
         description="Validated revision of the candidate configuration.",
+        examples=["1" * 64],
     )
     current_revision: str = Field(
         min_length=64,
         max_length=64,
         pattern=r"^[0-9a-f]{64}$",
         description="Revision of the currently stored configuration.",
+        examples=["0" * 64],
     )
     changes_detected: bool = Field(
-        description="Whether the candidate differs from current configuration."
+        description="Whether the candidate differs from current configuration.",
+        examples=[True],
     )
     document_types: list[str] = Field(
-        description="Sorted document-type keys in the candidate configuration."
+        description="Sorted document-type keys in the candidate configuration.",
+        examples=[["synthetic_invoice"]],
     )
 
 

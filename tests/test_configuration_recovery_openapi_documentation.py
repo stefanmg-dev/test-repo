@@ -66,3 +66,13 @@ def test_configuration_recovery_openapi_documents_error_details():
     ]
     assert error_schema["properties"]["detail"]["description"]
     assert error_schema["properties"]["detail"]["examples"]
+
+def test_configuration_restore_dry_run_response_fields_have_examples():
+    schema = app.openapi()
+    response_schema = schema["components"]["schemas"][
+        "ConfigurationRestoreDryRunResponse"
+    ]
+
+    for name, field in response_schema["properties"].items():
+        assert field.get("description"), name
+        assert field.get("examples"), name
