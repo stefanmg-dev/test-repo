@@ -549,6 +549,34 @@ class ConfigurationRestoreDryRunRequest(BaseModel):
     )
 
 
+class ConfigurationRestoreRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    snapshot: ConfigurationRestoreDryRunRequest = Field(
+        description="Validated configuration snapshot to restore."
+    )
+    expected_current_revision: str = Field(
+        min_length=64,
+        max_length=64,
+        pattern=r"^[0-9a-f]{64}$",
+        description="Current configuration revision expected by the caller.",
+    )
+    confirmation: Literal["RESTORE"] = Field(
+        description="Explicit destructive-operation confirmation."
+    )
+
+
+class ConfigurationRestoreResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    restore_applied: bool
+    previous_revision: str = Field(min_length=64, max_length=64)
+    restored_revision: str = Field(min_length=64, max_length=64)
+    backup_revision: str = Field(min_length=64, max_length=64)
+    backup_identifier: str
+    configuration_write: Literal["PERFORMED"]
+
+
 class ConfigurationRestoreDryRunResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

@@ -50,6 +50,7 @@ const el = {
     navRefresh: byId("navRefresh"),
     navExportConfiguration: byId("navExportConfiguration"),
     navValidateRestore: byId("navValidateRestore"),
+    navApplyRestore: byId("navApplyRestore"),
     restoreSnapshotInput: byId("restoreSnapshotInput"),
     openCreateDocumentTypeButton: byId("openCreateDocumentTypeButton"),
     renameDocumentTypeButton: byId("renameDocumentTypeButton"),
@@ -2073,13 +2074,20 @@ el.navRefresh.addEventListener("click", async () => {
     await loadConfiguration();
     showMessage("Конфигурацията е обновена.");
 });
+let pendingConfigurationRestore = null;
+
 el.navValidateRestore.addEventListener("click", () => {
+    pendingConfigurationRestore = null;
+    el.navApplyRestore.hidden = true;
     el.restoreSnapshotInput.value = "";
     el.restoreSnapshotInput.click();
 });
 el.restoreSnapshotInput.addEventListener("change", async () => {
     const file = el.restoreSnapshotInput.files[0];
     if (!file) return;
+
+    pendingConfigurationRestore = null;
+    el.navApplyRestore.hidden = true;
 
     try {
         const snapshot = JSON.parse(await file.text());
@@ -2090,6 +2098,13 @@ el.restoreSnapshotInput.addEventListener("change", async () => {
         const changeStatus = result.changes_detected
             ? "има промени"
             : "няма промени";
+        if (result.changes_detected) {
+            pendingConfigurationRestore = {
+                snapshot,
+                expectedCurrentRevision: result.current_revision,
+            };
+            el.navApplyRestore.hidden = false;
+        }
         showMessage(
             `Snapshot е валиден: ${changeStatus}; `
             + `snapshot revision ${result.snapshot_revision}; `
@@ -2098,6 +2113,43 @@ el.restoreSnapshotInput.addEventListener("change", async () => {
         );
     } catch (error) {
         showMessage(`Невалиден snapshot: ${error.message}`, "error");
+    }
+});
+el.navApplyRestore.addEventListener("click", async () => {
+    if (!pendingConfigurationRestore) {
+        showMessage("Първо проверете snapshot с промени.", "error");
+        return;
+    }
+
+    const confirmation = window.prompt(
+        "Въведете RESTORE, за да потвърдите възстановяването."
+    );
+    if (confirmation !== "RESTORE") {
+        showMessage("Възстановяването не е потвърдено.", "error");
+        return;
+    }
+
+    try {
+        const result = await apiRequest("/restore", {
+            method: "POST",
+            body: JSON.stringify({
+                snapshot: pendingConfigurationRestore.snapshot,
+                expected_current_revision: (
+                    pendingConfigurationRestore.expectedCurrentRevision
+                ),
+                confirmation,
+            }),
+        });
+        pendingConfigurationRestore = null;
+        el.navApplyRestore.hidden = true;
+        await loadConfiguration();
+        showMessage(
+            `Конфигурацията е възстановена до revision `
+            + `${result.restored_revision}; backup: `
+            + `${result.backup_identifier}.`
+        );
+    } catch (error) {
+        showMessage(`Грешка при възстановяване: ${error.message}`, "error");
     }
 });
 

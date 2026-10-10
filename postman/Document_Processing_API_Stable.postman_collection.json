@@ -982,6 +982,68 @@
             "description": "Validates a configuration snapshot as a restore candidate. This operation is read-only and never writes configuration."
           },
           "response": []
+        },
+        {
+          "name": "Apply Guarded Configuration Restore",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Guarded restore contract is valid\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.restore_applied).to.eql(true);",
+                  "    pm.expect(body.previous_revision).to.match(/^[0-9a-f]{64}$/);",
+                  "    pm.expect(body.restored_revision).to.match(/^[0-9a-f]{64}$/);",
+                  "    pm.expect(body.backup_revision).to.match(/^[0-9a-f]{64}$/);",
+                  "    pm.expect(body.backup_identifier).to.be.a(\"string\");",
+                  "    pm.expect(body.configuration_write).to.eql(\"PERFORMED\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"snapshot\": {\n    \"schema_version\": \"1\",\n    \"revision\": \"{{configurationSnapshotRevision}}\",\n    \"configuration\": {{configurationSnapshotConfiguration}}\n  },\n  \"expected_current_revision\": \"{{configurationCurrentRevision}}\",\n  \"confirmation\": \"RESTORE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/config/restore",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "config",
+                "restore"
+              ]
+            },
+            "description": "Applies a guarded atomic configuration restore after a successful dry-run. Requires the expected current revision, exact RESTORE confirmation, and config:write scope."
+          },
+          "response": []
         }
       ]
     }

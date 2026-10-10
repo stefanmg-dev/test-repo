@@ -1,4 +1,8 @@
 from copy import deepcopy
+import json
+from pathlib import Path as FileSystemPath
+import tempfile
+from uuid import uuid4
 
 from fastapi import (
     APIRouter,
@@ -14,6 +18,8 @@ from config_models import (
     AddProfileRequest,
     ConfigResponse,
     ConfigurationRestoreDryRunRequest,
+    ConfigurationRestoreRequest,
+    ConfigurationRestoreResponse,
     ConfigurationRestoreDryRunResponse,
     ConfigurationSnapshotResponse,
     CreateDocumentTypeRequest,
@@ -41,6 +47,10 @@ from configuration_snapshot import (
     ConfigurationSnapshotError,
     build_configuration_snapshot,
     validate_configuration_snapshot,
+)
+from scripts.apply_configuration_restore import (
+    AtomicConfigurationRestoreError,
+    apply_configuration_restore,
 )
 from security_scopes import enforce_config_scope
 from document_config_resolver import resolve_document_fields
@@ -81,6 +91,77 @@ def build_resolved_document_types(
         }
 
     return resolved_document_types
+
+
+@router.post(
+    "/restore",
+    summary="Apply guarded configuration restore",
+    description=(
+        "Applies a validated configuration snapshot using the shared write "
+        "lock, verified pre-restore backup, atomic write, and rollback safety. "
+        "Authenticated requests require the config:write scope."
+    ),
+    response_description="Applied restore and retained backup metadata.",
+    response_model=ConfigurationRestoreResponse,
+)
+def restore_configuration(
+    request: ConfigurationRestoreRequest,
+):
+    backup_directory = (
+        FileSystemPath(__file__).resolve().parent
+        / "configuration_snapshots"
+        / "restore_backups"
+    )
+    backup_directory.mkdir(parents=True, exist_ok=True)
+    backup_identifier = (
+        f"pre-restore-{uuid4().hex}.config-snapshot.json"
+    )
+    backup_path = backup_directory / backup_identifier
+
+    with tempfile.TemporaryDirectory(
+        prefix="configuration-restore-"
+    ) as temporary_directory:
+        snapshot_path = (
+            FileSystemPath(temporary_directory)
+            / "candidate.config-snapshot.json"
+        )
+        snapshot_path.write_text(
+            json.dumps(
+                request.snapshot.model_dump(),
+                ensure_ascii=False,
+                indent=2,
+            ) + "\n",
+            encoding="utf-8",
+        )
+
+        try:
+            result = apply_configuration_restore(
+                snapshot_path=snapshot_path,
+                backup_output=backup_path,
+                expected_current_revision=(
+                    request.expected_current_revision
+                ),
+                confirmation=request.confirmation,
+            )
+        except AtomicConfigurationRestoreError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(exc),
+            ) from exc
+        except (ValueError, FileExistsError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from exc
+
+    return {
+        "restore_applied": result["restore_applied"],
+        "previous_revision": result["previous_revision"],
+        "restored_revision": result["restored_revision"],
+        "backup_revision": result["backup_revision"],
+        "backup_identifier": backup_identifier,
+        "configuration_write": result["configuration_write"],
+    }
 
 
 @router.post(

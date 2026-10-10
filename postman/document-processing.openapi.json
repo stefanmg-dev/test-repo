@@ -1118,6 +1118,76 @@
         }
       }
     },
+    "/api/v1/config/restore": {
+      "post": {
+        "tags": [
+          "Configuration API v1"
+        ],
+        "summary": "Apply guarded configuration restore",
+        "description": "Applies a validated configuration snapshot using the shared write lock, verified pre-restore backup, atomic write, and rollback safety. Authenticated requests require the config:write scope.",
+        "operationId": "restore_configuration_api_v1_config_restore_post",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional strong configuration ETag. A stale value rejects the mutation.",
+              "title": "If-Match"
+            },
+            "description": "Optional strong configuration ETag. A stale value rejects the mutation."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigurationRestoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Applied restore and retained backup metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigurationRestoreResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/config/restore/dry-run": {
       "post": {
         "tags": [
@@ -4872,6 +4942,82 @@
           "document_types"
         ],
         "title": "ConfigurationRestoreDryRunResponse"
+      },
+      "ConfigurationRestoreRequest": {
+        "properties": {
+          "snapshot": {
+            "$ref": "#/components/schemas/ConfigurationRestoreDryRunRequest",
+            "description": "Validated configuration snapshot to restore."
+          },
+          "expected_current_revision": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Expected Current Revision",
+            "description": "Current configuration revision expected by the caller."
+          },
+          "confirmation": {
+            "type": "string",
+            "const": "RESTORE",
+            "title": "Confirmation",
+            "description": "Explicit destructive-operation confirmation."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot",
+          "expected_current_revision",
+          "confirmation"
+        ],
+        "title": "ConfigurationRestoreRequest"
+      },
+      "ConfigurationRestoreResponse": {
+        "properties": {
+          "restore_applied": {
+            "type": "boolean",
+            "title": "Restore Applied"
+          },
+          "previous_revision": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Previous Revision"
+          },
+          "restored_revision": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Restored Revision"
+          },
+          "backup_revision": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Backup Revision"
+          },
+          "backup_identifier": {
+            "type": "string",
+            "title": "Backup Identifier"
+          },
+          "configuration_write": {
+            "type": "string",
+            "const": "PERFORMED",
+            "title": "Configuration Write"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "restore_applied",
+          "previous_revision",
+          "restored_revision",
+          "backup_revision",
+          "backup_identifier",
+          "configuration_write"
+        ],
+        "title": "ConfigurationRestoreResponse"
       },
       "ConfigurationSnapshotResponse": {
         "properties": {
