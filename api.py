@@ -3,6 +3,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, status
 from fastapi.openapi.utils import get_openapi
+from pydantic import BaseModel, ConfigDict, Field
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
@@ -44,6 +45,48 @@ async def application_lifespan(app: FastAPI):
     yield
     engine.dispose()
 
+
+
+class HealthResponseModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: str = Field(
+        description="Application liveness status.",
+        examples=["ok"],
+    )
+
+
+class ReadinessResponseModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: str = Field(
+        description="Application readiness status.",
+        examples=["ready"],
+    )
+    database: str = Field(
+        description="Database connectivity status.",
+        examples=["connected"],
+    )
+    migrations: str = Field(
+        description="Database migration status.",
+        examples=["current"],
+    )
+    revision: str | list[str] = Field(
+        description=(
+            "Current database migration revision, or multiple revisions when "
+            "the migration graph has more than one active head."
+        ),
+        examples=["a6c3d4e5f7b8"],
+    )
+
+
+class ReadinessErrorResponseModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: str = Field(
+        description="Readiness failure status.",
+        examples=["not_ready"],
+    )
 
 docs_enabled = SETTINGS.api_docs_enabled()
 
@@ -109,7 +152,16 @@ def open_ui():
     )
 
 
-@app.get("/health")
+@app.get(
+    "/health",
+    response_model=HealthResponseModel,
+    summary="Health check",
+    description=(
+        "Reports application-process liveness without checking external "
+        "dependencies."
+    ),
+    response_description="Application process is running.",
+)
 def health_check():
     return {
         "status": "ok"
@@ -117,9 +169,17 @@ def health_check():
 
 @app.get(
     "/ready",
+    response_model=ReadinessResponseModel,
+    summary="Readiness check",
+    description=(
+        "Checks database connectivity and confirms that database migrations "
+        "are current before reporting the application as ready."
+    ),
+    response_description="Application dependencies are ready.",
     responses={
         status.HTTP_503_SERVICE_UNAVAILABLE: {
-            "description": "Application dependencies are not ready",
+            "model": ReadinessErrorResponseModel,
+            "description": "Application dependencies are not ready.",
         },
     },
 )

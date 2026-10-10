@@ -4268,14 +4268,17 @@
     },
     "/health": {
       "get": {
-        "summary": "Health Check",
+        "summary": "Health check",
+        "description": "Reports application-process liveness without checking external dependencies.",
         "operationId": "health_check_health_get",
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Application process is running.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponseModel"
+                }
               }
             }
           }
@@ -4284,19 +4287,29 @@
     },
     "/ready": {
       "get": {
-        "summary": "Readiness Check",
+        "summary": "Readiness check",
+        "description": "Checks database connectivity and confirms that database migrations are current before reporting the application as ready.",
         "operationId": "readiness_check_ready_get",
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Application dependencies are ready.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponseModel"
+                }
               }
             }
           },
           "503": {
-            "description": "Application dependencies are not ready"
+            "description": "Application dependencies are not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessErrorResponseModel"
+                }
+              }
+            }
           }
         }
       }
@@ -6133,6 +6146,24 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "HealthResponseModel": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Application liveness status.",
+            "examples": [
+              "ok"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "HealthResponseModel"
+      },
       "ImageQualityInputModel": {
         "properties": {
           "format": {
@@ -7936,6 +7967,79 @@
           "message"
         ],
         "title": "QualityWarningModel"
+      },
+      "ReadinessErrorResponseModel": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Readiness failure status.",
+            "examples": [
+              "not_ready"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "ReadinessErrorResponseModel"
+      },
+      "ReadinessResponseModel": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Application readiness status.",
+            "examples": [
+              "ready"
+            ]
+          },
+          "database": {
+            "type": "string",
+            "title": "Database",
+            "description": "Database connectivity status.",
+            "examples": [
+              "connected"
+            ]
+          },
+          "migrations": {
+            "type": "string",
+            "title": "Migrations",
+            "description": "Database migration status.",
+            "examples": [
+              "current"
+            ]
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Revision",
+            "description": "Current database migration revision, or multiple revisions when the migration graph has more than one active head.",
+            "examples": [
+              "a6c3d4e5f7b8"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "database",
+          "migrations",
+          "revision"
+        ],
+        "title": "ReadinessResponseModel"
       },
       "RenameDocumentTypeRequest": {
         "properties": {

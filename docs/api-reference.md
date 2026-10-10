@@ -1107,32 +1107,74 @@ Important response fields:
 
 ### GET `/health`
 
-**Purpose:** Health Check.
+**Purpose:** Report application-process liveness without checking external dependencies.
 
-**Access:** Follows the route's application security dependencies.
+**Access:** Public operational endpoint.
 
-**Parameters:** None documented.
+**Parameters:** None.
 
 **Request body:** None.
 
+**Successful response fields:**
+
+- `status`: Application liveness status; `ok` means the process is running.
+
+**Example response:**
+
+```json
+{
+  "status": "ok"
+}
+```
+
 **Responses:**
 
-- `200`: Successful Response Response: `application/json`: `documented schema`.
+- `200`: Application process is running.
 
 ### GET `/ready`
 
-**Purpose:** Readiness Check.
+**Purpose:** Check database connectivity and confirm that database migrations are current before reporting the application as ready.
 
-**Access:** Follows the route's application security dependencies.
+**Access:** Public operational endpoint.
 
-**Parameters:** None documented.
+**Parameters:** None.
 
 **Request body:** None.
 
+**Successful response fields:**
+
+- `status`: Application readiness status; `ready` means dependency checks passed.
+- `database`: Database connectivity status.
+- `migrations`: Database migration status.
+- `revision`: Current migration revision, or multiple revisions when the migration graph has more than one active head.
+
+**Example response:**
+
+```json
+{
+  "status": "ready",
+  "database": "connected",
+  "migrations": "current",
+  "revision": "a6c3d4e5f7b8"
+}
+```
+
+**Error response fields:**
+
+- `status`: `not_ready` when a readiness dependency check fails.
+
+**Example `503` response:**
+
+```json
+{
+  "status": "not_ready"
+}
+```
+
 **Responses:**
 
-- `200`: Successful Response Response: `application/json`: `documented schema`.
-- `503`: Application dependencies are not ready Response: No response body documented.
+- `200`: Application dependencies are ready.
+- `503`: Application dependencies are not ready.
 
 
 ## Configuration recovery
