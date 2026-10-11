@@ -571,6 +571,17 @@
                   "pm.test(\"Execution respects requested bound\", function () { pm.expect(body.deleted_count).to.be.at.most(Number(pm.environment.get(\"retention_limit\") || 100)); });"
                 ]
               }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.environment.get(\"allow_retention_execute\") !== \"true\") {",
+                  "  throw new Error(\"Retention execution is disabled. Set allow_retention_execute=true explicitly for this environment.\");",
+                  "}"
+                ]
+              }
             }
           ],
           "request": {
@@ -1004,6 +1015,17 @@
                   "    pm.expect(body.backup_identifier).to.be.a(\"string\");",
                   "    pm.expect(body.configuration_write).to.eql(\"PERFORMED\");",
                   "});"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.environment.get(\"allow_configuration_restore\") !== \"true\") {",
+                  "  throw new Error(\"Configuration restore is disabled. Set allow_configuration_restore=true explicitly for this environment.\");",
+                  "}"
                 ]
               }
             }

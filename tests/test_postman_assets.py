@@ -61,3 +61,43 @@ def test_postman_configuration_revision_contract():
     assert "^[0-9a-f]{64}$" in script
     assert 'headers.get("ETag")' in script
     assert '`"${body.revision}"`' in script
+
+
+def test_destructive_postman_requests_are_disabled_by_default():
+    collection = json.loads(COLLECTION.read_text(encoding="utf-8"))
+    environment = json.loads(ENVIRONMENT.read_text(encoding="utf-8"))
+
+    variables = {
+        item["key"]: item.get("value")
+        for item in environment["values"]
+    }
+    assert variables["allow_retention_execute"] == "false"
+    assert variables["allow_configuration_restore"] == "false"
+
+    def find_request(items, name):
+        for item in items:
+            if item.get("name") == name and "request" in item:
+                return item
+            found = find_request(item.get("item", []), name)
+            if found is not None:
+                return found
+        return None
+
+    expected = {
+        "Retention Execute": "allow_retention_execute",
+        "Apply Guarded Configuration Restore": (
+            "allow_configuration_restore"
+        ),
+    }
+    for name, variable in expected.items():
+        request = find_request(collection["item"], name)
+        assert request is not None
+        scripts = [
+            line
+            for event in request.get("event", [])
+            if event.get("listen") == "prerequest"
+            for line in event["script"]["exec"]
+        ]
+        script = "\n".join(scripts)
+        assert variable in script
+        assert '!== "true"' in script
