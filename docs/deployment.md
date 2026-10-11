@@ -100,18 +100,33 @@ Confirm interactive sign-in, silent token acquisition, extraction, history reads
 
 Only after the authenticated smoke test succeeds, set `LEGACY_ANONYMOUS_ACCESS_ENABLED=false`. Redeploy and verify protected routes return HTTP 401 without credentials while `/health`, `/ready`, `/api/v1/auth/config`, and static UI assets remain public.
 
+## Administrative recovery UI workflow
+
+The administrative UI exposes the existing configuration recovery operations at `/ui/index.html`.
+
+1. Export the current configuration snapshot before a planned recovery operation.
+2. Select a snapshot with **Провери snapshot**. The UI calls the read-only restore dry-run and does not enable apply unless the validated snapshot contains changes.
+3. Review the candidate and current revisions returned by dry-run.
+4. Apply restore only when the operator intends to replace the current configuration. The UI requires the exact confirmation `RESTORE` and sends the current revision observed during dry-run.
+5. After success, record the restored revision and backup identifier shown by the UI.
+
+Configuration restore is destructive. It requires authenticated configuration-write access, a successful dry-run, an unchanged current revision, and exact `RESTORE` confirmation. If any condition fails, do not bypass the guard. Export a fresh snapshot and repeat dry-run.
+
 ## Processing run retention
 
 Set `PROCESSING_RUN_RETENTION_DAYS` to the minimum completed-run age eligible for retention. The default is 365 days; accepted values are 30 through 3650.
 
 Retention is tenant-aware and requires an authenticated principal with the internal `admin` scope. Browser delegated scopes do not include `admin`.
 
-Use the endpoints in this order:
+Use `/ui/history.html` for the guarded operator workflow:
 
-1. Call `GET /api/v1/processing-runs/retention-preview` and review the cutoff, candidate count, and candidate date range.
-2. Call `POST /api/v1/processing-runs/retention-execute` only after validating the preview.
-3. Send the exact confirmation value `DELETE` and a batch limit from 1 through 1000.
-4. Repeat preview before any additional batch.
+1. Select **Провери retention** and review the retention period, cutoff, candidate count, and candidate date range.
+2. The execute action remains disabled until preview succeeds and returns at least one candidate.
+3. Set a batch limit from 1 through 1000.
+4. Select **Изпълни retention** only when deletion is intended and enter the exact confirmation `DELETE`.
+5. After execution, review the deleted count. The UI repeats preview and refreshes processing history; run preview again before any additional batch.
+
+The UI uses `GET /api/v1/processing-runs/retention-preview` for preview and `POST /api/v1/processing-runs/retention-execute` for execution. API clients must follow the same order and safeguards.
 
 Execution permanently deletes at most the requested number of the oldest eligible processing runs. Runs still processing and runs with pending review are excluded. Execution is atomic and emits security audit metadata containing the tenant identity, cutoff, limit, and deleted count, without document values.
 
