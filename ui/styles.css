@@ -962,3 +962,30 @@ textarea.form-control {
     outline: 3px solid rgba(37, 99, 235, 0.72);
     outline-offset: 2px;
 }
+
+.retention-header {
+    align-items: center;
+}
+
+.retention-summary-grid {
+    grid-template-columns: repeat(5, minmax(120px, 1fr));
+}
+
+.retention-actions {
+    display: flex;
+    align-items: end;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 0 20px 20px;
+}
+
+.retention-actions .form-group {
+    width: min(280px, 100%);
+}
+
+@media (max-width: 680px) {
+    .retention-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}

@@ -525,3 +525,160 @@ def test_universal_invoice_preview_handles_unavailable(live_server_url):
         )
         expect(page.get_by_role("dialog")).to_be_hidden()
         browser.close()
+
+
+def test_processing_retention_preview_and_execute(live_server_url):
+    preview_requests = []
+    execute_requests = []
+    history_requests = []
+    console_errors = []
+
+    list_body = {"items": [], "total": 0, "offset": 0, "limit": 20}
+    review_summary_body = {
+        "total_requiring_review": 0,
+        "pending": 0,
+        "approved": 0,
+        "corrected": 0,
+        "rejected": 0,
+        "average_review_duration_ms": None,
+    }
+    shadow_summary_body = {
+        "total": 0,
+        "succeeded": 0,
+        "failed": 0,
+        "not_applicable": 0,
+        "success_rate": None,
+        "schema_versions": [],
+        "failure_reasons": [],
+    }
+    preview_body = {
+        "retention_days": 365,
+        "cutoff": "2025-10-11T00:00:00Z",
+        "candidate_count": 2,
+        "oldest_candidate_completed_at": "2024-09-01T00:00:00Z",
+        "newest_candidate_completed_at": "2025-09-01T00:00:00Z",
+    }
+
+    with sync_playwright() as playwright:
+        executable = Path(playwright.chromium.executable_path)
+        if not executable.exists():
+            pytest.skip("Playwright Chromium is not installed")
+
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1280, "height": 900})
+        page.on(
+            "console",
+            lambda message: (
+                console_errors.append(message.text)
+                if message.type == "error"
+                else None
+            ),
+        )
+        page.route(
+            "**/api/v1/auth/config",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"enabled": False}),
+            ),
+        )
+        page.route(
+            "**/api/v1/processing-runs/review-summary",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(review_summary_body),
+            ),
+        )
+        page.route(
+            "**/api/v1/processing-runs/invoice-shadow-summary",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(shadow_summary_body),
+            ),
+        )
+
+        def handle_history(route):
+            history_requests.append(route.request.url)
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(list_body),
+            )
+
+        page.route("**/api/v1/processing-runs?*", handle_history)
+
+        def handle_preview(route):
+            preview_requests.append(route.request.url)
+            body = dict(preview_body)
+            if execute_requests:
+                body.update(
+                    candidate_count=0,
+                    oldest_candidate_completed_at=None,
+                    newest_candidate_completed_at=None,
+                )
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(body),
+            )
+
+        page.route(
+            "**/api/v1/processing-runs/retention-preview",
+            handle_preview,
+        )
+
+        def handle_execute(route):
+            execute_requests.append(json.loads(route.request.post_data))
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({
+                    "retention_days": 365,
+                    "cutoff": preview_body["cutoff"],
+                    "limit": 25,
+                    "deleted_count": 2,
+                }),
+            )
+
+        page.route(
+            "**/api/v1/processing-runs/retention-execute",
+            handle_execute,
+        )
+        page.on("dialog", lambda dialog: dialog.accept("DELETE"))
+
+        page.goto(
+            f"{live_server_url}/ui/history.html",
+            wait_until="networkidle",
+        )
+
+        execute_button = page.get_by_role(
+            "button", name="Изпълни retention"
+        )
+        expect(execute_button).to_be_disabled()
+
+        page.get_by_role(
+            "button", name="Провери retention"
+        ).click()
+        expect(page.locator("#retentionCandidates")).to_have_text("2")
+        expect(page.locator("#retentionDays")).to_have_text("365 дни")
+        expect(execute_button).to_be_enabled()
+
+        page.get_by_label("Максимален брой за изтриване").fill("25")
+        execute_button.click()
+
+        expect(page.locator("#historyMessageArea")).to_contain_text(
+            "Изтрити обработки: 2"
+        )
+        expect(page.locator("#retentionCandidates")).to_have_text("0")
+        expect(execute_button).to_be_disabled()
+
+        assert execute_requests == [
+            {"confirmation": "DELETE", "limit": 25}
+        ]
+        assert len(preview_requests) == 2
+        assert len(history_requests) >= 2
+        assert console_errors == []
+
+        browser.close()

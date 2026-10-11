@@ -136,3 +136,25 @@ def test_field_level_review_editor_preserves_value_types():
     assert "JSON.parse(input.value)" in content
     assert '"review-field-changed"' in content
     assert "collectCorrectedValues" in content
+
+
+def test_processing_history_has_guarded_retention_controls():
+    html = HISTORY_HTML.read_text(encoding="utf-8")
+    javascript = HISTORY_JS.read_text(encoding="utf-8")
+
+    assert 'id="retentionPreviewButton"' in html
+    assert 'id="retentionExecuteButton"' in html
+    assert 'id="retentionExecuteButton"' in html and "disabled" in html
+    assert 'for="retentionLimit"' in html
+    assert 'min="1"' in html
+    assert 'max="1000"' in html
+    assert 'id="retentionStatus"' in html
+
+    assert "async function loadRetentionPreview" in javascript
+    assert "async function executeRetention" in javascript
+    assert '`${HISTORY_URL}/retention-preview`' in javascript
+    assert '`${HISTORY_URL}/retention-execute`' in javascript
+    assert 'confirmation !== "DELETE"' in javascript
+    assert 'confirmation,' in javascript
+    assert "state.retentionPreview.candidate_count < 1" in javascript
+    assert "await Promise.all([loadRetentionPreview(), loadHistory()])" in javascript

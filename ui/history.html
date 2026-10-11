@@ -202,6 +202,71 @@
                 </div>
             </form>
 
+
+            <section
+                class="review-summary-panel retention-panel"
+                aria-labelledby="retentionTitle"
+            >
+                <div class="panel-header retention-header">
+                    <div>
+                        <h2 id="retentionTitle">Processing retention</h2>
+                        <p id="retentionStatus" role="status" aria-live="polite">
+                            Пуснете preview преди изтриване.
+                        </p>
+                    </div>
+                    <button
+                        id="retentionPreviewButton"
+                        class="button button-secondary"
+                        type="button"
+                    >
+                        Провери retention
+                    </button>
+                </div>
+                <div class="review-summary-grid retention-summary-grid">
+                    <article class="review-summary-card">
+                        <span>Retention период</span>
+                        <strong id="retentionDays">—</strong>
+                    </article>
+                    <article class="review-summary-card">
+                        <span>Cutoff</span>
+                        <strong id="retentionCutoff">—</strong>
+                    </article>
+                    <article class="review-summary-card">
+                        <span>Кандидати</span>
+                        <strong id="retentionCandidates">—</strong>
+                    </article>
+                    <article class="review-summary-card">
+                        <span>Най-стар кандидат</span>
+                        <strong id="retentionOldest">—</strong>
+                    </article>
+                    <article class="review-summary-card">
+                        <span>Най-нов кандидат</span>
+                        <strong id="retentionNewest">—</strong>
+                    </article>
+                </div>
+                <div class="retention-actions">
+                    <div class="form-group">
+                        <label for="retentionLimit">Максимален брой за изтриване</label>
+                        <input
+                            id="retentionLimit"
+                            class="form-control"
+                            type="number"
+                            min="1"
+                            max="1000"
+                            value="100"
+                        >
+                    </div>
+                    <button
+                        id="retentionExecuteButton"
+                        class="button button-danger-outline"
+                        type="button"
+                        disabled
+                    >
+                        Изпълни retention
+                    </button>
+                </div>
+            </section>
+
             <section class="history-panel" aria-labelledby="historyTableTitle">
                 <div class="panel-header">
                     <div>

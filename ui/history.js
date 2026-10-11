@@ -19,6 +19,15 @@ const elements = {
     invoiceSchemaVersion: byId("filterInvoiceSchemaVersion"),
     clearFilters: byId("clearHistoryFiltersButton"),
     refresh: byId("refreshHistoryButton"),
+    retentionStatus: byId("retentionStatus"),
+    retentionDays: byId("retentionDays"),
+    retentionCutoff: byId("retentionCutoff"),
+    retentionCandidates: byId("retentionCandidates"),
+    retentionOldest: byId("retentionOldest"),
+    retentionNewest: byId("retentionNewest"),
+    retentionLimit: byId("retentionLimit"),
+    retentionPreview: byId("retentionPreviewButton"),
+    retentionExecute: byId("retentionExecuteButton"),
     rows: byId("historyRows"),
     summary: byId("historySummary"),
     reviewSummaryStatus: byId("reviewSummaryStatus"),
@@ -50,6 +59,8 @@ const state = {
     total: 0,
     loading: false,
     dialogReturnFocus: null,
+    retentionPreview: null,
+    retentionLoading: false,
 };
 
 async function readJson(response) {
@@ -303,6 +314,108 @@ async function loadInvoiceShadowSummary() {
         resetInvoiceShadowSummary();
         elements.invoiceShadowSummaryStatus.textContent =
             `Metrics не са достъпни: ${error.message}`;
+    }
+}
+
+
+function resetRetentionPreview(message = "Пуснете preview преди изтриване.") {
+    state.retentionPreview = null;
+    elements.retentionDays.textContent = "—";
+    elements.retentionCutoff.textContent = "—";
+    elements.retentionCandidates.textContent = "—";
+    elements.retentionOldest.textContent = "—";
+    elements.retentionNewest.textContent = "—";
+    elements.retentionStatus.textContent = message;
+    elements.retentionExecute.disabled = true;
+}
+
+function setRetentionLoading(loading) {
+    state.retentionLoading = loading;
+    elements.retentionPreview.disabled = loading;
+    elements.retentionLimit.disabled = loading;
+    elements.retentionExecute.disabled = (
+        loading
+        || !state.retentionPreview
+        || state.retentionPreview.candidate_count < 1
+    );
+}
+
+async function loadRetentionPreview() {
+    setRetentionLoading(true);
+    elements.retentionStatus.textContent = "Проверка...";
+    try {
+        const response = await window.documentAuth.authenticatedFetch(
+            `${HISTORY_URL}/retention-preview`,
+            { headers: { Accept: "application/json" } },
+        );
+        const body = await readJson(response);
+        if (!response.ok) {
+            throw new Error(body?.detail || `HTTP ${response.status}`);
+        }
+        state.retentionPreview = body;
+        elements.retentionDays.textContent = `${body.retention_days} дни`;
+        elements.retentionCutoff.textContent = formatDate(body.cutoff);
+        elements.retentionCandidates.textContent = String(body.candidate_count);
+        elements.retentionOldest.textContent = formatDate(
+            body.oldest_candidate_completed_at,
+        );
+        elements.retentionNewest.textContent = formatDate(
+            body.newest_candidate_completed_at,
+        );
+        elements.retentionStatus.textContent = body.candidate_count
+            ? "Preview е готов. Изпълнението изисква точно DELETE потвърждение."
+            : "Preview е готов. Няма обработки за изтриване.";
+    } catch (error) {
+        resetRetentionPreview(`Retention preview не е достъпен: ${error.message}`);
+    } finally {
+        setRetentionLoading(false);
+    }
+}
+
+async function executeRetention() {
+    if (!state.retentionPreview || state.retentionPreview.candidate_count < 1) {
+        showMessage("Първо изпълнете retention preview с кандидати.");
+        return;
+    }
+    if (!elements.retentionLimit.reportValidity()) return;
+
+    const confirmation = window.prompt(
+        "Въведете DELETE, за да потвърдите необратимото изтриване.",
+    );
+    if (confirmation !== "DELETE") {
+        showMessage("Retention изпълнението не е потвърдено.");
+        return;
+    }
+
+    setRetentionLoading(true);
+    try {
+        const response = await window.documentAuth.authenticatedFetch(
+            `${HISTORY_URL}/retention-execute`,
+            {
+                method: "POST",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    confirmation,
+                    limit: Number(elements.retentionLimit.value),
+                }),
+            },
+        );
+        const body = await readJson(response);
+        if (!response.ok) {
+            throw new Error(body?.detail || `HTTP ${response.status}`);
+        }
+        await Promise.all([loadRetentionPreview(), loadHistory()]);
+        showMessage(
+            `Retention завърши. Изтрити обработки: ${body.deleted_count}.`,
+            "success",
+        );
+    } catch (error) {
+        showMessage(`Retention изпълнението е неуспешно: ${error.message}`);
+    } finally {
+        setRetentionLoading(false);
     }
 }
 
@@ -722,6 +835,14 @@ elements.clearFilters.addEventListener("click", () => {
 elements.refresh.addEventListener(
     "click",
     refreshHistoryPage,
+);
+elements.retentionPreview.addEventListener(
+    "click",
+    loadRetentionPreview,
+);
+elements.retentionExecute.addEventListener(
+    "click",
+    executeRetention,
 );
 elements.previous.addEventListener("click", () => {
     state.offset = Math.max(0, state.offset - PAGE_SIZE);
