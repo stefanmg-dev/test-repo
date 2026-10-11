@@ -2,15 +2,16 @@
 
 ## Release checkpoint
 
-The prototype release candidate is based on commit `f4c89d8` (`Add nearby extraction normalization regression`). At this checkpoint, `main`, `origin/main`, and `HEAD` are synchronized and the working tree is clean.
+The release-closure baseline is commit `de5f161` (`Add deployment owner cutover checklist`). At this checkpoint, `main`, `origin/main`, and `HEAD` are synchronized and the working tree is clean.
 
 Release verification completed with:
 
-- 923 passed tests and 4 intentionally skipped environment-dependent tests;
+- 1212 passed tests and 5 intentionally skipped environment-dependent tests;
 - no pending Alembic upgrade operations;
 - a reproducible and unchanged OpenAPI export;
 - clean Git whitespace and working-tree checks;
-- successful GitHub Actions CI, vulnerability audit, and SPDX SBOM generation for the preceding stable checkpoints.
+- successful GitHub Actions CI run #181;
+- successful Supply Chain Security run #106, including vulnerability audit and SPDX SBOM generation.
 
 ## Implemented prototype capabilities
 
@@ -25,12 +26,15 @@ Release verification completed with:
 - Versioned Universal Invoice shadow validation, preview, and bounded JSONL feedback export.
 - API-key and OIDC bearer authentication, scope authorization, browser OIDC foundation, rate limiting, and security audit logging.
 - Production container foundation, liveness/readiness checks, migration parity, backup/restore helpers, and deployment smoke automation.
-- Administrative UI coverage for configuration, processing history, authentication controls, and human review.
+- Administrative UI coverage for configuration, processing history, authentication controls, human review, guarded configuration snapshot recovery, and guarded processing retention.
+- Deployment handoff documentation with a deployment-owner cutover checklist for infrastructure sizing, operational ownership, recovery objectives, restore evidence, and rollback readiness.
 - OpenAPI and API-reference audits for Configuration, extraction, and processing-run operations.
 
 ## Prototype acceptance evidence
 
-The acceptance suites cover upload-to-processing lifecycle behavior, persistence, review, tenant isolation, authentication, retention contracts, backup/restore safeguards, deployment smoke behavior, security audit metadata, UI behavior, and real PDF page rendering. Environment-dependent real-provider fixtures remain optional and are not required for the deterministic CI baseline.
+The acceptance suites cover upload-to-processing lifecycle behavior, persistence, review, tenant isolation, authentication, retention contracts, backup/restore safeguards, guarded operational UI workflows, deployment smoke behavior, deployment-handoff documentation, security audit metadata, UI behavior, and real PDF page rendering. Environment-dependent real-provider fixtures remain optional and are not required for the deterministic CI baseline.
+
+Automated verification demonstrates the application baseline but does not approve a production cutover. Production use still requires completed deployment-owner decisions and retained evidence from the cutover checklist and deployment smoke test.
 
 ## Current boundaries
 

@@ -9,7 +9,7 @@ The current user interface is primarily an administrative, testing, monitoring, 
 
 ## Operational documentation map
 
-- [Production deployment](deployment.md) defines the container runtime, migration order, environment configuration, Microsoft Entra cutover, and retention operation.
+- [Production deployment](deployment.md) defines the container runtime, migration order, environment configuration, Microsoft Entra cutover, guarded configuration recovery and retention UI workflows, and the deployment-owner production cutover checklist.
 - [Security plan](security.md) separates implemented application controls from deployment-specific operational decisions.
 - [Backup and restore](backup-restore.md) defines logical backup creation, isolated restore verification, and the recovery-readiness gate.
 - [Deployment smoke test](deployment-smoke-test.md) defines the read-only post-deployment go/no-go checks and rollback criteria.

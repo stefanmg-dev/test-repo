@@ -10,8 +10,11 @@ SUMMARY = (
 
 def test_release_summary_records_checkpoint_and_evidence():
     content = SUMMARY.read_text(encoding="utf-8")
-    assert "`f4c89d8`" in content
-    assert "923 passed tests" in content
+    assert "`de5f161`" in content
+    assert "1212 passed tests" in content
+    assert "5 intentionally skipped" in content
+    assert "GitHub Actions CI run #181" in content
+    assert "Supply Chain Security run #106" in content
     assert "no pending Alembic upgrade operations" in content
     assert "unchanged OpenAPI export" in content
 
@@ -38,3 +41,16 @@ def test_release_summary_links_operational_documentation():
         "api-reference.md",
     ):
         assert f"]({filename})" in content
+
+
+def test_release_summary_records_operational_handoff_closure():
+    content = SUMMARY.read_text(encoding="utf-8")
+
+    for required in (
+        "guarded configuration snapshot recovery",
+        "guarded processing retention",
+        "deployment-owner cutover checklist",
+        "does not approve a production cutover",
+        "deployment smoke test",
+    ):
+        assert required in content
