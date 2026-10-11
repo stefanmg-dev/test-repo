@@ -132,6 +132,23 @@ Execution permanently deletes at most the requested number of the oldest eligibl
 
 Do not schedule retention automatically until operational monitoring, backup, and restore procedures have been validated.
 
+## Deployment-owner production cutover checklist
+
+Automated tests and smoke checks demonstrate application behavior, but they do not select production infrastructure or operational policy. Before production cutover, the deployment owner must record and approve each item below.
+
+- [ ] Infrastructure sizing and replica count are based on measured workload expectations.
+- [ ] Concurrency limits and request timeout policy are defined and validated.
+- [ ] Shared rate-limit storage is selected when more than one application process or replica is used.
+- [ ] Monitoring signals, alert thresholds, notification routes, and dashboard ownership are defined.
+- [ ] Incident ownership, escalation path, and rollback authority are assigned.
+- [ ] Database backup schedule, archive retention, and secure storage are approved.
+- [ ] Recovery objectives, including RPO and RTO, are explicitly recorded.
+- [ ] A restore exercise has succeeded in a separate verification database and evidence is retained.
+- [ ] The previous known-good image and rollback procedure are available.
+- [ ] The production deployment smoke test has passed and its evidence is retained.
+
+A production cutover is a no-go while any required decision is unassigned, unapproved, or unsupported by evidence. Application CI, OpenAPI synchronization, migration parity, security workflows, and the read-only deployment smoke test support the decision but do not replace deployment-owner approval.
+
 ## Related operational documentation
 
 - [System architecture](architecture.md)
