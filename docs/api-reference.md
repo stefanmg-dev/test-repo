@@ -27,80 +27,55 @@ Authentication can be supplied through an API key or OIDC bearer token where req
 
 ### GET `/api/v1/api-keys`
 
-**Purpose:** List Api Keys.
+**Purpose:** List API-key metadata for the authenticated administrator's tenant without exposing plaintext secrets.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
-
-**Parameters:** None documented.
+**Access:** Requires an authenticated administrator.
 
 **Request body:** None.
 
-**Responses:**
-
-- `200`: Successful Response Response: `application/json`: `ApiKeyListResponseModel`.
+**Successful response:** `200` with `ApiKeyListResponseModel`. The `items` array contains identifiers, names, tenant ownership, secret prefixes, scopes, lifecycle timestamps, and revocation state.
 
 ### POST `/api/v1/api-keys`
 
-**Purpose:** Create Api Key.
+**Purpose:** Create a tenant-scoped API key and return its plaintext secret once.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Requires an authenticated administrator.
 
-**Parameters:** None documented.
+**Request body:** `ApiKeyCreateRequest` with `name`, one or more `scopes`, and optional timezone-aware `expires_at`.
 
-**Request body:** `application/json`: `ApiKeyCreateRequest`
-
-**Responses:**
-
-- `201`: Successful Response Response: `application/json`: `ApiKeyCreatedModel`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+**Successful response:** `201` with `ApiKeyCreatedModel`. The `secret` value must be stored securely because later list operations return only metadata and `secret_prefix`.
 
 ### DELETE `/api/v1/api-keys/{api_key_id}`
 
-**Purpose:** Revoke Api Key.
+**Purpose:** Revoke one tenant-scoped API key.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Requires an authenticated administrator.
 
-**Parameters:**
+**Path parameters:** `api_key_id` identifies the API key to revoke.
 
-- `api_key_id` (path, required): Unique identifier of the API key to rotate or revoke.
-
-**Request body:** None.
-
-**Responses:**
-
-- `204`: Successful Response Response: No response body documented.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+**Successful response:** `204` with no response body.
 
 ### POST `/api/v1/api-keys/{api_key_id}/rotate`
 
-**Purpose:** Rotate Api Key.
+**Purpose:** Revoke an existing tenant-scoped key and return a replacement key with a new plaintext secret.
 
-**Access:** `ApiKeyAuth`, `BearerAuth`.
+**Access:** Requires an authenticated administrator.
 
-**Parameters:**
+**Path parameters:** `api_key_id` identifies the API key to rotate.
 
-- `api_key_id` (path, required): Unique identifier of the API key to rotate or revoke.
+**Request body:** `ApiKeyRotateRequest` with optional timezone-aware `expires_at`.
 
-**Request body:** `application/json`: `ApiKeyRotateRequest`
-
-**Responses:**
-
-- `200`: Successful Response Response: `application/json`: `ApiKeyCreatedModel`.
-- `422`: Validation Error Response: `application/json`: `HTTPValidationError`.
+**Successful response:** `200` with `ApiKeyCreatedModel`. The replacement `secret` is returned only in this response.
 
 ### GET `/api/v1/auth/config`
 
-**Purpose:** Get Browser Auth Config.
+**Purpose:** Return the public browser OIDC configuration without exposing confidential credentials.
 
-**Access:** Follows the route's application security dependencies.
-
-**Parameters:** None documented.
+**Access:** Public bootstrap endpoint for the administrative browser UI.
 
 **Request body:** None.
 
-**Responses:**
-
-- `200`: Successful Response Response: `application/json`: `BrowserAuthConfigModel`.
+**Successful response:** `200` with `BrowserAuthConfigModel`, including `enabled`, public `client_id`, `authority`, `redirect_path`, and requested `scopes`.
 
 ### GET `/api/v1/config/document-types`
 

@@ -105,11 +105,12 @@
         "tags": [
           "API keys"
         ],
-        "summary": "List Api Keys",
+        "summary": "List API keys",
+        "description": "Lists API-key metadata for the authenticated administrator's tenant. Plaintext secrets are never returned.",
         "operationId": "list_api_keys_api_v1_api_keys_get",
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Tenant-scoped API-key metadata.",
             "content": {
               "application/json": {
                 "schema": {
@@ -132,7 +133,8 @@
         "tags": [
           "API keys"
         ],
-        "summary": "Create Api Key",
+        "summary": "Create an API key",
+        "description": "Creates a tenant-scoped API key for an authenticated administrator. The plaintext secret is returned only in this response.",
         "operationId": "create_api_key_api_v1_api_keys_post",
         "requestBody": {
           "content": {
@@ -146,7 +148,7 @@
         },
         "responses": {
           "201": {
-            "description": "Successful Response",
+            "description": "API key created with its one-time plaintext secret.",
             "content": {
               "application/json": {
                 "schema": {
@@ -181,7 +183,8 @@
         "tags": [
           "API keys"
         ],
-        "summary": "Rotate Api Key",
+        "summary": "Rotate an API key",
+        "description": "Revokes the existing tenant-scoped API key and returns a replacement key with a new one-time plaintext secret.",
         "operationId": "rotate_api_key_api_v1_api_keys__api_key_id__rotate_post",
         "security": [
           {
@@ -199,8 +202,10 @@
             "schema": {
               "type": "string",
               "format": "uuid",
+              "description": "Identifier of the tenant-scoped API key to rotate.",
               "title": "Api Key Id"
-            }
+            },
+            "description": "Identifier of the tenant-scoped API key to rotate."
           }
         ],
         "requestBody": {
@@ -215,7 +220,7 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Replacement API key with its one-time plaintext secret.",
             "content": {
               "application/json": {
                 "schema": {
@@ -242,7 +247,8 @@
         "tags": [
           "API keys"
         ],
-        "summary": "Revoke Api Key",
+        "summary": "Revoke an API key",
+        "description": "Revokes one tenant-scoped API key for an authenticated administrator.",
         "operationId": "revoke_api_key_api_v1_api_keys__api_key_id__delete",
         "security": [
           {
@@ -260,13 +266,15 @@
             "schema": {
               "type": "string",
               "format": "uuid",
+              "description": "Identifier of the tenant-scoped API key to revoke.",
               "title": "Api Key Id"
-            }
+            },
+            "description": "Identifier of the tenant-scoped API key to revoke."
           }
         ],
         "responses": {
           "204": {
-            "description": "Successful Response"
+            "description": "API key revoked successfully."
           },
           "422": {
             "description": "Validation Error",
@@ -286,11 +294,12 @@
         "tags": [
           "Authentication"
         ],
-        "summary": "Get Browser Auth Config",
+        "summary": "Get browser authentication configuration",
+        "description": "Returns the public browser OIDC configuration. No client secret or other confidential credential is exposed.",
         "operationId": "get_browser_auth_config_api_v1_auth_config_get",
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Public browser authentication configuration.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4398,7 +4407,11 @@
             "type": "string",
             "maxLength": 100,
             "minLength": 1,
-            "title": "Name"
+            "title": "Name",
+            "description": "Human-readable name used to identify the API key.",
+            "examples": [
+              "document-import-service"
+            ]
           },
           "scopes": {
             "items": {
@@ -4407,7 +4420,14 @@
             "type": "array",
             "minItems": 1,
             "uniqueItems": true,
-            "title": "Scopes"
+            "title": "Scopes",
+            "description": "Permission scopes granted to the API key.",
+            "examples": [
+              [
+                "documents:extract",
+                "processing-runs:read"
+              ]
+            ]
           },
           "expires_at": {
             "anyOf": [
@@ -4419,7 +4439,11 @@
                 "type": "null"
               }
             ],
-            "title": "Expires At"
+            "title": "Expires At",
+            "description": "Optional future expiration timestamp including a timezone. Omit it for a key without a configured expiration.",
+            "examples": [
+              "2027-01-31T23:59:59Z"
+            ]
           }
         },
         "additionalProperties": false,
@@ -4435,31 +4459,58 @@
           "id": {
             "type": "string",
             "format": "uuid",
-            "title": "Id"
+            "title": "Id",
+            "description": "Stable identifier of the API-key record.",
+            "examples": [
+              "123e4567-e89b-12d3-a456-426614174000"
+            ]
           },
           "name": {
             "type": "string",
-            "title": "Name"
+            "title": "Name",
+            "description": "Human-readable API-key name.",
+            "examples": [
+              "document-import-service"
+            ]
           },
           "tenant_id": {
             "type": "string",
-            "title": "Tenant Id"
+            "title": "Tenant Id",
+            "description": "Tenant boundary to which the API key belongs.",
+            "examples": [
+              "default"
+            ]
           },
           "secret_prefix": {
             "type": "string",
-            "title": "Secret Prefix"
+            "title": "Secret Prefix",
+            "description": "Non-secret prefix used to recognize the API key.",
+            "examples": [
+              "dpk_3f92a1"
+            ]
           },
           "scopes": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Scopes"
+            "title": "Scopes",
+            "description": "Permission scopes granted to the API key.",
+            "examples": [
+              [
+                "documents:extract",
+                "processing-runs:read"
+              ]
+            ]
           },
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "description": "Timestamp when the API key was created.",
+            "examples": [
+              "2026-10-11T12:00:00Z"
+            ]
           },
           "expires_at": {
             "anyOf": [
@@ -4471,7 +4522,11 @@
                 "type": "null"
               }
             ],
-            "title": "Expires At"
+            "title": "Expires At",
+            "description": "Configured expiration timestamp, or null when unset.",
+            "examples": [
+              "2027-01-31T23:59:59Z"
+            ]
           },
           "last_used_at": {
             "anyOf": [
@@ -4483,7 +4538,11 @@
                 "type": "null"
               }
             ],
-            "title": "Last Used At"
+            "title": "Last Used At",
+            "description": "Most recent successful use timestamp, or null if unused.",
+            "examples": [
+              "2026-10-12T08:30:00Z"
+            ]
           },
           "revoked_at": {
             "anyOf": [
@@ -4495,11 +4554,19 @@
                 "type": "null"
               }
             ],
-            "title": "Revoked At"
+            "title": "Revoked At",
+            "description": "Revocation timestamp, or null while the key is active.",
+            "examples": [
+              null
+            ]
           },
           "secret": {
             "type": "string",
-            "title": "Secret"
+            "title": "Secret",
+            "description": "New plaintext secret returned only by the create or rotate operation. Store it securely because it cannot be retrieved later.",
+            "examples": [
+              "dpk_example_secret_value"
+            ]
           }
         },
         "additionalProperties": false,
@@ -4522,7 +4589,8 @@
               "$ref": "#/components/schemas/ApiKeyModel"
             },
             "type": "array",
-            "title": "Items"
+            "title": "Items",
+            "description": "API keys belonging to the authenticated administrator's tenant."
           }
         },
         "additionalProperties": false,
@@ -4537,31 +4605,58 @@
           "id": {
             "type": "string",
             "format": "uuid",
-            "title": "Id"
+            "title": "Id",
+            "description": "Stable identifier of the API-key record.",
+            "examples": [
+              "123e4567-e89b-12d3-a456-426614174000"
+            ]
           },
           "name": {
             "type": "string",
-            "title": "Name"
+            "title": "Name",
+            "description": "Human-readable API-key name.",
+            "examples": [
+              "document-import-service"
+            ]
           },
           "tenant_id": {
             "type": "string",
-            "title": "Tenant Id"
+            "title": "Tenant Id",
+            "description": "Tenant boundary to which the API key belongs.",
+            "examples": [
+              "default"
+            ]
           },
           "secret_prefix": {
             "type": "string",
-            "title": "Secret Prefix"
+            "title": "Secret Prefix",
+            "description": "Non-secret prefix used to recognize the API key.",
+            "examples": [
+              "dpk_3f92a1"
+            ]
           },
           "scopes": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Scopes"
+            "title": "Scopes",
+            "description": "Permission scopes granted to the API key.",
+            "examples": [
+              [
+                "documents:extract",
+                "processing-runs:read"
+              ]
+            ]
           },
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "description": "Timestamp when the API key was created.",
+            "examples": [
+              "2026-10-11T12:00:00Z"
+            ]
           },
           "expires_at": {
             "anyOf": [
@@ -4573,7 +4668,11 @@
                 "type": "null"
               }
             ],
-            "title": "Expires At"
+            "title": "Expires At",
+            "description": "Configured expiration timestamp, or null when unset.",
+            "examples": [
+              "2027-01-31T23:59:59Z"
+            ]
           },
           "last_used_at": {
             "anyOf": [
@@ -4585,7 +4684,11 @@
                 "type": "null"
               }
             ],
-            "title": "Last Used At"
+            "title": "Last Used At",
+            "description": "Most recent successful use timestamp, or null if unused.",
+            "examples": [
+              "2026-10-12T08:30:00Z"
+            ]
           },
           "revoked_at": {
             "anyOf": [
@@ -4597,7 +4700,11 @@
                 "type": "null"
               }
             ],
-            "title": "Revoked At"
+            "title": "Revoked At",
+            "description": "Revocation timestamp, or null while the key is active.",
+            "examples": [
+              null
+            ]
           }
         },
         "additionalProperties": false,
@@ -4624,7 +4731,11 @@
                 "type": "null"
               }
             ],
-            "title": "Expires At"
+            "title": "Expires At",
+            "description": "Optional replacement expiration timestamp including a timezone. Omit it to preserve a non-expiring replacement key.",
+            "examples": [
+              "2027-01-31T23:59:59Z"
+            ]
           }
         },
         "additionalProperties": false,
@@ -4659,7 +4770,11 @@
         "properties": {
           "enabled": {
             "type": "boolean",
-            "title": "Enabled"
+            "title": "Enabled",
+            "description": "Whether browser-based OIDC authentication is enabled.",
+            "examples": [
+              true
+            ]
           },
           "client_id": {
             "anyOf": [
@@ -4670,7 +4785,11 @@
                 "type": "null"
               }
             ],
-            "title": "Client Id"
+            "title": "Client Id",
+            "description": "Public OIDC client identifier exposed to the browser.",
+            "examples": [
+              "00000000-0000-0000-0000-000000000000"
+            ]
           },
           "authority": {
             "anyOf": [
@@ -4681,18 +4800,33 @@
                 "type": "null"
               }
             ],
-            "title": "Authority"
+            "title": "Authority",
+            "description": "OIDC authority used by the browser authentication client.",
+            "examples": [
+              "https://login.microsoftonline.com/common"
+            ]
           },
           "redirect_path": {
             "type": "string",
-            "title": "Redirect Path"
+            "title": "Redirect Path",
+            "description": "Application path used after browser authentication.",
+            "examples": [
+              "/ui/index.html"
+            ]
           },
           "scopes": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Scopes"
+            "title": "Scopes",
+            "description": "OIDC scopes requested by the browser authentication client.",
+            "examples": [
+              [
+                "openid",
+                "profile"
+              ]
+            ]
           }
         },
         "additionalProperties": false,

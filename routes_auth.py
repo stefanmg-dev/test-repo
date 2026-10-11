@@ -9,7 +9,16 @@ from auth_models import BrowserAuthConfigModel
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
 
-@router.get("/config", response_model=BrowserAuthConfigModel)
+@router.get(
+    "/config",
+    response_model=BrowserAuthConfigModel,
+    summary="Get browser authentication configuration",
+    description=(
+        "Returns the public browser OIDC configuration. No client secret or "
+        "other confidential credential is exposed."
+    ),
+    response_description="Public browser authentication configuration.",
+)
 def get_browser_auth_config(
     settings: Annotated[
         object,

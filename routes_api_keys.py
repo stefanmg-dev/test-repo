@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, HTTPException, Path, Response, status
 from uuid import UUID
 
 from api_key_models import (
@@ -26,7 +26,17 @@ def created_response(created):
     }
 
 
-@router.post("", response_model=ApiKeyCreatedModel, status_code=201)
+@router.post(
+    "",
+    response_model=ApiKeyCreatedModel,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create an API key",
+    description=(
+        "Creates a tenant-scoped API key for an authenticated administrator. "
+        "The plaintext secret is returned only in this response."
+    ),
+    response_description="API key created with its one-time plaintext secret.",
+)
 def create_api_key(
     request: ApiKeyCreateRequest,
     principal: AdminPrincipal,
@@ -48,7 +58,16 @@ def create_api_key(
     return created_response(created)
 
 
-@router.get("", response_model=ApiKeyListResponseModel)
+@router.get(
+    "",
+    response_model=ApiKeyListResponseModel,
+    summary="List API keys",
+    description=(
+        "Lists API-key metadata for the authenticated administrator's tenant. "
+        "Plaintext secrets are never returned."
+    ),
+    response_description="Tenant-scoped API-key metadata.",
+)
 def list_api_keys(
     principal: AdminPrincipal,
     service: ApiKeyServiceDependency,
@@ -56,12 +75,24 @@ def list_api_keys(
     return {"items": service.list_keys(tenant_id=principal.tenant_id)}
 
 
-@router.post("/{api_key_id}/rotate", response_model=ApiKeyCreatedModel)
+@router.post(
+    "/{api_key_id}/rotate",
+    response_model=ApiKeyCreatedModel,
+    summary="Rotate an API key",
+    description=(
+        "Revokes the existing tenant-scoped API key and returns a replacement "
+        "key with a new one-time plaintext secret."
+    ),
+    response_description="Replacement API key with its one-time plaintext secret.",
+)
 def rotate_api_key(
-    api_key_id: UUID,
     request: ApiKeyRotateRequest,
     principal: AdminPrincipal,
     service: ApiKeyServiceDependency,
+    api_key_id: UUID = Path(
+        ...,
+        description="Identifier of the tenant-scoped API key to rotate.",
+    ),
 ):
     try:
         created = service.rotate_key(
@@ -83,11 +114,22 @@ def rotate_api_key(
     return created_response(created)
 
 
-@router.delete("/{api_key_id}", status_code=204)
+@router.delete(
+    "/{api_key_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Revoke an API key",
+    description=(
+        "Revokes one tenant-scoped API key for an authenticated administrator."
+    ),
+    response_description="API key revoked successfully.",
+)
 def revoke_api_key(
-    api_key_id: UUID,
     principal: AdminPrincipal,
     service: ApiKeyServiceDependency,
+    api_key_id: UUID = Path(
+        ...,
+        description="Identifier of the tenant-scoped API key to revoke.",
+    ),
 ):
     try:
         service.revoke_key(api_key_id, tenant_id=principal.tenant_id)
