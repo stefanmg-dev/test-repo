@@ -26,7 +26,7 @@ def test_postman_contains_guarded_restore_request():
 
     assert item["request"]["method"] == "POST"
     assert item["request"]["url"]["raw"] == (
-        "{{baseUrl}}/api/v1/config/restore"
+        "{{base_url}}/api/v1/config/restore"
     )
     assert item["request"]["url"]["path"] == [
         "api", "v1", "config", "restore"
@@ -46,3 +46,20 @@ def test_postman_guarded_restore_has_safety_inputs_and_checks():
     assert "body.restore_applied" in script
     assert "body.backup_identifier" in script
     assert "body.configuration_write" in script
+
+
+def test_postman_guarded_restore_requires_complete_recovery_workflow():
+    item = get_restore_request()
+    prerequest = "\n".join(
+        line
+        for event in item.get("event", [])
+        if event.get("listen") == "prerequest"
+        for line in event["script"]["exec"]
+    )
+
+    assert 'environment.get("allow_configuration_restore")' in prerequest
+    assert '!== "true"' in prerequest
+    assert 'collectionVariables.get("configurationSnapshotRevision")' in prerequest
+    assert 'collectionVariables.get("configurationSnapshotConfiguration")' in prerequest
+    assert 'collectionVariables.get("configurationCurrentRevision")' in prerequest
+    assert "Run snapshot export and restore dry-run" in prerequest

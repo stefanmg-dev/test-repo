@@ -24,7 +24,7 @@ def test_postman_contains_configuration_snapshot_request():
     item = get_snapshot_request()
     assert item["request"]["method"] == "GET"
     assert item["request"]["url"]["raw"] == (
-        "{{baseUrl}}/api/v1/config/snapshot"
+        "{{base_url}}/api/v1/config/snapshot"
     )
     assert item["request"]["url"]["path"] == [
         "api", "v1", "config", "snapshot"
@@ -39,3 +39,18 @@ def test_postman_snapshot_request_checks_response_contract():
     assert "body.schema_version" in script
     assert "body.revision" in script
     assert "body.configuration" in script
+
+
+def test_postman_snapshot_stores_recovery_variables():
+    item = get_snapshot_request()
+    scripts = [
+        line
+        for event in item.get("event", [])
+        if event.get("listen") == "test"
+        for line in event["script"]["exec"]
+    ]
+    script = "\n".join(scripts)
+
+    assert 'collectionVariables.set("configurationSnapshotRevision"' in script
+    assert 'collectionVariables.set("configurationSnapshotConfiguration"' in script
+    assert "JSON.stringify(snapshot.configuration)" in script

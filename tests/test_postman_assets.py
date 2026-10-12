@@ -101,3 +101,32 @@ def test_destructive_postman_requests_are_disabled_by_default():
         script = "\n".join(scripts)
         assert variable in script
         assert '!== "true"' in script
+
+
+def test_postman_request_urls_use_defined_base_url_variable():
+    collection = load(COLLECTION)
+    environment = load(ENVIRONMENT)
+    environment_keys = {
+        item["key"] for item in environment["values"]
+    }
+
+    assert "base_url" in environment_keys
+
+    for item in requests(collection["item"]):
+        url = item["request"].get("url", "")
+        if isinstance(url, dict):
+            url = url.get("raw", "")
+        assert "{{baseUrl}}" not in url
+        assert url.startswith("{{base_url}}")
+
+
+def test_postman_configuration_recovery_variables_are_declared():
+    collection = load(COLLECTION)
+    variables = {
+        item["key"]: item.get("value")
+        for item in collection.get("variable", [])
+    }
+
+    assert variables["configurationSnapshotRevision"] == ""
+    assert variables["configurationSnapshotConfiguration"] == ""
+    assert variables["configurationCurrentRevision"] == ""

@@ -37,6 +37,18 @@
       "key": "latest_profile",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "configurationSnapshotRevision",
+      "value": ""
+    },
+    {
+      "key": "configurationSnapshotConfiguration",
+      "value": ""
+    },
+    {
+      "key": "configurationCurrentRevision",
+      "value": ""
     }
   ],
   "item": [
@@ -898,7 +910,11 @@
                   "    pm.expect(body.schema_version).to.eql(\"1\");",
                   "    pm.expect(body.revision).to.match(/^[0-9a-f]{64}$/);",
                   "    pm.expect(body.configuration).to.be.an(\"object\");",
-                  "});"
+                  "});",
+                  "",
+                  "const snapshot = pm.response.json();",
+                  "pm.collectionVariables.set(\"configurationSnapshotRevision\", snapshot.revision);",
+                  "pm.collectionVariables.set(\"configurationSnapshotConfiguration\", JSON.stringify(snapshot.configuration));"
                 ]
               }
             }
@@ -912,9 +928,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/config/snapshot",
+              "raw": "{{base_url}}/api/v1/config/snapshot",
               "host": [
-                "{{baseUrl}}"
+                "{{base_url}}"
               ],
               "path": [
                 "api",
@@ -951,7 +967,23 @@
                   "    pm.expect(body.current_revision).to.match(/^[0-9a-f]{64}$/);",
                   "    pm.expect(body.changes_detected).to.be.a(\"boolean\");",
                   "    pm.expect(body.document_types).to.be.an(\"array\");",
-                  "});"
+                  "});",
+                  "",
+                  "const dryRun = pm.response.json();",
+                  "pm.collectionVariables.set(\"configurationCurrentRevision\", dryRun.current_revision);"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const snapshotRevision = pm.collectionVariables.get(\"configurationSnapshotRevision\");",
+                  "const snapshotConfiguration = pm.collectionVariables.get(\"configurationSnapshotConfiguration\");",
+                  "if (!snapshotRevision || !snapshotConfiguration) {",
+                  "  throw new Error(\"Run Export Configuration Snapshot successfully before restore dry-run.\");",
+                  "}"
                 ]
               }
             }
@@ -978,9 +1010,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/v1/config/restore/dry-run",
+              "raw": "{{base_url}}/api/v1/config/restore/dry-run",
               "host": [
-                "{{baseUrl}}"
+                "{{base_url}}"
               ],
               "path": [
                 "api",
@@ -1025,6 +1057,13 @@
                 "exec": [
                   "if (pm.environment.get(\"allow_configuration_restore\") !== \"true\") {",
                   "  throw new Error(\"Configuration restore is disabled. Set allow_configuration_restore=true explicitly for this environment.\");",
+                  "}",
+                  "",
+                  "const snapshotRevision = pm.collectionVariables.get(\"configurationSnapshotRevision\");",
+                  "const snapshotConfiguration = pm.collectionVariables.get(\"configurationSnapshotConfiguration\");",
+                  "const currentRevision = pm.collectionVariables.get(\"configurationCurrentRevision\");",
+                  "if (!snapshotRevision || !snapshotConfiguration || !currentRevision) {",
+                  "  throw new Error(\"Run snapshot export and restore dry-run successfully before guarded restore.\");",
                   "}"
                 ]
               }
@@ -1052,9 +1091,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/v1/config/restore",
+              "raw": "{{base_url}}/api/v1/config/restore",
               "host": [
-                "{{baseUrl}}"
+                "{{base_url}}"
               ],
               "path": [
                 "api",

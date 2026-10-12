@@ -26,7 +26,7 @@ def test_postman_contains_configuration_restore_dry_run_request():
 
     assert item["request"]["method"] == "POST"
     assert item["request"]["url"]["raw"] == (
-        "{{baseUrl}}/api/v1/config/restore/dry-run"
+        "{{base_url}}/api/v1/config/restore/dry-run"
     )
     assert item["request"]["url"]["path"] == [
         "api",
@@ -51,3 +51,25 @@ def test_postman_dry_run_request_has_snapshot_body_and_checks():
     assert "body.snapshot_revision" in script
     assert "body.current_revision" in script
     assert "body.changes_detected" in script
+
+
+def test_postman_dry_run_requires_snapshot_and_stores_current_revision():
+    item = get_dry_run_request()
+    prerequest = "\n".join(
+        line
+        for event in item.get("event", [])
+        if event.get("listen") == "prerequest"
+        for line in event["script"]["exec"]
+    )
+    tests = "\n".join(
+        line
+        for event in item.get("event", [])
+        if event.get("listen") == "test"
+        for line in event["script"]["exec"]
+    )
+
+    assert 'collectionVariables.get("configurationSnapshotRevision")' in prerequest
+    assert 'collectionVariables.get("configurationSnapshotConfiguration")' in prerequest
+    assert "Run Export Configuration Snapshot" in prerequest
+    assert 'collectionVariables.set("configurationCurrentRevision"' in tests
+    assert "dryRun.current_revision" in tests
