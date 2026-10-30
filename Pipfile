@@ -18,11 +18,15 @@ pydantic-settings = "*"
 greenlet = "<4,>=1"
 pyjwt = {extras = ["crypto"], version = "*"}
 limits = {extras = ["redis"], version = "*"}
+filelock = ">=4.2.1"
+pillow = ">=13.0.0"
+setuptools = ">=84.1.0"
 
 [dev-packages]
 pytest = "*"
 pytest-playwright = "*"
 httpx2 = "*"
+certifi = ">=2026.10.19"
 
 [requires]
 python_version = "3.14"
